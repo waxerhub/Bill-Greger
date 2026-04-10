@@ -19,21 +19,29 @@
       window.addEventListener('unhandledrejection', function(e) {
         cfError('Promise rejection: ' + String(e.reason));
       });
-      // Fallback: if React hasn't mounted after 12s, show a diagnostic message
+      // Fallback: if React hasn't mounted after 20s, show a helpful message
       window.__cfMounted = false;
       setTimeout(function() {
         if (!window.__cfMounted) {
           cfError(
-            'App failed to start (scripts may not have loaded).\n\n' +
-            'User agent: ' + navigator.userAgent + '\n\n' +
-            'Try: hard-refresh (hold reload button), or check browser console for errors.'
+            'App took too long to load.\n\n' +
+            'This usually happens on first visit when the server needs ~30 seconds to wake up.\n\n' +
+            'Please hard-refresh the page (on iOS: hold the reload button \u21ba, then tap "Reload").\n\n' +
+            'Browser: ' + navigator.userAgent
           );
         }
-      }, 12000);
+      }, 20000);
     </script>
   </head>
   <body>
-    <div id="root"><div style="min-height:100vh;background:#08080d;color:#c9a84c;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:18px;letter-spacing:2px;">Loading Character Forge…</div></div>
+    <style>
+      #cf-slow{display:none;margin-top:16px;font-size:12px;color:#7a7080;font-family:monospace;}
+      @keyframes cf-show{to{opacity:1}}
+      @media(prefers-reduced-motion:no-preference){
+        #cf-slow{display:block;opacity:0;animation:cf-show 0s 7s forwards;}
+      }
+    </style>
+    <div id="root"><div style="min-height:100vh;background:#08080d;color:#c9a84c;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:Georgia,serif;font-size:18px;letter-spacing:2px;">Loading Character Forge…<div id="cf-slow">Server warming up — please wait a moment…</div></div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
