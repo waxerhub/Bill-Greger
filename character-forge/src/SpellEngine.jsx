@@ -648,7 +648,9 @@ function CharCreator({ spellData: SPELL_DATA }) {
   var _casts=useState([]),activeCasts=_casts[0],setActiveCasts=_casts[1];
   var _round=useState(1),combatRound=_round[0],setCombatRound=_round[1];
   var _casting=useState(null),castingSpell=_casting[0],setCastingSpell=_casting[1];
-  var _spells=useState(SPELL_DATA),compSpells=_spells[0],setCompSpells=_spells[1];
+  var _spells=useState([]),compSpells=_spells[0],setCompSpells=_spells[1];
+  // Sync compSpells when spell data prop loads
+  useEffect(function(){if(SPELL_DATA&&SPELL_DATA.length>0)setCompSpells(SPELL_DATA);},[SPELL_DATA]);
   var _memo=useState([]),memorized=_memo[0],setMemorized=_memo[1];
   var _notes=useState(""),notes=_notes[0],setNotes=_notes[1];
   // AI state
