@@ -14,21 +14,15 @@
 
 ## The Header
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Character Forge  AD&D 2E · PLAYER'S OPTION                                 │
-│  [stats] [combat] [spells] [✦ CP] [sheet] [notes] [✦ AI]  [NEW] [PDF]      │
-│  [💾 Save] [📂 Load] [☁ Cloud Save] [☁ Cloud Load]                         │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+![Stats tab overview](docs/01-stats-filled.png)
 
-The top info bar also shows the character's name, class, level, HP, AC, and THAC0 at a glance.
+The top bar shows your character's **name, class, level, HP, AC, THAC0, and CP** at a glance. All values update live as you edit.
 
 ### Header Buttons
 
 | Button | What it does |
 |--------|-------------|
-| **NEW** | Clear everything and start a fresh character (asks no confirmation — use Save first!) |
+| **NEW** | Clear everything and start a fresh character (no confirmation — use Save first!) |
 | **PDF** | Export a formatted character sheet as a PDF file |
 | **💾 Save** | Download the character as a `.json` file to your device |
 | **📂 Load** | Load a `.json` file **or** import a Character Forge PDF (AI reads it) |
@@ -39,230 +33,126 @@ The top info bar also shows the character's name, class, level, HP, AC, and THAC
 
 ## Tab 1 — STATS
 
-The main character creation tab.
+The main character creation tab. Set everything here first.
 
-```
-┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│  RACE    │ │  CLASS   │ │   KIT    │ │  LEVEL   │
-│  Human ▾ │ │  Druid ▾ │ │  None ▾  │ │ [−] 5 [+]│
-└──────────┘ └──────────┘ └──────────┘ └──────────┘
-┌─────────────────────────┐ ┌──────────┐ ┌──────────┐
-│  EXPERIENCE             │ │  HIT PTS │ │ALIGNMENT │
-│  [  1500  ] +100 +500 +1k│ │ [28] − + │ │True Neut▾│
-│  1.5k / 4k XP  ▓▓▓░  37%│ │ ROLL 5d8 │ │          │
-└─────────────────────────┘ └──────────┘ └──────────┘
-```
+![Stats tab with character filled in](docs/01-stats-filled.png)
 
 ### Race & Class
-- Pick from the **Race** dropdown: Human, Elf, Half-Elf, Dwarf, Gnome, Halfling, Half-Orc
-- Pick a **Class**: Fighter, Ranger, Paladin, Cleric, Druid, Mage, Illusionist, Thief, Bard
-- Racial stat adjustments are shown below the race selector
+
+- **Race** dropdown: Human, Elf, Half-Elf, Dwarf, Gnome, Halfling, Half-Orc
+- **Class** dropdown: Fighter, Ranger, Paladin, Cleric, Druid, Mage, Illusionist, Thief, Bard
+- Racial stat adjustments are shown below the race selector (e.g. "Dex+1, Con-1" for Elf)
 
 ### Kit
-- For **Druids**: choose a specialty kit (Totemic Druid, Shapeshifter, etc.) from the dropdown
-- For **all other classes**: free-text field — type anything (e.g. "Eldritch Knight")
+
+- **Druids**: choose a specialty kit (Totemic Druid, Shapeshifter, etc.) from the dropdown
+- **All other classes**: free-text field — type anything (e.g. "Eldritch Knight")
 - If a kit has stat requirements you don't meet, a warning appears with a **DM Override** checkbox
 
-### Level & XP
+### Level
+
 - Use **−/+** buttons or type directly in the Level field (1–20)
-- The **EXPERIENCE** card shows:
-  - Your current XP (editable) and the threshold for the next level
-  - A progress bar filling toward next level
-  - **LEVEL UP!** in green when you've earned enough XP
-  - Quick-add buttons: **+100**, **+500**, **+1k** for fast entry after a session
+
+### Experience
+
+- The **EXPERIENCE** card shows your current XP (editable) and the XP threshold for next level
+- A progress bar fills toward the next level — turns green and shows **LEVEL UP!** when you've earned enough
+- Quick-add buttons: **+100**, **+500**, **+1k** for fast entry after a session
 
 ### Hit Points
+
 - Type directly or use **−/+** to track damage mid-session
-- **ROLL Nd8** button rolls HD × level + CON bonus automatically
+- **ROLL NdX** button rolls HD × level + CON bonus automatically
 
 ### Ability Scores
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  ABILITY SCORES        [3d6] [4d6] [3d6r1]  [ROLL] [ASSIGN] │
-│                                                              │
-│  STR  [16] − +    Melee: +1    Dmg: +1                      │
-│  DEX  [14] − +    AC: +0    Missile: +0                     │
-│  CON  [15] − +    HP/die: +1                                │
-│  INT  [10] − +                                              │
-│  WIS  [16] − +    Saves: +2    Bonus spells: 2/2            │
-│  CHA  [15] − +                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+Six stat cards (STR, DEX, CON, INT, WIS, CHA) each show the derived mechanical effects (to-hit, AC adjustment, HP per die, saving throw bonus, bonus spells, etc.) calculated from the PHB tables.
 
-**Rolling stats:**
-1. Click **ROLL** — a modal shows all 6 sets of dice
-2. Use **ASSIGN** to drag-drop or assign each roll to a stat
-3. **3d6** = classic, **4d6** = drop lowest, **3d6r1** = reroll ones
+**Rolling stats** — three methods available top-right:
+- **3d6** — classic straight roll
+- **3d6 reroll 1s** — reroll any die showing 1
+- **4d6 drop lowest** — roll 4, discard the lowest
 
-Each stat shows its mechanical effect (to-hit bonus, AC adjustment, HP per die, etc.) calculated from the PHB tables.
+Click one of the method buttons, then **ROLL** to open the roll modal. Use **ASSIGN** to drag-and-drop each result to a stat.
 
-**Exceptional Strength:** Warriors with STR 18 get a **percentile** input (1–100) for 18/xx exceptional strength.
-
-### Druid-Only: Shapechange & Totem
-
-When playing a Druid with a shapeshifting kit:
-- **Totem Animal** dropdown appears — pick your spirit animal
-- **Shape Uses** tracker counts remaining daily shapeshifts
-- **Failed Attempts** tracks cumulative shapechange failures (each adds 5% stuck chance)
+**Exceptional Strength:** Warriors with STR 18 get a percentile input (18/01 – 18/00) for exceptional strength.
 
 ---
 
 ## Tab 2 — COMBAT
 
-Read-only combat reference — all values calculated from your stats.
+Read-only combat reference — all values calculated from your stats and level.
 
-```
-┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│  THAC0   │ │    AC    │ │    HP    │ │  DMG ADJ │
-│    15    │ │    8     │ │    28    │ │   +1     │
-└──────────┘ └──────────┘ └──────────┘ └──────────┘
+![Combat tab](docs/02-combat-filled.png)
 
-SAVING THROWS
-┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐
-│Para/ │ │Rod/  │ │Petri-│ │Breath│ │Spell │
-│Poison│ │Staff │ │fy   │ │      │ │      │
-│  10  │ │  14  │ │  13  │ │  16  │ │  15  │
-└──────┘ └──────┘ └──────┘ └──────┘ └──────┘
-
-SPELL SLOTS
-  L1    L2    L3
- 2/3   1/3   0/2    ← used/available
-```
-
-- **THAC0** updates based on class, level, and STR bonus
-- **AC** updates from DEX; add armor separately
-- **Spell Slots** show used/available for each spell level (red when full)
-- **Memorized spells** are listed with a click-to-remove ✕
+- **THAC0** — updates based on class, level, and STR bonus
+- **AC** — base 10, adjusted by DEX modifier; add armor separately via the Notes tab
+- **HP** — mirrors the value from the Stats tab
+- **DMG ADJ** — STR damage bonus
+- **Saving Throws** — five categories, calculated per class/level tables
+- **Spell Slots** — shows used/available for each spell level (red when full); slots refill from the Spells tab
+- **Memorized** — lists all prepared spells as tags with a click-to-remove **×**
 
 ---
 
 ## Tab 3 — SPELLS
 
-The spell management center.
+The spell management center. Requires selecting a spellcasting class on the Stats tab.
 
-```
-┌────────────────────────────────────────────────┐
-│  2203 spells · Filtered by CP    [⟳ Reload XLSX]│
-└────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────┐
-│ COMBAT ROUND  3   [⏭ Next Round]  [↺ Reset]     │
-└─────────────────────────────────────────────────┘
-```
+![Spells tab](docs/03-spells-filled.png)
 
-### Compendium (bottom of tab)
+### Compendium
 
-```
-[Search…]  [All Levels ▾]  147 spells
+The bottom section lists the full spell database (2,203 spells), filtered to your class's accessible spells:
 
-[+]  L1  Entangle        Support
-[+]  L2  Barkskin        Support
-[+1] L2  Cure Light Wounds  Healing   ← already prepared once
-[+]  L3  Call Lightning  Combat      2d10 damage
-         ▶ (click to expand description)
-```
+- **Search** box — filter by name
+- **Level filter** — show only spells of a specific level
+- **[+]** button — prepare the spell (adds it to your memorized list)
+- **▶** — expands an AI-generated description on demand
+- Spells already at capacity for that slot level appear **greyed out**
+- Spells highlighted by the AI tab show with a **gold border**
 
-- **[+]** button prepares the spell — adds it to your memorized list
-- Shows up to 150 matching spells; use **Search** or **Level** filter to narrow it
-- **▶** expands AI-generated description on demand
-- Spells are **greyed out** when that spell slot level is full
-- **AI-highlighted** spells (from the AI tab suggestion) show with a gold border
+### Prepared Spells
 
-### Managing Prepared Spells
-
-Once you've added spells to your list:
-
-```
-PREPARED  ·  6 spells
-  L2  Barkskin  buff · 9 rds     [⚡ Cast]  [▶]  [✕]
-  L3  Call Lightning             [⚡ Cast]  [▶]  [✕]
-```
-
-Click **⚡ Cast** to cast a spell:
-- **⚡ Instant** — expends the slot immediately (no duration tracking)
-- **[rds] ⏱ Track** — enter the number of rounds and track it in the Active Spells panel
+The top section shows spells you've memorized. Click **⚡ Cast** to cast a spell:
+- **Instant** — expends the slot immediately
+- **Track** — enter a round count and track it in the Active Spells panel
 
 ### Active Spells (duration tracking)
 
-```
-ACTIVE SPELLS
-  L2  Barkskin    ▓▓▓▓▓▓░░  7 rds / 9     [▶]  [×]
-  L3  Call Lightning  ∞ ongoing            [▶]  [×]
-```
-
-- Click **⏭ Next Round** to advance all durations by 1 round
-- Bars turn yellow then red as spells near expiry
-- **[×]** dismisses a spell early
+Active timed spells show a progress bar counting down. Click **⏭ Next Round** (top of tab) to advance all durations by 1 round. Bars turn yellow then red as spells near expiry. **[×]** dismisses early.
 
 ### Reloading Spell Data
 
-The built-in list has 2,203 spells. To use a custom XLSX (e.g. a homebrew compendium):
-1. Click **⟳ Reload XLSX**
-2. Pick an `.xlsx` file with columns: `Spell Name`, `Level`, `Category`, `Sphere`/`School`, `Damage Dice`
+Click **⟳ Reload XLSX** to load a custom `.xlsx` file (columns: `Spell Name`, `Level`, `Category`, `Sphere`/`School`, `Damage Dice`).
 
 ---
 
 ## Tab 4 — ✦ CP (Character Points)
 
-Used for **Player's Option: Skills & Powers** custom class creation.
+Used for **Player's Option: Skills & Powers** custom class building.
 
-```
-CP Budget: [120]    (Priest 120 base)
-Spent: 45    Refund: 10    Remaining: 85
-▓▓▓▓▓░░░░░░░░░░░
+![CP tab](docs/04-cp-filled.png)
 
-PRESETS: Generic Druid (50)  Combat Druid (65)  ...
-
-SPHERES OF ACCESS
-[✓] All        [✓] Animal    [ ] Astral    [✓] Elemental
-[✓] Healing    [ ] Necromantic  [✓] Plant   [ ] Weather
-
-MAJOR SPHERES (full access)
-[✓] Animal  [✓] Plant
-
-MINOR SPHERES (spells up to L3 only)
-[✓] Healing
-
-SPECIAL ABILITIES
-[✓] Shapechange (15 CP)   [✓] Turn undead (15 CP)
-
-LIMITATIONS
-[✓] Armor: Chain or lighter  (+5 CP refund)
-```
-
-- **Priests** start with 120 CP; **Wizards** with 40 CP
-- Select spheres/schools, abilities, and limitations to build a custom class
-- Sphere/school selection also **filters the Spells tab** to show only accessible spells
-- **Presets** apply a pre-built configuration for common archetypes (Priests only)
+- **CP Budget** — Priests start with 120 CP; Wizards with 40 CP
+- Spent/Refund/Remaining tracked with a progress bar
+- **Presets** — apply a pre-built configuration for common archetypes (Priests only)
+- **Spheres of Access** — check which spheres your priest can use; this also **filters the Spells tab** to only accessible spells
+- **Major Spheres** — full access (all spell levels)
+- **Minor Spheres** — limited access (spells up to level 3 only)
+- **Special Abilities** — e.g. Shapechange (15 CP), Turn undead (15 CP)
+- **Limitations** — e.g. armor restrictions give back CP as a refund
 - **CLEAR** resets all selections
 
 ---
 
 ## Tab 5 — SHEET
 
-A formatted text character sheet — useful for a quick overview or copy-paste.
+A formatted text character sheet — useful for a quick overview or copy-paste to share with your DM.
 
-```
-═══════════════════════════════════════════
-CHARACTER SHEET
-═══════════════════════════════════════════
-Character    Aelindra           Level    5
-Race         Elf                Class    Druid
-Alignment    True Neutral       Kit      Totemic Druid
-HP  28  |  AC  8  |  THAC0  15
+![Sheet tab](docs/05-sheet-filled.png)
 
-ABILITY SCORES
-  STR  16 (+1/+1)   DEX  14 (AC+0)
-  CON  15 (+1/die)  INT  10
-  WIS  16 (+2sv)    CHA  15
-
-SAVING THROWS
-  Para/Poison 10  Rod/Staff 14  Petrify 13
-  Breath 16       Spell 15
-
-SPELL SLOTS  L1:3  L2:3  L3:2  L4:1
-...
-```
+Shows name, race, class, kit, alignment, HP, AC, THAC0, all ability scores with bonuses, saving throws, spell slots, prepared spells, and notes — all in a clean printable layout.
 
 ---
 
@@ -277,53 +167,25 @@ A free-text area for anything: backstory, equipment lists, NPC names, quest note
 
 ## Tab 7 — ✦ AI
 
-Two AI-powered tools (requires the Anthropic API key to be configured on the server).
+Two AI-powered tools (requires the Anthropic API key configured on the server).
+
+![AI tab](docs/07-ai.png)
 
 ### Spell Search
 
-```
-[spells] [gen]
-
-Ask anything about AD&D 2e spells...
-┌──────────────────────────────────────┐
-│ What are the best 2nd level combat   │
-│ spells for a druid?                  │
-└──────────────────────────────────────┘
-[🔍 Search]
-
-Result streams in:
-  The best combat options at L2 for a Druid are:
-  **Barkskin** — grants AC bonus...
-  **Flame Blade** — creates a weapon dealing 1d4+2 damage...
-```
-
-- Results stream in real-time
-- Spell names mentioned in **bold** are **highlighted in gold** in the Spells tab
+Type a natural language query (e.g. *"best 2nd level combat spells for a druid"*) and click **Search**. Results stream in real-time. Spell names mentioned in the response are **highlighted in gold** in the Spells tab so you can quickly find and prepare them.
 
 ### Character Generator
 
-```
-[spells] [gen]
+Switch to the **Character Generator** sub-tab. Describe a character concept in plain English (e.g. *"a grizzled dwarven fighter who worships a forge god"*) and click **✨ Generate**.
 
-Describe a character concept:
-┌──────────────────────────────────────┐
-│ A grizzled dwarven fighter who       │
-│ worships a forge god                 │
-└──────────────────────────────────────┘
-[✨ Generate]
+The AI returns:
+- Name, race, class, level
+- Full ability scores
+- Alignment and HP
+- A short backstory paragraph
 
-Generated:
-  Name: Bromdar Ironhallow
-  Race: Dwarf · Class: Fighter · Level 4
-  STR 18/45  DEX 11  CON 17  INT 9  WIS 13  CHA 8
-  Alignment: Lawful Good  HP: 38
-  Background: "A veteran of the siege of Kharak Dûm..."
-
-  [↙ Apply to Sheet]    [🎲 Suggest Spells]
-```
-
-- **Apply to Sheet** fills in all stats instantly — you can edit anything afterward
-- **🎲 Suggest Spells** (for spellcasters) asks the AI to pick thematic spells from the compendium — they appear highlighted in the Spells tab
+Click **↙ Apply to Sheet** to fill everything in instantly — you can edit any field afterward. For spellcasters, **🎲 Suggest Spells** asks the AI to pick thematic spells from the compendium, which appear highlighted in the Spells tab.
 
 ---
 
@@ -339,7 +201,7 @@ Generated:
 | **☁ Cloud Save** | Saves to Supabase (if configured) | Cross-device, permanent storage |
 | **☁ Cloud Load** | Lists your cloud saves | Switching between multiple characters |
 
-> **Tip:** The auto-save is browser-local. Use **💾 Save** before clearing browser data or switching browsers.
+> **Tip:** Auto-save is browser-local. Use **💾 Save** before clearing browser data or switching browsers.
 
 ---
 
@@ -348,6 +210,6 @@ Generated:
 - **Stat requirements for Druid kits** — if your stats don't qualify, a warning shows. Enable **DM Override** if your DM allows it anyway.
 - **WIS bonus spells** — Priest spell slots automatically include WIS bonus slots per the PHB table.
 - **Exceptional Strength** — Warriors with STR 18 unlock the percentile input. 18/00 = maximum strength.
-- **Spell filtering** — Sphere/school selections in the CP tab carry over to the Spells tab so you only see spells your class can access.
-- **Progress bar** — The XP progress bar turns green and shows **LEVEL UP!** when you've hit the threshold. Level up manually with the +/− on the Level card.
+- **Sphere/school filtering** — selections in the CP tab carry over to the Spells tab so you only see spells your class can access.
+- **XP progress bar** — turns green and shows **LEVEL UP!** when you've hit the threshold. Level up manually with the +/− buttons on the Level card.
 - **First load on Render** — The server sleeps after 15 min on the free tier. First visit may take 30–60 seconds to wake up; hard-refresh once it's awake.
