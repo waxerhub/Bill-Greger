@@ -7,6 +7,21 @@ import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyChara
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
 var CLASSES={"Fighter":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:null,group:"Warrior"},"Ranger":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"ranger",group:"Warrior"},"Paladin":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"paladin",group:"Warrior"},"Cleric":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Druid":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Mage":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Illusionist":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Thief":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:null,group:"Rogue"},"Bard":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:"bard",group:"Rogue"}};
+// PHB XP tables — index 0 = XP needed to reach level 1 (always 0), index 19 = level 20
+var XP_TABLE={
+  Fighter:    [0,2000,4000,8000,16000,32000,64000,125000,250000,500000,750000,1000000,1250000,1500000,1750000,2000000,2250000,2500000,2750000,3000000],
+  Ranger:     [0,2250,4500,9000,18000,36000,75000,150000,300000,600000,900000,1200000,1500000,1800000,2100000,2400000,2700000,3000000,3300000,3600000],
+  Paladin:    [0,2750,5500,12000,24000,45000,95000,175000,350000,700000,1050000,1400000,1750000,2100000,2450000,2800000,3150000,3500000,3850000,4200000],
+  Cleric:     [0,1500,3000,6000,13000,27500,55000,110000,225000,450000,675000,900000,1125000,1350000,1575000,1800000,2025000,2250000,2475000,2700000],
+  Druid:      [0,2000,4000,7500,12500,20000,35000,60000,90000,125000,200000,300000,750000,1500000,3000000,3600000,4200000,4800000,5400000,6000000],
+  Mage:       [0,2500,5000,10000,20000,40000,70000,110000,160000,220000,440000,660000,880000,1100000,1320000,1540000,1760000,1980000,2200000,2420000],
+  Illusionist:[0,2250,4500,9000,18000,36000,62000,95000,145000,200000,400000,600000,800000,1000000,1200000,1400000,1600000,1800000,2000000,2200000],
+  Thief:      [0,1250,2500,5000,10000,20000,40000,70000,110000,160000,220000,440000,660000,880000,1100000,1320000,1540000,1760000,1980000,2200000],
+  Bard:       [0,1500,3000,6000,13000,27500,55000,110000,200000,400000,600000,800000,1000000,1200000,1400000,1600000,1800000,2000000,2200000,2400000],
+};
+function xpForLevel(cls,lvl){var t=XP_TABLE[cls];return t?t[Math.max(0,Math.min(19,lvl-1))]||0:0;}
+function xpToNextLevel(cls,lvl){if(lvl>=20)return null;var t=XP_TABLE[cls];return t?t[Math.min(19,lvl)]:null;}
+function fmt(n){return n>=1000000?(n/1000000).toFixed(2).replace(/\.?0+$/,"")+"M":n>=1000?Math.round(n/100)/10+"k":String(n);}
 function getThac0(t,l){
   // PHB tables: Warriors improve 1/level (THAC0 20 at L1)
   // Priests improve 2 every 3 levels (20 at L1-3, 18 at L4-6, 16 at L7-9...)
@@ -641,6 +656,7 @@ function CharCreator({ spellData: SPELL_DATA }) {
   var _shapeUses=useState(0),shapeUsesLeft=_shapeUses[0],setShapeUsesLeft=_shapeUses[1];
   var _shapeFailed=useState(0),shapeFailed=_shapeFailed[0],setShapeFailed=_shapeFailed[1];
   var _lvl=useState(5),level=_lvl[0],setLevel=_lvl[1];
+  var _xp=useState(0),xp=_xp[0],setXP=_xp[1];
   var _hp=useState(28),hp=_hp[0],setHP=_hp[1];
   var _align=useState("True Neutral"),align=_align[0],setAlign=_align[1];
   var _stats=useState({Str:10,Dex:10,Con:10,Int:10,Wis:16,Cha:15}),stats=_stats[0],setStats=_stats[1];
@@ -693,11 +709,11 @@ function CharCreator({ spellData: SPELL_DATA }) {
   // Auto-save to localStorage on every change
   useEffect(function(){
     try{
-      var snap={charName,race,cls,kit,level,hp,align,stats,strPct,memorized,notes,
+      var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
         cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
     }catch(_){}
-  },[charName,race,cls,kit,level,hp,align,stats,strPct,memorized,notes,
+  },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed]);
 
   // Restore autosave on first load
@@ -958,7 +974,7 @@ function CharCreator({ spellData: SPELL_DATA }) {
 
   // Reset character
   async function resetCharacter() {
-    setCharName("");setRace("Human");setCls("Druid");setKit("");setLevel(1);setHP(8);setAlign("True Neutral");
+    setCharName("");setRace("Human");setCls("Druid");setKit("");setLevel(1);setXP(0);setHP(8);setAlign("True Neutral");
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
@@ -1068,7 +1084,7 @@ function CharCreator({ spellData: SPELL_DATA }) {
 
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
-    return {charName,race,cls,kit,level,hp,align,stats,strPct,memorized,notes,
+    return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
       cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,_version:1};
   }
   function applyCharacterData(d){
@@ -1078,6 +1094,7 @@ function CharCreator({ spellData: SPELL_DATA }) {
     if(d.cls&&CLASSES[d.cls])changeClass(d.cls);
     if(d.kit!==undefined)setKit(d.kit);
     if(d.level)setLevel(parseInt(d.level)||1);
+    if(d.xp!==undefined)setXP(parseInt(d.xp)||0);
     if(d.hp)setHP(parseInt(d.hp)||1);
     if(d.align)setAlign(d.align);
     if(d.stats)setStats({Str:d.stats.Str||10,Dex:d.stats.Dex||10,Con:d.stats.Con||10,Int:d.stats.Int||10,Wis:d.stats.Wis||10,Cha:d.stats.Cha||10});
@@ -1309,6 +1326,37 @@ function CharCreator({ spellData: SPELL_DATA }) {
     <button onClick={function(){setLevel(function(p){return Math.min(20,p+1);});}} style={{background:"#1a1a28",color:dim,border:"1px solid "+brd,borderRadius:"4px",width:"22px",height:"22px",cursor:"pointer",fontSize:"14px",lineHeight:"1",padding:"0"}}>+</button>
   </div>
   <div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>1–20</div>
+</Card>
+            <Card brd={brd} surf={surf}><Lbl dim={dim}>EXPERIENCE</Lbl>
+  {(function(){
+    var nextXP=xpToNextLevel(cls,level);
+    var thisXP=xpForLevel(cls,level);
+    var pct=nextXP?Math.min(100,Math.round(((xp-thisXP)/(nextXP-thisXP))*100)):100;
+    var canLevel=nextXP!==null&&xp>=nextXP;
+    return <div>
+      <div style={{display:"flex",alignItems:"center",gap:"4px",flexWrap:"wrap"}}>
+        <input type="text" inputMode="numeric" value={xp===0?"0":String(xp)}
+          onChange={function(e){var n=parseInt(e.target.value.replace(/[^0-9]/g,""));setXP(isNaN(n)?0:n);}}
+          style={Object.assign({},is(brd,txt),{width:"80px",textAlign:"center"})} />
+        <button onClick={function(){setXP(function(p){return p+100;});}} title="+100 XP"
+          style={{background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",padding:"1px 5px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace"}}>+100</button>
+        <button onClick={function(){setXP(function(p){return p+500;});}} title="+500 XP"
+          style={{background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",padding:"1px 5px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace"}}>+500</button>
+        <button onClick={function(){setXP(function(p){return p+1000;});}} title="+1,000 XP"
+          style={{background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",padding:"1px 5px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace"}}>+1k</button>
+      </div>
+      {nextXP!==null&&<div style={{marginTop:"6px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:"10px",color:dim,fontFamily:"monospace",marginBottom:"3px"}}>
+          <span>{fmt(xp)} / {fmt(nextXP)} XP</span>
+          <span style={{color:canLevel?"#7db87d":dim}}>{canLevel?"LEVEL UP!":pct+"%"}</span>
+        </div>
+        <div style={{height:"4px",background:brd,borderRadius:"2px",overflow:"hidden"}}>
+          <div style={{height:"100%",width:pct+"%",background:canLevel?"#7db87d":"#4a6a8a",borderRadius:"2px",transition:"width 0.3s"}} />
+        </div>
+      </div>}
+      {nextXP===null&&<div style={{fontSize:"10px",color:"#c9a84c",fontFamily:"monospace",marginTop:"4px"}}>Max level</div>}
+    </div>;
+  })()}
 </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>HIT POINTS</Lbl>
   <div style={{display:"flex",alignItems:"center",gap:"4px",flexWrap:"wrap"}}>
