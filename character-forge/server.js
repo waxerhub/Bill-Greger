@@ -15,10 +15,15 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 
-// Load .env if present (no dotenv dependency needed in Node 20.6+; for older
-// Node versions install dotenv and uncomment the next two lines)
-// import { config } from 'dotenv';
-// config();
+// Load .env automatically in Node 20.6+ (ignored on Render — env vars set in dashboard)
+const envPath = new URL('.env', import.meta.url).pathname;
+if (existsSync(envPath)) {
+  const { readFileSync } = await import('node:fs');
+  for (const line of readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim().replace(/^['"]|['"]$/g, '');
+  }
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
