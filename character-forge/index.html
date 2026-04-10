@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Character Forge</title>
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        document.getElementById('root').innerHTML =
+          '<div style="background:#08080d;color:#e08080;padding:20px;font-family:monospace;min-height:100vh;white-space:pre-wrap">' +
+          '<div style="color:#c9a84c;font-size:16px;margin-bottom:12px">Character Forge — Load Error</div>' +
+          String(msg) + '\n' + String(src) + ':' + line + '</div>';
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        document.getElementById('root').innerHTML =
+          '<div style="background:#08080d;color:#e08080;padding:20px;font-family:monospace;min-height:100vh;white-space:pre-wrap">' +
+          '<div style="color:#c9a84c;font-size:16px;margin-bottom:12px">Character Forge — Promise Error</div>' +
+          String(e.reason) + '</div>';
+      });
+    </script>
   </head>
   <body>
     <div id="root"><div style="min-height:100vh;background:#08080d;color:#c9a84c;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:18px;letter-spacing:2px;">Loading Character Forge…</div></div>
