@@ -29,6 +29,7 @@ class ErrorBoundary extends Component {
   }
 }
 
+window.__cfMounted = true;
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

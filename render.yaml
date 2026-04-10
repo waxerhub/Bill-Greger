@@ -2,9 +2,14 @@ services:
   - type: web
     name: character-forge
     runtime: node
+    nodeVersion: 22.11.0
     rootDir: character-forge
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
         sync: false

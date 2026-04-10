@@ -6,18 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Character Forge</title>
     <script>
-      window.onerror = function(msg, src, line, col, err) {
-        document.getElementById('root').innerHTML =
+      function cfError(msg) {
+        var r = document.getElementById('root');
+        if (r) r.innerHTML =
           '<div style="background:#08080d;color:#e08080;padding:20px;font-family:monospace;min-height:100vh;white-space:pre-wrap">' +
-          '<div style="color:#c9a84c;font-size:16px;margin-bottom:12px">Character Forge — Load Error</div>' +
-          String(msg) + '\n' + String(src) + ':' + line + '</div>';
+          '<div style="color:#c9a84c;font-size:16px;margin-bottom:12px">Character Forge — Error</div>' +
+          String(msg) + '</div>';
+      }
+      window.onerror = function(msg, src, line) {
+        cfError(String(msg) + '\n' + String(src) + ':' + line);
       };
       window.addEventListener('unhandledrejection', function(e) {
-        document.getElementById('root').innerHTML =
-          '<div style="background:#08080d;color:#e08080;padding:20px;font-family:monospace;min-height:100vh;white-space:pre-wrap">' +
-          '<div style="color:#c9a84c;font-size:16px;margin-bottom:12px">Character Forge — Promise Error</div>' +
-          String(e.reason) + '</div>';
+        cfError('Promise rejection: ' + String(e.reason));
       });
+      // Fallback: if React hasn't mounted after 12s, show a diagnostic message
+      window.__cfMounted = false;
+      setTimeout(function() {
+        if (!window.__cfMounted) {
+          cfError(
+            'App failed to start (scripts may not have loaded).\n\n' +
+            'User agent: ' + navigator.userAgent + '\n\n' +
+            'Try: hard-refresh (hold reload button), or check browser console for errors.'
+          );
+        }
+      }, 12000);
     </script>
   </head>
   <body>
