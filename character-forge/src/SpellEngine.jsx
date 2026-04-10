@@ -1217,6 +1217,7 @@ function CharCreator({ spellData: SPELL_DATA }) {
           <input ref={loadFileRef} type="file" accept=".json,.pdf" onChange={handleLoadFile} style={{display:"none"}} />
           <button onClick={cloudSave} title="Save to cloud (Supabase)" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Cloud Save</button>
           <button onClick={openCloudList} title="Load a saved character from cloud" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Cloud Load</button>
+          <a href="https://github.com/waxerhub/Bill-Greger/blob/claude/access-character-forge-CaPe1/character-forge/GUIDE.md" target="_blank" rel="noopener noreferrer" title="Open feature guide" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"transparent",color:dim,border:"1px solid transparent",textDecoration:"none"}}>? Guide</a>
         </div>
       </div>
       {/* Status bar */}
