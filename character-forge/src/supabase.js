@@ -18,8 +18,21 @@ import { createClient } from '@supabase/supabase-js';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Returns null if env vars aren't set (cloud features will be disabled gracefully)
-export const supabase = (url && key) ? createClient(url, key) : null;
+// Returns null if env vars aren't set or invalid — cloud features disabled gracefully.
+// Wrapped in try/catch so a bad VITE_SUPABASE_URL never crashes the whole app.
+function makeClient() {
+  if (!url || !key) return null;
+  try {
+    // Basic sanity-check: must look like a URL before calling createClient
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    return createClient(url, key);
+  } catch {
+    console.warn('[Character Forge] Supabase init skipped — VITE_SUPABASE_URL is invalid:', url);
+    return null;
+  }
+}
+export const supabase = makeClient();
 
 // Save or update a character. Returns the saved record (with id).
 // Pass an existing id to update, omit to insert a new row.
