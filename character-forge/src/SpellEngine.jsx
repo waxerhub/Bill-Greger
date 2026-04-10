@@ -4,9 +4,6 @@ import { exportCharacterSheet } from "./exportPDF.js";
 import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter } from "./claudeAI.js";
 import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId } from "./supabase.js";
 
-import { SPELL_DATA } from "./spellData.js";
-
-
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
 var CLASSES={"Fighter":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:null,group:"Warrior"},"Ranger":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"ranger",group:"Warrior"},"Paladin":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"paladin",group:"Warrior"},"Cleric":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Druid":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Mage":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Illusionist":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Thief":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:null,group:"Rogue"},"Bard":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:"bard",group:"Rogue"}};
@@ -633,7 +630,7 @@ var DRUID_KITS = {
 };
 
 // ======== MAIN COMPONENT ========
-function CharCreator() {
+function CharCreator({ spellData: SPELL_DATA }) {
   var _tab=useState("stats"),tab=_tab[0],setTab=_tab[1];
   var _name=useState(""),charName=_name[0],setCharName=_name[1];
   var _race=useState("Human"),race=_race[0],setRace=_race[1];
