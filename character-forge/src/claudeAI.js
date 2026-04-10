@@ -222,3 +222,19 @@ export async function fetchSpellDescription(spell) {
   if (!textBlock) throw new Error('No text block in response');
   return textBlock.text.trim();
 }
+
+// ── PDF Character Import ─────────────────────────────────────────────────────
+// Reads a base64-encoded PDF via the server proxy and extracts character data.
+// Returns a character object matching the app's state shape.
+export async function parsePDFCharacter(pdfBase64) {
+  var response = await fetch('/api/parse-pdf', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ pdfBase64: pdfBase64 }),
+  });
+  if (!response.ok) {
+    var errText = await response.text();
+    throw new Error('PDF parse failed: ' + errText);
+  }
+  return response.json();
+}

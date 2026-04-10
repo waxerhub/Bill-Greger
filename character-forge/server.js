@@ -76,6 +76,80 @@ app.post('/api/messages', async (req, res) => {
   }
 });
 
+// ── PDF → Character parser ───────────────────────────────────────────────────
+app.post('/api/parse-pdf', async (req, res) => {
+  const { pdfBase64 } = req.body;
+  if (!pdfBase64) return res.status(400).json({ error: 'No PDF data provided' });
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set on server' });
+
+  const systemPrompt =
+    'You are an AD&D 2nd Edition character sheet parser.\n' +
+    'Read the provided character sheet PDF and extract all character data.\n' +
+    'Return ONLY a valid JSON object — no markdown, no code fences.\n\n' +
+    'Required shape:\n' +
+    '{\n' +
+    '  "charName": string,\n' +
+    '  "race": string (Human/Elf/Half-Elf/Dwarf/Gnome/Halfling/Half-Orc),\n' +
+    '  "cls": string (Fighter/Ranger/Paladin/Cleric/Druid/Mage/Illusionist/Thief/Bard),\n' +
+    '  "kit": string (or ""),\n' +
+    '  "level": integer,\n' +
+    '  "hp": integer,\n' +
+    '  "align": string,\n' +
+    '  "stats": { "Str":int, "Dex":int, "Con":int, "Int":int, "Wis":int, "Cha":int },\n' +
+    '  "strPct": integer (0 unless exceptional STR shown),\n' +
+    '  "notes": string\n' +
+    '}\n' +
+    'If a field is not visible on the sheet, use a sensible default (0 for numbers, "" for strings).\n' +
+    'Return ONLY the JSON object.';
+
+  let upstream;
+  try {
+    upstream = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 1200,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+            },
+            { type: 'text', text: 'Extract the character data from this sheet as JSON.' },
+          ],
+        }],
+      }),
+    });
+  } catch (err) {
+    return res.status(502).json({ error: 'Failed to reach Anthropic API: ' + err.message });
+  }
+
+  const apiData = await upstream.json();
+  if (!upstream.ok) return res.status(upstream.status).json(apiData);
+
+  const textBlock = apiData.content.find(b => b.type === 'text');
+  if (!textBlock) return res.status(500).json({ error: 'No text in API response' });
+
+  let text = textBlock.text.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if (start === -1 || end === -1) return res.status(500).json({ error: 'No JSON found in response' });
+
+  try {
+    res.json(JSON.parse(text.slice(start, end + 1)));
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to parse JSON: ' + e.message });
+  }
+});
+
 // ── Serve built frontend in production ──────────────────────────────────────
 const distDir = join(__dirname, 'dist');
 if (existsSync(distDir)) {

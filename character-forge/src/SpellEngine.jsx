@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { exportCharacterSheet } from "./exportPDF.js";
-import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter } from "./claudeAI.js";
+import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter } from "./claudeAI.js";
+import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId } from "./supabase.js";
 
 import { SPELL_DATA } from "./spellData.js";
 
@@ -681,6 +682,33 @@ function CharCreator() {
   var _cpAbil=useState([]),cpAbil=_cpAbil[0],setCpAbil=_cpAbil[1];
   var _cpLim=useState([]),cpLim=_cpLim[0],setCpLim=_cpLim[1];
   var fr=useRef(null);
+  var loadFileRef=useRef(null);
+
+  // Cloud / save state
+  var _cloudId=useState(function(){try{return localStorage.getItem("cf_active_id")||null;}catch{return null;}}),cloudId=_cloudId[0],setCloudId=_cloudId[1];
+  var _cloudStatus=useState(""),cloudStatus=_cloudStatus[0],setCloudStatus=_cloudStatus[1];
+  var _cloudList=useState(null),cloudList=_cloudList[0],setCloudList=_cloudList[1];
+  var _cloudListOpen=useState(false),cloudListOpen=_cloudListOpen[0],setCloudListOpen=_cloudListOpen[1];
+  var _pdfParsing=useState(false),pdfParsing=_pdfParsing[0],setPdfParsing=_pdfParsing[1];
+
+  // Auto-save to localStorage on every change
+  useEffect(function(){
+    try{
+      var snap={charName,race,cls,kit,level,hp,align,stats,strPct,memorized,notes,
+        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed};
+      localStorage.setItem("cf_autosave",JSON.stringify(snap));
+    }catch(_){}
+  },[charName,race,cls,kit,level,hp,align,stats,strPct,memorized,notes,
+     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed]);
+
+  // Restore autosave on first load
+  useEffect(function(){
+    try{
+      var raw=localStorage.getItem("cf_autosave");
+      if(raw){var d=JSON.parse(raw);applyCharacterData(d);}
+    }catch(_){}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   // Derived
   var raceData=RACES[race]||RACES.Human;
@@ -1039,6 +1067,109 @@ function CharCreator() {
     setTab("stats");
   }
 
+  // ── Character data helpers ───────────────────────────────────────────────
+  function getCharacterSnapshot(){
+    return {charName,race,cls,kit,level,hp,align,stats,strPct,memorized,notes,
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,_version:1};
+  }
+  function applyCharacterData(d){
+    if(!d)return;
+    if(d.charName!==undefined)setCharName(d.charName);
+    if(d.race&&RACES[d.race])setRace(d.race);
+    if(d.cls&&CLASSES[d.cls])changeClass(d.cls);
+    if(d.kit!==undefined)setKit(d.kit);
+    if(d.level)setLevel(parseInt(d.level)||1);
+    if(d.hp)setHP(parseInt(d.hp)||1);
+    if(d.align)setAlign(d.align);
+    if(d.stats)setStats({Str:d.stats.Str||10,Dex:d.stats.Dex||10,Con:d.stats.Con||10,Int:d.stats.Int||10,Wis:d.stats.Wis||10,Cha:d.stats.Cha||10});
+    if(d.strPct!==undefined)setStrPct(parseInt(d.strPct)||0);
+    if(d.memorized)setMemorized(d.memorized);
+    if(d.notes!==undefined)setNotes(d.notes);
+    if(d.cpBudget)setCpBudget(d.cpBudget);
+    if(d.cpMajor)setCpMajor(d.cpMajor);
+    if(d.cpMinor)setCpMinor(d.cpMinor);
+    if(d.cpSchools)setCpSchools(d.cpSchools);
+    if(d.cpAbil)setCpAbil(d.cpAbil);
+    if(d.cpLim)setCpLim(d.cpLim);
+    if(d.dmOverride!==undefined)setDmOverride(d.dmOverride);
+    if(d.totemAnimal!==undefined)setTotemAnimal(d.totemAnimal);
+    if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
+    if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
+  }
+
+  // ── JSON save / load ─────────────────────────────────────────────────────
+  function saveJSON(){
+    var blob=new Blob([JSON.stringify(getCharacterSnapshot(),null,2)],{type:"application/json"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;a.download=(charName||"character").replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g,"")+".json";
+    a.click();URL.revokeObjectURL(url);
+  }
+  function handleLoadFile(e){
+    var file=e.target.files&&e.target.files[0];
+    if(!file)return;
+    e.target.value="";
+    var ext=file.name.split(".").pop().toLowerCase();
+    if(ext==="json"){
+      var reader=new FileReader();
+      reader.onload=function(ev){try{applyCharacterData(JSON.parse(ev.target.result));setCloudStatus("Loaded from file");}catch(_){setCloudStatus("Error: invalid JSON");}};
+      reader.readAsText(file);
+    } else if(ext==="pdf"){
+      var reader2=new FileReader();
+      reader2.onload=async function(ev){
+        setPdfParsing(true);setCloudStatus("Reading PDF…");
+        try{
+          var b64=btoa(String.fromCharCode(...new Uint8Array(ev.target.result)));
+          var data=await parsePDFCharacter(b64);
+          applyCharacterData(data);setCloudStatus("Imported from PDF");
+        }catch(err){setCloudStatus("PDF error: "+err.message);}
+        setPdfParsing(false);
+      };
+      reader2.readAsArrayBuffer(file);
+    }
+  }
+
+  // ── Cloud save / load ────────────────────────────────────────────────────
+  async function cloudSave(){
+    if(!supabase){setCloudStatus("⚠ Add VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY to .env");return;}
+    setCloudStatus("Saving…");
+    try{
+      var rec=await supabaseSave(getCharacterSnapshot(),cloudId||undefined);
+      setCloudId(rec.id);
+      try{localStorage.setItem("cf_active_id",rec.id);}catch(_){}
+      addMyId(rec.id);
+      setCloudStatus("Saved ✓");
+    }catch(err){setCloudStatus("Save error: "+err.message);}
+  }
+  async function openCloudList(){
+    if(!supabase){setCloudStatus("⚠ Supabase not configured");return;}
+    setCloudStatus("Loading list…");
+    try{
+      var list=await listMyCharacters();
+      setCloudList(list);setCloudListOpen(true);setCloudStatus("");
+    }catch(err){setCloudStatus("Load error: "+err.message);}
+  }
+  async function loadCloudChar(id){
+    setCloudListOpen(false);setCloudStatus("Loading…");
+    try{
+      var rec=await loadCharacterById(id);
+      applyCharacterData(rec.data);
+      setCloudId(id);
+      try{localStorage.setItem("cf_active_id",id);}catch(_){}
+      setCloudStatus("Loaded ✓");
+    }catch(err){setCloudStatus("Load error: "+err.message);}
+  }
+  async function deleteCloudChar(id,e){
+    e.stopPropagation();
+    if(!supabase)return;
+    try{
+      await supabase.from("characters").delete().eq("id",id);
+      removeMyId(id);
+      if(cloudId===id){setCloudId(null);try{localStorage.removeItem("cf_active_id");}catch(_){}}
+      setCloudList(function(l){return l.filter(function(c){return c.id!==id;});});
+    }catch(err){setCloudStatus("Delete error: "+err.message);}
+  }
+
   // Styles
   var g="#c9a84c",bg="#08080d",surf="#111118",brd="#1e1e2e",dim="#666050",txt="#ccc8b8";
   var tabs=["stats","combat","spells","✦ CP","sheet","notes","✦ AI"];
@@ -1065,8 +1196,28 @@ function CharCreator() {
           })}
           <button onClick={resetCharacter} style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#2a1a1a",color:"#a07d7d",border:"1px solid #4e2e2e"}}>NEW</button>
           <button onClick={exportPDF} style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2e4e2e"}}>PDF</button>
+          <button onClick={saveJSON} title="Download character as JSON" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a2a",color:"#80a0e0",border:"1px solid #2a2a5a"}}>💾 Save</button>
+          <button onClick={function(){loadFileRef.current&&loadFileRef.current.click();}} disabled={pdfParsing} title="Load from JSON or import from PDF" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a2a",color:pdfParsing?"#555":"#80a0e0",border:"1px solid #2a2a5a"}}>{pdfParsing?"…":"📂 Load"}</button>
+          <input ref={loadFileRef} type="file" accept=".json,.pdf" onChange={handleLoadFile} style={{display:"none"}} />
+          <button onClick={cloudSave} title="Save to cloud (Supabase)" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Cloud Save</button>
+          <button onClick={openCloudList} title="Load a saved character from cloud" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Cloud Load</button>
         </div>
       </div>
+      {/* Status bar */}
+      {cloudStatus&&<div style={{padding:"4px 16px",background:"#0a0a18",borderBottom:"1px solid "+brd,fontSize:"11px",color:cloudStatus.startsWith("⚠")||cloudStatus.startsWith("Error")||cloudStatus.includes("error")?"#e08080":"#7db87d",fontFamily:"monospace"}}>{cloudStatus}</div>}
+      {/* Cloud character list modal */}
+      {cloudListOpen&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={function(){setCloudListOpen(false);}}>
+        <div style={{background:"#12111a",border:"1px solid "+brd,borderRadius:"8px",padding:"20px",minWidth:"320px",maxWidth:"480px",width:"90%"}} onClick={function(e){e.stopPropagation();}}>
+          <div style={{color:g,fontWeight:"bold",marginBottom:"14px",fontVariant:"small-caps",letterSpacing:"1px"}}>Cloud Characters</div>
+          {(!cloudList||cloudList.length===0)
+            ?<div style={{color:dim,fontSize:"12px",fontFamily:"monospace"}}>No saved characters found.</div>
+            :cloudList.map(function(c){return <div key={c.id} onClick={function(){loadCloudChar(c.id);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",marginBottom:"6px",background:surf,border:"1px solid "+(cloudId===c.id?"#3a5a3a":brd),borderRadius:"4px",cursor:"pointer"}}>
+              <div><div style={{fontSize:"13px",color:txt}}>{c.name||"Unnamed"}</div><div style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{new Date(c.updated_at).toLocaleString()}</div></div>
+              <button onClick={function(e){deleteCloudChar(c.id,e);}} style={{background:"transparent",border:"none",color:"#664444",cursor:"pointer",fontSize:"16px",padding:"0 4px"}}>×</button>
+            </div>;})}
+          <button onClick={function(){setCloudListOpen(false);}} style={{marginTop:"10px",padding:"6px 16px",background:"#1a1a2a",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace"}}>Close</button>
+        </div>
+      </div>}
       {/* Character bar */}
       <div style={{padding:"8px 16px",borderBottom:"1px solid "+brd,background:"#0d0d14",display:"flex",gap:"16px",alignItems:"center",flexWrap:"wrap",fontSize:"12px"}}>
         <input value={charName} onChange={function(e){setCharName(e.target.value);}} placeholder="Character Name" style={{padding:"4px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"3px",color:g,fontSize:"14px",fontFamily:"Georgia,serif",width:"160px",outline:"none"}} />
