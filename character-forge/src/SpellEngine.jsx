@@ -2414,6 +2414,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             setGearLibStatus("Added: "+libItem.name);
             setTimeout(function(){setGearLibStatus("");},2000);
           }
+          function importAllFromLibrary(){
+            if(!gearLibItems.length)return;
+            var newGear=gearLibItems.map(function(libItem,i){
+              return Object.assign({},BLANK_GEAR,{
+                id:Date.now()+"_"+i+"_"+Math.random().toString(36).slice(2),
+                name:libItem.name,
+                type:libItem.type||"Misc",
+                desc:libItem.description||"",
+                effects:Object.assign({},BLANK_GEAR.effects,libItem.effects||{}),
+                equipped:false,
+              });
+            });
+            setGearItems(function(prev){return prev.concat(newGear);});
+            setGearLibStatus("Added "+newGear.length+" items \u2713");
+            setTimeout(function(){setGearLibStatus("");},2500);
+          }
 
           var equippedGear=gearItems.filter(function(g){return g.equipped;});
           var anyBonuses=equippedGear.length>0;
@@ -2491,6 +2507,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     </div>}
                     {gearLibLoading&&<div style={{padding:"20px",textAlign:"center",color:dim,fontFamily:"monospace",fontSize:"12px"}}>Loading…</div>}
                     {!gearLibLoading&&gearLibItems.length===0&&<div style={{padding:"20px",textAlign:"center",color:dim,fontSize:"12px"}}>No items in this library yet.</div>}
+                    {!gearLibLoading&&gearLibItems.length>0&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:"8px"}}>
+                      <button onClick={importAllFromLibrary}
+                        style={{padding:"3px 12px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
+                        ↙ Load All ({gearLibItems.length})
+                      </button>
+                    </div>}
                     {!gearLibLoading&&gearLibItems.map(function(it){
                       var bonuses=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];});
                       var libBdl=bonusDmgLabel(it);
