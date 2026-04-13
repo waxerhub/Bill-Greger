@@ -645,7 +645,7 @@ var DRUID_KITS = {
 };
 
 // ======== MAIN COMPONENT ========
-function CharCreator({ spellData: SPELL_DATA }) {
+function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _tab=useState("stats"),tab=_tab[0],setTab=_tab[1];
   var _name=useState(""),charName=_name[0],setCharName=_name[1];
   var _race=useState("Human"),race=_race[0],setRace=_race[1];
@@ -689,6 +689,11 @@ function CharCreator({ spellData: SPELL_DATA }) {
   var _rollKey=useState(0),rollKey=_rollKey[0],setRollKey=_rollKey[1];
   var _sfilt=useState(""),spellFilter=_sfilt[0],setSpellFilter=_sfilt[1];
   var _slvl=useState("1"),spellLvlFilter=_slvl[0],setSpellLvlFilter=_slvl[1];
+  // Items tab state
+  var _iSearch=useState(""),itemSearch=_iSearch[0],setItemSearch=_iSearch[1];
+  var _iCat=useState(""),itemCat=_iCat[0],setItemCat=_iCat[1];
+  var _iUsable=useState(""),itemUsable=_iUsable[0],setItemUsable=_iUsable[1];
+  var _iExpanded=useState(null),expandedItem=_iExpanded[0],setExpandedItem=_iExpanded[1];
   // CP state
   var _cpBudget=useState(120),cpBudget=_cpBudget[0],setCpBudget=_cpBudget[1];
   var _cpMajor=useState([]),cpMajor=_cpMajor[0],setCpMajor=_cpMajor[1];
@@ -1188,7 +1193,7 @@ function CharCreator({ spellData: SPELL_DATA }) {
 
   // Styles
   var g="#c9a84c",bg="#08080d",surf="#111118",brd="#1e1e2e",dim="#666050",txt="#ccc8b8";
-  var tabs=["stats","combat","spells","✦ CP","sheet","notes","✦ AI"];
+  var tabs=["stats","combat","spells","✦ CP","sheet","notes","items","✦ AI"];
 
   return (
     <div style={{minHeight:"100vh",background:bg,color:txt,fontFamily:"Georgia,serif",display:"flex",flexDirection:"column"}}>
@@ -1780,6 +1785,70 @@ function CharCreator({ spellData: SPELL_DATA }) {
           </div>
           {notes&&<div style={{marginTop:"12px"}}><div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>NOTES</div><div style={{color:"#bbb",whiteSpace:"pre-wrap"}}>{notes}</div></div>}
         </div>}
+
+        {/* ═══ ITEMS TAB ═══ */}
+        {tab==="items"&&(function(){
+          var allItems=ITEM_DATA||[];
+          var cats=["","Potion/Oil","Ring","Rod/Staff/Wand","Book","Jewelry","Wearable","Container","Powder/Candle","Household/Tool","Weird"];
+          var usables=["","All","Priest","Wizard","Warrior"];
+          var q=itemSearch.trim().toLowerCase();
+          var filtered=allItems.filter(function(it){
+            if(q&&it.name.toLowerCase().indexOf(q)<0&&(it.description||"").toLowerCase().indexOf(q)<0)return false;
+            if(itemCat&&it.category!==itemCat)return false;
+            if(itemUsable&&itemUsable!==""){
+              if(itemUsable==="All"&&it.usableBy&&it.usableBy.indexOf("All")<0)return false;
+              if(itemUsable!=="All"&&it.usableBy&&it.usableBy.indexOf(itemUsable)<0&&it.usableBy.indexOf("All")<0)return false;
+            }
+            return true;
+          });
+          return <div>
+            <Lbl dim={dim}>TOME OF MAGIC — MAGIC ITEMS <span style={{color:"#666",fontWeight:"normal"}}>({allItems.length} items)</span></Lbl>
+            {/* Filters */}
+            <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"14px",alignItems:"center"}}>
+              <input value={itemSearch} onChange={function(e){setItemSearch(e.target.value);}} placeholder="Search items…"
+                style={Object.assign({},is(brd,txt),{flex:"1",minWidth:"160px"})} />
+              <select value={itemCat} onChange={function(e){setItemCat(e.target.value);}}
+                style={Object.assign({},ss(brd,txt),{minWidth:"160px"})}>
+                {cats.map(function(c){return <option key={c} value={c}>{c||"All Categories"}</option>;})}
+              </select>
+              <select value={itemUsable} onChange={function(e){setItemUsable(e.target.value);}}
+                style={Object.assign({},ss(brd,txt),{minWidth:"130px"})}>
+                {usables.map(function(u){return <option key={u} value={u}>{u||"All Classes"}</option>;})}
+              </select>
+            </div>
+            {allItems.length===0&&<div style={{padding:"40px",textAlign:"center",color:dim}}>
+              <div style={{fontSize:"32px",opacity:0.3,marginBottom:"10px"}}>✦</div>
+              <div>Magic items are loading…</div>
+            </div>}
+            {allItems.length>0&&filtered.length===0&&<div style={{padding:"20px",textAlign:"center",color:dim,fontFamily:"monospace",fontSize:"12px"}}>No items match that filter.</div>}
+            {/* Item list */}
+            <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+              {filtered.map(function(it){
+                var isOpen=expandedItem===it.name;
+                var usableBadge=(it.usableBy&&it.usableBy.indexOf("All")<0)?it.usableBy.join(", "):null;
+                var catColor={"Potion/Oil":"#7db87d","Ring":"#c9a84c","Rod/Staff/Wand":"#80a0e0","Book":"#e0c080","Jewelry":"#e080c0","Wearable":"#80c0e0","Container":"#a0e0a0","Powder/Candle":"#e0a080","Household/Tool":"#a0a0e0","Weird":"#c080e0"}[it.category]||dim;
+                return <div key={it.name} style={{background:surf,border:"1px solid "+(isOpen?"#2a2a4a":brd),borderRadius:"6px",overflow:"hidden"}}>
+                  <div onClick={function(){setExpandedItem(isOpen?null:it.name);}}
+                    style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 12px",cursor:"pointer",userSelect:"none"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <span style={{fontSize:"13px",color:it.cursed?"#e08080":txt,fontWeight:"bold"}}>{it.name}</span>
+                      {it.cursed&&<span style={{fontSize:"9px",color:"#e06060",fontFamily:"monospace",marginLeft:"6px",background:"#2a0a0a",border:"1px solid #4a2020",borderRadius:"3px",padding:"1px 4px"}}>CURSED</span>}
+                    </div>
+                    <div style={{display:"flex",gap:"6px",alignItems:"center",flexShrink:0}}>
+                      <span style={{fontSize:"9px",color:catColor,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 6px"}}>{it.category}</span>
+                      {usableBadge&&<span style={{fontSize:"9px",color:"#c9a84c",fontFamily:"monospace",background:"#0a0a12",border:"1px solid #2a2010",borderRadius:"3px",padding:"2px 6px"}}>{usableBadge}</span>}
+                      {it.xpValue>0&&<span style={{fontSize:"9px",color:"#888",fontFamily:"monospace"}}>{it.xpValue.toLocaleString()} XP</span>}
+                      <span style={{color:isOpen?g:dim,fontSize:"12px",marginLeft:"4px"}}>{isOpen?"▼":"▶"}</span>
+                    </div>
+                  </div>
+                  {isOpen&&<div style={{padding:"8px 14px 12px 14px",borderTop:"1px solid "+brd,fontSize:"12px",color:"#b8b4a8",lineHeight:"1.7",fontStyle:"italic"}}>
+                    {it.description||<span style={{color:dim,fontFamily:"monospace",fontStyle:"normal"}}>No description available.</span>}
+                  </div>}
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
 
         {/* ═══ NOTES TAB ═══ */}
         {tab==="notes"&&<div>
