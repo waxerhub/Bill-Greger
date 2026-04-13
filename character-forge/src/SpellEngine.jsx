@@ -704,6 +704,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _gearAiLoading=useState(false),gearAiLoading=_gearAiLoading[0],setGearAiLoading=_gearAiLoading[1];
   var _gearAiError=useState(""),gearAiError=_gearAiError[0],setGearAiError=_gearAiError[1];
   // Gear library modal
+  var _gearSearch=useState(""),gearSearch=_gearSearch[0],setGearSearch=_gearSearch[1];
   var _gearLibOpen=useState(false),gearLibOpen=_gearLibOpen[0],setGearLibOpen=_gearLibOpen[1];
   var _gearLibItems=useState([]),gearLibItems=_gearLibItems[0],setGearLibItems=_gearLibItems[1];
   var _gearLibLoading=useState(false),gearLibLoading=_gearLibLoading[0],setGearLibLoading=_gearLibLoading[1];
@@ -2373,8 +2374,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>}
 
             {/* Item list */}
+            {gearItems.length>3&&<input value={gearSearch} onChange={function(e){setGearSearch(e.target.value);}}
+              placeholder="Search items…"
+              style={{width:"100%",boxSizing:"border-box",padding:"6px 10px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"10px"}}/>}
             <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
-              {gearItems.map(function(it){
+              {gearItems.filter(function(it){return !gearSearch.trim()||(it.name||"").toLowerCase().includes(gearSearch.toLowerCase())||(it.desc||"").toLowerCase().includes(gearSearch.toLowerCase());}).map(function(it){
                 var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];}).map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
                 var bdl=bonusDmgLabel(it);if(bdl)bonusParts.push(<span key="bdmg" style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[it.effects.bonusDmgType]||"#e0c080",background:"#0a0a12",border:"1px solid #2a1a0a",borderRadius:"3px",padding:"1px 5px"}}>+{bdl}</span>);
                 return <div key={it.id} style={{background:surf,border:"1px solid "+(it.equipped?"#2a4a2a":brd),borderRadius:"6px",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
