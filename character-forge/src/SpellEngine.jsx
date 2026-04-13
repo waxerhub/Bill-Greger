@@ -954,6 +954,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _dmPwLoading=useState(false),dmPwLoading=_dmPwLoading[0],setDmPwLoading=_dmPwLoading[1];
   var _dmPwHashExists=useState(null),dmPwHashExists=_dmPwHashExists[0],setDmPwHashExists=_dmPwHashExists[1];
   var _dmChangePw=useState(false),dmChangePw=_dmChangePw[0],setDmChangePw=_dmChangePw[1];
+  var _dmPwCurrent=useState(""),dmPwCurrent=_dmPwCurrent[0],setDmPwCurrent=_dmPwCurrent[1];
   // CP state
   var _cpBudget=useState(120),cpBudget=_cpBudget[0],setCpBudget=_cpBudget[1];
   var _cpMajor=useState([]),cpMajor=_cpMajor[0],setCpMajor=_cpMajor[1];
@@ -2355,25 +2356,25 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           async function saveDmPassword(){
             if(!dmPwInput.trim()){setDmPwError("Password cannot be empty.");return;}
             if(dmPwInput!==dmPwConfirm){setDmPwError("Passwords do not match.");return;}
-            setDmPwLoading(true);setDmPwError("");
+            // When changing an existing password, verify the current one first
+            if(dmPwHashExists){
+              if(!dmPwCurrent.trim()){setDmPwError("Enter your current password.");return;}
+              setDmPwLoading(true);setDmPwError("");
+              try{
+                var stored=await getDmPasswordHash();
+                if(await sha256hex(dmPwCurrent)!==stored){setDmPwError("Current password is incorrect.");setDmPwLoading(false);return;}
+              }catch(e){setDmPwError(e.message);setDmPwLoading(false);return;}
+            }else{
+              setDmPwLoading(true);setDmPwError("");
+            }
             try{
               var hash=await sha256hex(dmPwInput);
               await setDmPasswordHash(hash);
               setDmPwHashExists(true);setDmPwVerified(true);
-              setDmPwInput("");setDmPwConfirm("");setDmChangePw(false);
+              setDmPwInput("");setDmPwConfirm("");setDmPwCurrent("");setDmChangePw(false);
               setGearLibStatus("DM password set \u2713");
               setTimeout(function(){setGearLibStatus("");},3000);
               await loadDmItems();
-            }catch(e){setDmPwError(e.message);}
-            setDmPwLoading(false);
-          }
-          async function removeDmPassword(){
-            setDmPwLoading(true);setDmPwError("");
-            try{
-              await setDmPasswordHash(null);
-              setDmPwHashExists(false);setDmChangePw(false);
-              setGearLibStatus("DM password removed \u2713");
-              setTimeout(function(){setGearLibStatus("");},3000);
             }catch(e){setDmPwError(e.message);}
             setDmPwLoading(false);
           }
@@ -2465,15 +2466,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                         ?<button onClick={function(){setDmChangePw(true);setDmPwInput("");setDmPwConfirm("");setDmPwError("");}}
                             style={{padding:"2px 10px",background:"transparent",color:dim,border:"1px solid #2a2a3a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Change Password</button>
                         :<div style={{display:"flex",gap:"4px",alignItems:"center",flexWrap:"wrap"}}>
+                            <input type="password" value={dmPwCurrent} onChange={function(e){setDmPwCurrent(e.target.value);setDmPwError("");}}
+                              placeholder="Current password" style={{padding:"3px 7px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",width:"130px"}}/>
                             <input type="password" value={dmPwInput} onChange={function(e){setDmPwInput(e.target.value);setDmPwError("");}}
                               placeholder="New password" style={{padding:"3px 7px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",width:"120px"}}/>
                             <input type="password" value={dmPwConfirm} onChange={function(e){setDmPwConfirm(e.target.value);setDmPwError("");}}
                               placeholder="Confirm" style={{padding:"3px 7px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",width:"100px"}}/>
                             <button onClick={saveDmPassword} disabled={dmPwLoading}
                               style={{padding:"3px 8px",background:"#1e1a2e",color:"#e0c080",border:"1px solid #4a3a0a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Save</button>
-                            <button onClick={removeDmPassword} disabled={dmPwLoading}
-                              style={{padding:"3px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Remove</button>
-                            <button onClick={function(){setDmChangePw(false);setDmPwInput("");setDmPwConfirm("");setDmPwError("");}}
+                            <button onClick={function(){setDmChangePw(false);setDmPwInput("");setDmPwConfirm("");setDmPwCurrent("");setDmPwError("");}}
                               style={{padding:"3px 6px",background:"transparent",color:dim,border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"12px"}}>✕</button>
                             {dmPwError&&<div style={{fontSize:"10px",color:"#e08080",fontFamily:"monospace",width:"100%"}}>{dmPwError}</div>}
                           </div>
