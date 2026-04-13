@@ -108,6 +108,35 @@ Two AI-powered tools, both requiring the Anthropic API key to be configured on t
 
 ---
 
+## Accounts & Cloud Save
+
+![Account modal](docs/09-account.png)
+
+Cloud save is optional but recommended for anyone playing across multiple devices or browsers. It requires a free account tied to your email address.
+
+### Creating an Account
+
+Click **👤 Sign In** in the header. The **My Account** modal opens with two tabs: **Sign In** and **Create Account**. Switch to **Create Account**, enter your email and a password, then click the button. You'll receive a confirmation email — click the link inside it, then return to the app and sign in with the same credentials.
+
+### Signing In
+
+Click **👤 Sign In**, enter your email and password on the **Sign In** tab, and click **Sign In**. Once authenticated, the button in the header changes to show your username (the part of your email before the @).
+
+### Inside the Account Modal (Signed In)
+
+| Action | What it does |
+|--------|-------------|
+| **☁ Save Current** | Saves the character you're working on to the cloud. If you've already saved this character before, it updates the same record. |
+| **⎘ Clone** | Saves a copy of the current character as a brand-new cloud entry — useful for creating variants. |
+| **Character list** | Lists all your saved characters by name and last-updated date. Click any entry to load it. |
+| **Filter box** | Appears when you have more than 4 saved characters. Type to narrow the list by name. |
+| **× button** | Deletes a saved character from the cloud (appears on each list entry). |
+| **Sign Out** | Signs you out and clears the character list from the modal. |
+
+> The **☁ Save** button in the header is a quick shortcut — it saves without opening the modal. If you aren't signed in it will open the modal instead.
+
+---
+
 ## Saving Your Character
 
 | Method | How | Best for |
@@ -117,9 +146,7 @@ Two AI-powered tools, both requiring the Anthropic API key to be configured on t
 | 📂 Load (JSON) | Uploads the `.json` back | Restoring a backup |
 | PDF Export | Downloads a `.pdf` | Printing, sharing with your DM |
 | 📂 Load (PDF) | Uploads an exported PDF | Re-importing a printed sheet |
-| 👤 Account → Cloud Save | Saves to Supabase under your account | Permanent cross-device storage |
-| 👤 Account → Load Character | Lists all your cloud saves | Switching between characters |
+| ☁ Save (header) | Quick cloud save without opening the modal | Fast saves mid-session |
+| 👤 Account → Cloud Save | Full cloud save with history list | Managing multiple characters |
 
 > Auto-save is browser-local. Use **💾 Save** before clearing browser data or switching browsers.
-
-> **Cloud storage** requires a free account. Click **👤 Sign In** in the header, then create an account with your email address. Once signed in, your username appears in place of "Sign In" and cloud save/load become available inside the account modal. You can also search your saved characters by name and clone an existing character as a starting point for a new one.
