@@ -1006,7 +1006,13 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   useEffect(function(){
     if(!supabase)return;
     supabase.auth.getUser().then(function(r){setAuthUser(r.data.user||null);});
-    var unsub=onAuthStateChange(function(user){setAuthUser(user||null);});
+    var unsub=onAuthStateChange(function(user){
+      setAuthUser(user||null);
+      // Always revoke DM access when the signed-in user changes or signs out
+      setDmPwVerified(false);setDmChangePw(false);
+      setDmPwInput("");setDmPwConfirm("");setDmPwCurrent("");setDmPwError("");
+      setDmPwHashExists(null);setGearLibItems([]);
+    });
     return unsub;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
@@ -1486,6 +1492,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   async function doSignOut(){
     try{await signOut();}catch(_){}
     setAuthUser(null);setCloudId(null);setAcctChars([]);setAcctStatus("");
+    setDmPwVerified(false);setDmChangePw(false);
+    setDmPwInput("");setDmPwConfirm("");setDmPwCurrent("");setDmPwError("");
+    setDmPwHashExists(null);setGearLibItems([]);
   }
   async function refreshAcctChars(){
     setAcctLoading(true);
