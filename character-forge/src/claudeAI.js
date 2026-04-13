@@ -228,6 +228,9 @@ export async function fetchSpellDescription(spell) {
 export async function generateMagicItem(description) {
   var validTypes = ['Ring','Amulet/Necklace','Bracers/Gloves','Helm/Hat','Cloak/Robe',
                     'Belt','Boots','Weapon','Armor/Shield','Wand/Staff/Rod','Misc'];
+  var validDmgTypes = ['Fire','Cold','Electricity','Acid','Poison','Radiant','Necrotic',
+                       'Sonic','Force','Psychic','Holy','Unholy','Magic',
+                       'Piercing','Slashing','Bludgeoning'];
 
   var systemPrompt =
     'You are an AD&D 2nd Edition magic item designer.\n' +
@@ -240,19 +243,23 @@ export async function generateMagicItem(description) {
     '  "description": string (2-3 sentences of flavor text and key powers),\n' +
     '  "effects": {\n' +
     '    "str": int,  "dex": int,  "con": int,  "int": int,  "wis": int,  "cha": int,\n' +
-    '    "ac": int,      (positive = AC improves, e.g. Ring of Protection +2 → ac:2)\n' +
-    '    "thac0": int,   (positive = THAC0 improves, e.g. Sword +2 → thac0:2)\n' +
-    '    "dmg": int,     (bonus to damage rolls, e.g. Sword +2 → dmg:2)\n' +
-    '    "saves": int,   (positive = saving throws improve)\n' +
-    '    "hp": int       (flat HP bonus while worn)\n' +
+    '    "ac": int,           (positive = AC improves, e.g. Ring of Protection +2 → ac:2)\n' +
+    '    "thac0": int,        (positive = THAC0 improves, e.g. Sword +2 → thac0:2)\n' +
+    '    "dmg": int,          (flat bonus to damage rolls, e.g. Sword +2 → dmg:2)\n' +
+    '    "saves": int,        (positive = saving throws improve)\n' +
+    '    "hp": int,           (flat HP bonus while worn)\n' +
+    '    "bonusDmgDice": int, (number of extra damage dice, e.g. 2 for 2d8 fire)\n' +
+    '    "bonusDmgDie":  int, (die size: 4, 6, 8, 10, 12, or 20)\n' +
+    '    "bonusDmgType": string one of ' + JSON.stringify(validDmgTypes) + ' or "" for none\n' +
     '  }\n' +
     '}\n\n' +
     'Guidelines: AD&D 2e magic items are typically +1 to +5. ' +
     'A Ring of Protection +2 → ac:2, saves:2. ' +
     'Gauntlets of Ogre Power → str:4. ' +
-    'A Sword +3 → thac0:3, dmg:3. ' +
-    'Cursed items use negative values. ' +
-    'Zero means no effect for that stat. ' +
+    'A Sword +1 with 2d6 fire damage → thac0:1, dmg:1, bonusDmgDice:2, bonusDmgDie:6, bonusDmgType:"Fire". ' +
+    'A Sword of Radiant Striking +1 → thac0:1, dmg:1, bonusDmgDice:2, bonusDmgDie:8, bonusDmgType:"Radiant". ' +
+    'If no typed damage, set bonusDmgDice:0 and bonusDmgType:"". ' +
+    'Cursed items use negative values for stat effects. ' +
     'Return ONLY the JSON object.';
 
   var response = await fetch(API_URL, {
@@ -260,7 +267,7 @@ export async function generateMagicItem(description) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 600,
+      max_tokens: 700,
       system: systemPrompt,
       messages: [{ role: 'user', content: description }],
     }),
@@ -279,10 +286,14 @@ export async function generateMagicItem(description) {
   var end = text.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('No JSON object found in response');
   var item = JSON.parse(text.slice(start, end + 1));
-  // Normalise effects — ensure all keys exist as integers
-  var blank = {str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0};
+  // Normalise effects — ensure all keys exist with correct types
+  var blank = {str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,
+               bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:""};
   item.effects = Object.assign({}, blank, item.effects);
-  Object.keys(item.effects).forEach(function(k){ item.effects[k] = parseInt(item.effects[k])||0; });
+  var intKeys = ['str','dex','con','int','wis','cha','ac','thac0','dmg','saves','hp','bonusDmgDice','bonusDmgDie'];
+  intKeys.forEach(function(k){ item.effects[k] = parseInt(item.effects[k])||0; });
+  if(typeof item.effects.bonusDmgType !== 'string') item.effects.bonusDmgType = '';
+  if(!validDmgTypes.includes(item.effects.bonusDmgType)) item.effects.bonusDmgType = '';
   return item;
 }
 
