@@ -8,7 +8,7 @@
 
 ![Stats tab overview](docs/01-stats-filled.png)
 
-The top bar is always visible regardless of which tab you're on. It shows your character's **name, race, class, level, HP, AC, THAC0, and CP** at a glance — all updating live as you edit. The tab row lets you switch between the seven sections. **NEW** clears everything for a fresh character. **PDF** exports a printable character sheet. **💾 Save** downloads a `.json` backup. **📂 Load** restores from a `.json` file or imports a Character Forge PDF. **☁ Cloud Save / Cloud Load** sync to Supabase cloud storage when configured.
+The top bar is always visible regardless of which tab you're on. It shows your character's **name, race, class, level, HP, AC, THAC0, and CP** at a glance — all updating live as you edit. The tab row lets you switch between the nine sections. **NEW** clears everything for a fresh character. **PDF** exports a printable character sheet. **💾 Save** downloads a `.json` backup. **📂 Load** restores from a `.json` file or imports a Character Forge PDF. **👤 Sign In** (or your username when logged in) opens the account modal for cloud save, cloud load, and character management.
 
 ---
 
@@ -60,7 +60,43 @@ A free-text scratchpad that auto-saves with the character. Use it for equipment 
 
 ---
 
-## Tab 7 — AI
+## Tab 7 — INV (Inventory)
+
+> *(Screenshot coming soon)*
+
+Track everything your character is carrying. Add custom items with **Name**, **Quantity**, **Weight**, **Cost**, and **Notes** fields. A running **total weight** keeps your encumbrance honest.
+
+**PHB Equipment Browser** — toggle the browser panel to search and filter the full Player's Handbook equipment list by category (Weapons, Armor, Adventuring Gear, etc.). Click any item to add it to your inventory instantly.
+
+**Starter Kits** — quick-add buttons for pre-defined equipment bundles let you outfit a fresh character in seconds. Each item already in your inventory is visually flagged so you don't duplicate it.
+
+Existing inventory entries can be **edited or deleted** inline with the pencil and trash icons on each row.
+
+---
+
+## Tab 8 — ITEMS
+
+> *(Screenshot coming soon)*
+
+A two-sub-tab magic item hub combining an official reference compendium with a fully custom item builder.
+
+### 📖 Tome of Magic
+A browsable database of 400+ magic items drawn from AD&D 2E source material. Filter by **Category** (Potion/Oil, Ring, Rod/Staff/Wand, Book, Jewelry, Wearable, Container, Powder/Candle, Household/Tool, Weird) and by **Usable Class** (All, Priest, Wizard, Warrior). Each item shows its XP value, a cursed badge where applicable, and class eligibility chips. Click any row to expand the full description.
+
+### ⚔ Custom Magic Items
+Build your own magic items from scratch or let the AI generate one from a description.
+
+- **Item types**: Ring, Amulet/Necklace, Bracers/Gloves, Helm/Hat, Cloak/Robe, Belt, Boots, Weapon, Armor/Shield, Wand/Staff/Rod, Misc
+- **Effects**: Apply bonuses to STR, DEX, CON, INT, WIS, CHA, AC, THAC0, HP, saving throws, or add bonus damage dice (fire, cold, electricity, acid, poison, and more)
+- **Equip toggle**: Mark an item as equipped and its bonuses apply to your character stats in real time; unequip to remove them
+- **✨ AI Generate**: Describe an item in plain English and the AI creates it with appropriate stats
+- **Gear Library**: Share items across characters via the shared library:
+  - **Player Library** — open to all users; anyone can browse and import items to their sheet
+  - **DM Library** — password-protected; only the DM (with the correct password) can add or remove items. The password is stored as a SHA-256 hash. DMs can set, change, or remove the password at any time.
+
+---
+
+## Tab 9 — AI
 
 ![AI tab](docs/07-ai.png)
 
@@ -81,7 +117,9 @@ Two AI-powered tools, both requiring the Anthropic API key to be configured on t
 | 📂 Load (JSON) | Uploads the `.json` back | Restoring a backup |
 | PDF Export | Downloads a `.pdf` | Printing, sharing with your DM |
 | 📂 Load (PDF) | Uploads an exported PDF | Re-importing a printed sheet |
-| ☁ Cloud Save | Saves to Supabase | Cross-device permanent storage |
-| ☁ Cloud Load | Lists your cloud saves | Switching between characters |
+| 👤 Account → Cloud Save | Saves to Supabase under your account | Permanent cross-device storage |
+| 👤 Account → Load Character | Lists all your cloud saves | Switching between characters |
 
 > Auto-save is browser-local. Use **💾 Save** before clearing browser data or switching browsers.
+
+> **Cloud storage** requires a free account. Click **👤 Sign In** in the header, then create an account with your email address. Once signed in, your username appears in place of "Sign In" and cloud save/load become available inside the account modal. You can also search your saved characters by name and clone an existing character as a starting point for a new one.
