@@ -1035,8 +1035,6 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var saves=(SAVES[classData.saves]||SAVES.pri)(level);
   var ac=10+dexAC(adjStats.Dex);
   var isWarrior=classData.group==="Warrior";
-  var exStr=isWarrior&&adjStats.Str===18&&strPct>0;
-  var strB=exStr?strExBonus(strPct):strBonus(adjStats.Str);
   var conB=conHP(adjStats.Con,classData.group);
   var wisAdj=wisDefense(adjStats.Wis);
   var wisImm=wisImmunity(adjStats.Wis);
@@ -1062,6 +1060,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Apply gear stat bonuses on top of racial adjustments
   adjStats.Str+=gearStr; adjStats.Dex+=gearDex; adjStats.Con+=gearCon;
   adjStats.Int+=gearInt; adjStats.Wis+=gearWis; adjStats.Cha+=gearCha;
+  // exStr and strB computed after gear so gear STR bonuses are included
+  var exStr=isWarrior&&adjStats.Str===18&&strPct>0;
+  var strB=exStr?strExBonus(strPct):strBonus(adjStats.Str);
 
   // Active spell buffs
   var buffStr=0,buffStrLvl=0,buffAC=0,buffSave=0,activeBuffs=[];
@@ -1091,7 +1092,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var effStrB=effStrPct>0?strExBonus(effStrPct):strBonus(effStr);
   // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
   var effAC=ac-buffAC-gearAC;
-  var effThac0=thac0-strB.hit-gearThac0;
+  var effThac0=thac0-effStrB.hit-gearThac0;
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-gearSaves-buffSave;});
   var effHP=hp+gearHP;
@@ -1852,10 +1853,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {/* ═══ COMBAT TAB ═══ */}
         {tab==="combat"&&<div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px",marginBottom:"20px"}}>
-            <SB label="THAC0" value={effThac0} color="#e0c080" sub={"Hit: "+(strB.hit>=0?"+":"")+strB.hit+(gearThac0?" Gear:"+(gearThac0>0?"+":"")+gearThac0:"")} />
+            <SB label="THAC0" value={effThac0} color="#e0c080" sub={"Hit: "+(effStrB.hit>=0?"+":"")+effStrB.hit+(gearThac0?" Gear:"+(gearThac0>0?"+":"")+gearThac0:"")} />
             <SB label="AC" value={effAC} color="#80a0e0" sub={"Dex: "+dexAC(adjStats.Dex)+(gearAC?" Gear:"+(gearAC>0?"+":"")+gearAC:"")} />
             <SB label="HP" value={effHP} color="#e08080" sub={"d"+classData.hd+(gearHP?" +"+gearHP+" gear":"")} />
-            <SB label="DMG ADJ" value={(effStrB.dmg+gearDmg>=0?"+":"")+(effStrB.dmg+gearDmg)} color="#e0a080" sub={exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0")):"Str "+adjStats.Str} />
+            <SB label="DMG ADJ" value={(effStrB.dmg+gearDmg>=0?"+":"")+(effStrB.dmg+gearDmg)} color="#e0a080" sub={effStrPct>0?"18/"+(effStrPct===100?"00":String(effStrPct).padStart(2,"0")):exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0")):"Str "+effStr} />
           </div>
           <Lbl dim={dim}>SAVING THROWS</Lbl>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px",marginBottom:"20px"}}>
