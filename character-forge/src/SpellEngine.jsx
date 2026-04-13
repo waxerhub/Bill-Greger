@@ -644,6 +644,73 @@ var DRUID_KITS = {
   }
 };
 
+// ======== STARTER KITS ========
+function mkItem(name,qty,weight,cost,notes){
+  return {id:name.replace(/\s/g,'_')+'_'+qty,name:name,qty:qty,weight:weight,cost:cost,notes:notes||""};
+}
+var STARTER_KITS={
+  traveler:[
+    mkItem("Backpack",1,2,"2gp"),
+    mkItem("Bedroll",1,5,"1sp"),
+    mkItem("Winter Blanket",1,3,"5sp"),
+    mkItem("Waterskin",1,1,"1gp"),
+    mkItem("Trail Rations (1 week)",1,10,"3gp"),
+    mkItem("Rope, Hemp (50 ft)",1,20,"1gp"),
+    mkItem("Hooded Lantern",1,2,"7gp"),
+    mkItem("Oil, Flask",2,1,"2sp","Each"),
+    mkItem("Flint and Steel",1,0,"1gp"),
+    mkItem("Knife",1,0.5,"5sp"),
+    mkItem("Belt Pouch, Small",1,0,"7sp"),
+    mkItem("Torch",3,1,"1cp","Each"),
+    mkItem("Cloak",1,1,"1sp"),
+    mkItem("Boots, Soft",1,5,"1sp"),
+    mkItem("Sack, Large",1,1,"2sp"),
+  ],
+  scholar:[
+    mkItem("Backpack",1,2,"2gp"),
+    mkItem("Parchment, Sheet",10,0,"3sp","Each"),
+    mkItem("Quill",3,0,"1cp","Each"),
+    mkItem("Writing Ink, Vial",2,0,"8gp","Each"),
+    mkItem("Map/Scroll Case",2,0.5,"8sp","Each"),
+    mkItem("Candle",5,0,"1cp","Each"),
+    mkItem("Flint and Steel",1,0,"1gp"),
+    mkItem("Hooded Lantern",1,2,"7gp"),
+    mkItem("Oil, Flask",2,1,"2sp","Each"),
+    mkItem("Knife",1,0.5,"5sp"),
+    mkItem("Belt Pouch, Small",1,0,"7sp"),
+    mkItem("Waterskin",1,1,"1gp"),
+    mkItem("Trail Rations (3 days)",1,3,"1gp"),
+    mkItem("Rope, Hemp (50 ft)",1,20,"1gp"),
+    mkItem("Whetstone",1,1,"2cp"),
+  ],
+  dungeoneer:[
+    mkItem("Backpack",1,2,"2gp"),
+    mkItem("Torch",6,1,"1cp","Each"),
+    mkItem("Hooded Lantern",1,2,"7gp"),
+    mkItem("Oil, Flask",4,1,"2sp","Each"),
+    mkItem("Flint and Steel",1,0,"1gp"),
+    mkItem("Rope, Hemp (50 ft)",1,20,"1gp"),
+    mkItem("Grappling Hook",1,4,"8gp"),
+    mkItem("Hammer, Small",1,2,"5sp"),
+    mkItem("Iron Spike",10,0.5,"1sp","Each"),
+    mkItem("Mirror, Small Metal",1,0,"10gp"),
+    mkItem("Crowbar",1,5,"2gp"),
+    mkItem("Waterskin",1,1,"1gp"),
+    mkItem("Trail Rations (1 week)",1,10,"3gp"),
+    mkItem("Belt Pouch, Small",1,0,"7sp"),
+    mkItem("Sack, Large",1,1,"2sp"),
+  ],
+};
+var KIT_LABELS={traveler:"Traveler",scholar:"Scholar",dungeoneer:"Dungeoneer"};
+// Auto-pick kit by class group
+function defaultKitForClass(cls){
+  var g=(CLASSES[cls]||{}).group;
+  if(g==="Warrior")return "dungeoneer";
+  if(g==="Wizard")return "scholar";
+  if(g==="Priest")return "scholar";
+  return "traveler";
+}
+
 // ======== MAIN COMPONENT ========
 function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _tab=useState("stats"),tab=_tab[0],setTab=_tab[1];
@@ -678,7 +745,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _genPrompt=useState(""),genPrompt=_genPrompt[0],setGenPrompt=_genPrompt[1];
   var _genResult=useState(null),genResult=_genResult[0],setGenResult=_genResult[1];
   var _genLoading=useState(false),genLoading=_genLoading[0],setGenLoading=_genLoading[1];
+  var _genKit=useState("traveler"),genKit=_genKit[0],setGenKit=_genKit[1];
   var _suggestLoading=useState(false),suggestLoading=_suggestLoading[0],setSuggestLoading=_suggestLoading[1];
+  // Inventory
+  var _inventory=useState([]),inventory=_inventory[0],setInventory=_inventory[1];
+  var _invSearch=useState(""),invSearch=_invSearch[0],setInvSearch=_invSearch[1];
+  var _invForm=useState(null),invForm=_invForm[0],setInvForm=_invForm[1];
   var _suggestDone=useState(false),suggestDone=_suggestDone[0],setSuggestDone=_suggestDone[1];
   var _expandedSpell=useState(null),expandedSpell=_expandedSpell[0],setExpandedSpell=_expandedSpell[1];
   var _rolling=useState(false),isRolling=_rolling[0],setIsRolling=_rolling[1];
@@ -1049,7 +1121,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
-    setCloudId(null);
+    setInventory([]);setCloudId(null);
   }
 
   function exportPDF() {
@@ -1092,7 +1164,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   async function doGenChar(){
     if(!genPrompt.trim()||genLoading)return;
     setGenLoading(true);setGenResult(null);
-    try{var r=await generateCharacter(genPrompt);setGenResult(r);}catch(e){setGenResult({error:e.message});}
+    try{
+      var r=await generateCharacter(genPrompt);
+      setGenResult(r);
+      // Auto-pick starter kit based on generated class if user hasn't overridden
+      if(r&&!r.error&&r.cls)setGenKit(defaultKitForClass(r.cls));
+    }catch(e){setGenResult({error:e.message});}
     setGenLoading(false);
   }
   function applyGenerated(r){
@@ -1144,6 +1221,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(genResult.align)setAlign(genResult.align);
     if(genResult.hp)setHP(parseInt(genResult.hp)||1);
     if(genResult.notes)setNotes(genResult.notes);
+    // Apply starter kit inventory — stamp each item with a unique id
+    var kitItems=(STARTER_KITS[genKit]||[]).map(function(item){
+      return Object.assign({},item,{id:Date.now()+"_"+Math.random().toString(36).slice(2)+"_"+item.name.replace(/\s/g,'')});
+    });
+    setInventory(kitItems);
     // Apply suggested spells to memorized list
     if(aiHighlight.length>0){
       var matched=SPELL_DATA.filter(function(s){return aiHighlight.indexOf(s["Spell Name"])>=0;});
@@ -1157,7 +1239,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,inventory,_version:1};
   }
   function applyCharacterData(d){
     if(!d)return;
@@ -1184,6 +1266,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
     if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
     if(d.gearItems)setGearItems(d.gearItems);
+    if(d.inventory)setInventory(d.inventory);
   }
 
   // ── JSON save / load ─────────────────────────────────────────────────────
@@ -1295,7 +1378,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
   // Styles
   var g="#c9a84c",bg="#08080d",surf="#111118",brd="#1e1e2e",dim="#666050",txt="#ccc8b8";
-  var tabs=["stats","combat","spells","✦ CP","sheet","notes","items","gear","✦ AI"];
+  var tabs=["stats","combat","spells","✦ CP","sheet","notes","inv","items","gear","✦ AI"];
 
   return (
     <div style={{minHeight:"100vh",background:bg,color:txt,fontFamily:"Georgia,serif",display:"flex",flexDirection:"column"}}>
@@ -2424,6 +2507,113 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             style={{width:"100%",minHeight:"300px",padding:"12px",background:surf,border:"1px solid "+brd,borderRadius:"6px",color:txt,fontSize:"13px",fontFamily:"Georgia,serif",outline:"none",resize:"vertical",lineHeight:"1.6"}} />
         </div>}
 
+        {/* ═══ INVENTORY TAB ═══ */}
+        {tab==="inv"&&(function(){
+          var totalWt=inventory.reduce(function(s,it){return s+(it.weight||0)*it.qty;},0);
+          var filteredInv=invSearch.trim()
+            ?inventory.filter(function(it){return it.name.toLowerCase().includes(invSearch.toLowerCase());})
+            :inventory;
+          function saveInvItem(form){
+            var item=Object.assign({},form,{id:form.id||Date.now()+"_"+Math.random().toString(36).slice(2)});
+            setInventory(function(prev){var idx=prev.findIndex(function(x){return x.id===item.id;});return idx>=0?prev.map(function(x,i){return i===idx?item:x;}):prev.concat([item]);});
+            setInvForm(null);
+          }
+          function delInvItem(id){setInventory(function(prev){return prev.filter(function(x){return x.id!==id;});});}
+          function applyKit(kitKey){
+            var kitItems=(STARTER_KITS[kitKey]||[]).map(function(item){
+              return Object.assign({},item,{id:Date.now()+"_"+Math.random().toString(36).slice(2)+"_"+item.name.replace(/\s/g,'')});
+            });
+            setInventory(function(prev){
+              var names=kitItems.map(function(x){return x.name;});
+              var merged=prev.filter(function(x){return !names.includes(x.name);});
+              return merged.concat(kitItems);
+            });
+          }
+          var BLANK_INV={id:null,name:"",qty:1,weight:0,cost:"",notes:""};
+          return <div>
+            {/* Header */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px",flexWrap:"wrap",gap:"8px"}}>
+              <Lbl dim={dim}>INVENTORY{inventory.length>0&&<span style={{color:"#666",fontWeight:"normal"}}> ({inventory.length} items · {totalWt.toFixed(1)} lb)</span>}</Lbl>
+              <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                {Object.keys(KIT_LABELS).map(function(k){
+                  return <button key={k} onClick={function(){applyKit(k);}}
+                    style={{padding:"4px 10px",background:"#1a1a28",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
+                    + {KIT_LABELS[k]} Kit
+                  </button>;
+                })}
+                {!invForm&&<button onClick={function(){setInvForm(Object.assign({},BLANK_INV));}}
+                  style={{padding:"4px 12px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Add Item</button>}
+              </div>
+            </div>
+
+            {/* Add / edit form */}
+            {invForm&&<div style={{background:surf,border:"1px solid #2a2a4a",borderRadius:"6px",padding:"14px",marginBottom:"14px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                <div>
+                  <Lbl dim={dim}>Item Name</Lbl>
+                  <input value={invForm.name} onChange={function(e){setInvForm(function(f){return Object.assign({},f,{name:e.target.value});});}}
+                    placeholder="e.g. Torch" style={Object.assign({},is(brd,txt),{width:"100%"})} autoFocus />
+                </div>
+                <div>
+                  <Lbl dim={dim}>Qty</Lbl>
+                  <input type="number" value={invForm.qty} min="1" onChange={function(e){setInvForm(function(f){return Object.assign({},f,{qty:parseInt(e.target.value)||1});});}}
+                    style={Object.assign({},is(brd,txt),{width:"100%"})} />
+                </div>
+                <div>
+                  <Lbl dim={dim}>Wt (lb ea)</Lbl>
+                  <input type="number" value={invForm.weight} step="0.5" min="0" onChange={function(e){setInvForm(function(f){return Object.assign({},f,{weight:parseFloat(e.target.value)||0});});}}
+                    style={Object.assign({},is(brd,txt),{width:"100%"})} />
+                </div>
+                <div>
+                  <Lbl dim={dim}>Cost</Lbl>
+                  <input value={invForm.cost} onChange={function(e){setInvForm(function(f){return Object.assign({},f,{cost:e.target.value});});}}
+                    placeholder="5gp" style={Object.assign({},is(brd,txt),{width:"100%"})} />
+                </div>
+              </div>
+              <div style={{marginBottom:"8px"}}>
+                <Lbl dim={dim}>Notes</Lbl>
+                <input value={invForm.notes} onChange={function(e){setInvForm(function(f){return Object.assign({},f,{notes:e.target.value});});}}
+                  placeholder="Optional" style={Object.assign({},is(brd,txt),{width:"100%"})} />
+              </div>
+              <div style={{display:"flex",gap:"6px"}}>
+                <button onClick={function(){saveInvItem(invForm);}}
+                  style={{padding:"5px 14px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>Save</button>
+                <button onClick={function(){setInvForm(null);}}
+                  style={{padding:"5px 12px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>Cancel</button>
+              </div>
+            </div>}
+
+            {/* Search */}
+            {inventory.length>4&&<input value={invSearch} onChange={function(e){setInvSearch(e.target.value);}}
+              placeholder="Search inventory…"
+              style={{width:"100%",boxSizing:"border-box",padding:"6px 10px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"10px"}}/>}
+
+            {/* Item list */}
+            {inventory.length===0&&<div style={{padding:"24px",textAlign:"center",color:dim,fontSize:"12px"}}>No items yet. Add one or apply a starter kit above.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+              {filteredInv.map(function(it){
+                return <div key={it.id} style={{background:surf,border:"1px solid "+brd,borderRadius:"5px",padding:"8px 12px",display:"flex",alignItems:"center",gap:"10px"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"baseline",gap:"8px",flexWrap:"wrap"}}>
+                      <span style={{fontSize:"13px",color:txt,fontWeight:"bold"}}>{it.name}</span>
+                      {it.qty>1&&<span style={{fontSize:"10px",color:"#80a0e0",fontFamily:"monospace"}}>×{it.qty}</span>}
+                      {it.cost&&<span style={{fontSize:"10px",color:"#e0c080",fontFamily:"monospace"}}>{it.cost}{it.qty>1?" ea":""}</span>}
+                      {it.weight>0&&<span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{(it.weight*it.qty).toFixed(1)} lb{it.qty>1?" total":""}</span>}
+                    </div>
+                    {it.notes&&<div style={{fontSize:"10px",color:dim,marginTop:"2px",fontStyle:"italic"}}>{it.notes}</div>}
+                  </div>
+                  <div style={{display:"flex",gap:"4px",flexShrink:0}}>
+                    <button onClick={function(){setInvForm(Object.assign({},it));}}
+                      style={{padding:"3px 8px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Edit</button>
+                    <button onClick={function(){delInvItem(it.id);}}
+                      style={{padding:"3px 6px",background:"transparent",color:"#664444",border:"none",cursor:"pointer",fontSize:"14px"}}>×</button>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
+
         {/* ═══ AI TAB ═══ */}
         {tab==="AI"&&<div>
           <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
@@ -2444,6 +2634,17 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           {aiMode==="gen"&&<div>
             <Lbl dim={dim}>DESCRIBE YOUR CHARACTER CONCEPT</Lbl>
             <textarea value={genPrompt} onChange={function(e){setGenPrompt(e.target.value);}} placeholder="e.g. A grizzled dwarven fighter who lost his clan and wanders as a mercenary. Strong, tough, suspicious of magic…" style={{width:"100%",minHeight:"120px",padding:"10px",background:surf,border:"1px solid "+brd,borderRadius:"6px",color:txt,fontSize:"13px",fontFamily:"Georgia,serif",outline:"none",resize:"vertical",lineHeight:"1.6",marginBottom:"10px"}} />
+            <div style={{marginBottom:"10px"}}>
+              <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>STARTER KIT (auto-applied on Create)</div>
+              <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                {Object.keys(KIT_LABELS).map(function(k){
+                  return <button key={k} onClick={function(){setGenKit(k);}}
+                    style={{padding:"4px 12px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:genKit===k?"#1a2a1a":"transparent",color:genKit===k?"#7db87d":dim,border:genKit===k?"1px solid #2a4a2a":"1px solid #1a1a2a"}}>
+                    {KIT_LABELS[k]}
+                  </button>;
+                })}
+              </div>
+            </div>
             <button onClick={doGenChar} disabled={genLoading} style={{padding:"7px 22px",background:genLoading?"#1a1a28":"#1e1a2e",color:genLoading?dim:g,border:"1px solid "+(genLoading?brd:"#3a2a5a"),borderRadius:"4px",cursor:genLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"11px",letterSpacing:"1px"}}>{genLoading?"Generating…":"Generate Character"}</button>
             {genResult&&!genResult.error&&<div style={{marginTop:"14px",background:surf,border:"1px solid "+brd,borderRadius:"8px",padding:"16px"}}>
               <div style={{color:g,fontWeight:"bold",fontSize:"15px",marginBottom:"10px",fontVariant:"small-caps",letterSpacing:"2px"}}>{genResult.name||"Character"}</div>
