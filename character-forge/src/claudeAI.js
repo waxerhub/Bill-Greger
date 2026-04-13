@@ -223,6 +223,69 @@ export async function fetchSpellDescription(spell) {
   return textBlock.text.trim();
 }
 
+// ── Magic Item Generator ─────────────────────────────────────────────────────
+// Returns { name, type, description, effects: { str,dex,con,int,wis,cha,ac,thac0,dmg,saves,hp } }
+export async function generateMagicItem(description) {
+  var validTypes = ['Ring','Amulet/Necklace','Bracers/Gloves','Helm/Hat','Cloak/Robe',
+                    'Belt','Boots','Weapon','Armor/Shield','Wand/Staff/Rod','Misc'];
+
+  var systemPrompt =
+    'You are an AD&D 2nd Edition magic item designer.\n' +
+    'Create a named magic item based on the user\'s description.\n' +
+    'Return ONLY a valid JSON object — no markdown, no code fences, no commentary.\n\n' +
+    'Required shape:\n' +
+    '{\n' +
+    '  "name": string (evocative AD&D-style name),\n' +
+    '  "type": one of ' + JSON.stringify(validTypes) + ',\n' +
+    '  "description": string (2-3 sentences of flavor text and key powers),\n' +
+    '  "effects": {\n' +
+    '    "str": int,  "dex": int,  "con": int,  "int": int,  "wis": int,  "cha": int,\n' +
+    '    "ac": int,      (positive = AC improves, e.g. Ring of Protection +2 → ac:2)\n' +
+    '    "thac0": int,   (positive = THAC0 improves, e.g. Sword +2 → thac0:2)\n' +
+    '    "dmg": int,     (bonus to damage rolls, e.g. Sword +2 → dmg:2)\n' +
+    '    "saves": int,   (positive = saving throws improve)\n' +
+    '    "hp": int       (flat HP bonus while worn)\n' +
+    '  }\n' +
+    '}\n\n' +
+    'Guidelines: AD&D 2e magic items are typically +1 to +5. ' +
+    'A Ring of Protection +2 → ac:2, saves:2. ' +
+    'Gauntlets of Ogre Power → str:4. ' +
+    'A Sword +3 → thac0:3, dmg:3. ' +
+    'Cursed items use negative values. ' +
+    'Zero means no effect for that stat. ' +
+    'Return ONLY the JSON object.';
+
+  var response = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 600,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: description }],
+    }),
+  });
+
+  if (!response.ok) {
+    var errText = await response.text();
+    throw new Error('API ' + response.status + ': ' + errText);
+  }
+
+  var data = await response.json();
+  var textBlock = data.content.find(function(b) { return b.type === 'text'; });
+  if (!textBlock) throw new Error('No text block in response');
+  var text = textBlock.text.replace(/```(?:json)?\n?/g, '').replace(/```\n?/g, '').trim();
+  var start = text.indexOf('{');
+  var end = text.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('No JSON object found in response');
+  var item = JSON.parse(text.slice(start, end + 1));
+  // Normalise effects — ensure all keys exist as integers
+  var blank = {str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0};
+  item.effects = Object.assign({}, blank, item.effects);
+  Object.keys(item.effects).forEach(function(k){ item.effects[k] = parseInt(item.effects[k])||0; });
+  return item;
+}
+
 // ── PDF Character Import ─────────────────────────────────────────────────────
 // Reads a base64-encoded PDF via the server proxy and extracts character data.
 // Returns a character object matching the app's state shape.

@@ -12,6 +12,23 @@
 //     updated_at timestamptz default now()
 //   );
 //   create index on characters (updated_at desc);
+//
+// Gear library table (shared DM + Player item database):
+//
+//   create table gear_library (
+//     id uuid default gen_random_uuid() primary key,
+//     name text not null,
+//     type text,
+//     description text,
+//     effects jsonb default '{}',
+//     role text default 'player',   -- 'dm' or 'player'
+//     created_at timestamptz default now()
+//   );
+//   create index on gear_library (role, created_at desc);
+//   alter table gear_library enable row level security;
+//   create policy "Public read"   on gear_library for select using (true);
+//   create policy "Public insert" on gear_library for insert with check (true);
+//   create policy "Public delete" on gear_library for delete using (true);
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -95,4 +112,46 @@ export function addMyId(id) {
 
 export function removeMyId(id) {
   localStorage.setItem(LS_KEY, JSON.stringify(getMyIds().filter(i => i !== id)));
+}
+
+// ── Gear Library (shared DM / Player item database) ──────────────────────────
+
+// Save a gear item to the shared library.
+// role: 'dm' | 'player'
+export async function saveGearToLibrary(item, role) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const row = {
+    name: item.name || 'Unnamed',
+    type: item.type || 'Misc',
+    description: item.desc || item.description || '',
+    effects: item.effects || {},
+    role: role || 'player',
+  };
+  const { data, error } = await supabase
+    .from('gear_library')
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// List all gear items, optionally filtered by role ('dm', 'player', or '' for all).
+export async function listGearLibrary(role) {
+  if (!supabase) throw new Error('Supabase not configured');
+  let query = supabase
+    .from('gear_library')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (role) query = query.eq('role', role);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Delete a gear item from the library by id.
+export async function deleteGearFromLibrary(id) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.from('gear_library').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }

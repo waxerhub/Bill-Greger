@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { exportCharacterSheet } from "./exportPDF.js";
-import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter } from "./claudeAI.js";
-import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId } from "./supabase.js";
+import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter, generateMagicItem } from "./claudeAI.js";
+import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary } from "./supabase.js";
 
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
@@ -699,6 +699,16 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
   var BLANK_GEAR={id:null,name:"",type:"Ring",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0}};
   function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
+  // AI item generation
+  var _gearAiPrompt=useState(""),gearAiPrompt=_gearAiPrompt[0],setGearAiPrompt=_gearAiPrompt[1];
+  var _gearAiLoading=useState(false),gearAiLoading=_gearAiLoading[0],setGearAiLoading=_gearAiLoading[1];
+  var _gearAiError=useState(""),gearAiError=_gearAiError[0],setGearAiError=_gearAiError[1];
+  // Gear library modal
+  var _gearLibOpen=useState(false),gearLibOpen=_gearLibOpen[0],setGearLibOpen=_gearLibOpen[1];
+  var _gearLibItems=useState([]),gearLibItems=_gearLibItems[0],setGearLibItems=_gearLibItems[1];
+  var _gearLibLoading=useState(false),gearLibLoading=_gearLibLoading[0],setGearLibLoading=_gearLibLoading[1];
+  var _gearLibRole=useState(""),gearLibRole=_gearLibRole[0],setGearLibRole=_gearLibRole[1];
+  var _gearLibStatus=useState(""),gearLibStatus=_gearLibStatus[0],setGearLibStatus=_gearLibStatus[1];
   // CP state
   var _cpBudget=useState(120),cpBudget=_cpBudget[0],setCpBudget=_cpBudget[1];
   var _cpMajor=useState([]),cpMajor=_cpMajor[0],setCpMajor=_cpMajor[1];
@@ -1882,21 +1892,130 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor/Shield","Wand/Staff/Rod","Misc"];
           var EFFECT_LABELS={str:"STR",dex:"DEX",con:"CON",int:"INT",wis:"WIS",cha:"CHA",ac:"AC bonus",thac0:"THAC0 bonus",dmg:"Damage bonus",saves:"Saves bonus",hp:"HP bonus"};
           var EFFECT_COLORS={str:"#e08080",dex:"#80e0a0",con:"#e0a060",int:"#80c0e0",wis:"#c080e0",cha:"#e0c080",ac:"#80a0e0",thac0:"#e0c080",dmg:"#e09060",saves:"#a0e0a0",hp:"#e08080"};
+
           function saveGear(form){
             var item=Object.assign({},form,{id:form.id||Date.now()+"_"+Math.random().toString(36).slice(2),equipped:form.equipped||false});
             setGearItems(function(prev){var idx=prev.findIndex(function(g){return g.id===item.id;});return idx>=0?prev.map(function(g,i){return i===idx?item:g;}):prev.concat([item]);});
-            setGearForm(null);
+            setGearForm(null);setGearAiPrompt("");setGearAiError("");
           }
           function deleteGear(id){setGearItems(function(prev){return prev.filter(function(g){return g.id!==id;})});}
           function toggleEquip(id){setGearItems(function(prev){return prev.map(function(g){return g.id===id?Object.assign({},g,{equipped:!g.equipped}):g;});});}
           function setEffect(key,val){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{[key]:parseInt(val)||0})});});}
+
+          async function doGenerateItem(){
+            if(!gearAiPrompt.trim()||gearAiLoading)return;
+            setGearAiLoading(true);setGearAiError("");
+            try{
+              var result=await generateMagicItem(gearAiPrompt);
+              setGearForm(function(f){return Object.assign({},f||BLANK_GEAR,{
+                name:result.name||f&&f.name||"",
+                type:GEAR_TYPES.indexOf(result.type)>=0?result.type:(f&&f.type)||"Misc",
+                desc:result.description||f&&f.desc||"",
+                effects:Object.assign({},BLANK_GEAR.effects,result.effects||{}),
+              });});
+            }catch(e){setGearAiError(e.message);}
+            setGearAiLoading(false);
+          }
+
+          async function openLibrary(){
+            setGearLibOpen(true);setGearLibLoading(true);setGearLibStatus("");
+            try{var items=await listGearLibrary(gearLibRole);setGearLibItems(items||[]);}
+            catch(e){setGearLibStatus("Error: "+e.message);}
+            setGearLibLoading(false);
+          }
+          async function fetchLibrary(role){
+            setGearLibRole(role);setGearLibLoading(true);setGearLibStatus("");
+            try{var items=await listGearLibrary(role);setGearLibItems(items||[]);}
+            catch(e){setGearLibStatus("Error: "+e.message);}
+            setGearLibLoading(false);
+          }
+          async function saveToLibrary(item,role){
+            setGearLibStatus("Saving…");
+            try{
+              await saveGearToLibrary(item,role);
+              setGearLibStatus("Saved to "+role+" library ✓");
+              setTimeout(function(){setGearLibStatus("");},3000);
+            }catch(e){setGearLibStatus("Error: "+e.message);}
+          }
+          async function removeFromLibrary(id){
+            try{
+              await deleteGearFromLibrary(id);
+              setGearLibItems(function(prev){return prev.filter(function(x){return x.id!==id;});});
+            }catch(e){setGearLibStatus("Error: "+e.message);}
+          }
+          function importFromLibrary(libItem){
+            var gear=Object.assign({},BLANK_GEAR,{
+              id:Date.now()+"_"+Math.random().toString(36).slice(2),
+              name:libItem.name,
+              type:libItem.type||"Misc",
+              desc:libItem.description||"",
+              effects:Object.assign({},BLANK_GEAR.effects,libItem.effects||{}),
+              equipped:false,
+            });
+            setGearItems(function(prev){return prev.concat([gear]);});
+            setGearLibStatus("Added: "+libItem.name);
+            setTimeout(function(){setGearLibStatus("");},2000);
+          }
+
           var equippedGear=gearItems.filter(function(g){return g.equipped;});
           var anyBonuses=equippedGear.length>0;
+
           return <div>
+            {/* Library modal */}
+            {gearLibOpen&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={function(){setGearLibOpen(false);}}>
+              <div style={{background:"#12111a",border:"1px solid "+brd,borderRadius:"8px",padding:"20px",width:"90%",maxWidth:"560px",maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={function(e){e.stopPropagation();}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                  <div style={{color:g,fontWeight:"bold",fontVariant:"small-caps",letterSpacing:"1px"}}>Gear Library</div>
+                  <button onClick={function(){setGearLibOpen(false);}} style={{background:"transparent",border:"none",color:dim,cursor:"pointer",fontSize:"18px",padding:"0 4px"}}>×</button>
+                </div>
+                {/* Role tabs */}
+                <div style={{display:"flex",gap:"6px",marginBottom:"12px"}}>
+                  {[["","All"],["player","Player"],["dm","DM"]].map(function(pair){
+                    return <button key={pair[0]} onClick={function(){fetchLibrary(pair[0]);}}
+                      style={{padding:"4px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:gearLibRole===pair[0]?"#1a2a3a":"transparent",color:gearLibRole===pair[0]?"#80c0e0":dim,border:gearLibRole===pair[0]?"1px solid #2a4a6a":"1px solid transparent"}}>{pair[1]}</button>;
+                  })}
+                </div>
+                {gearLibStatus&&<div style={{fontSize:"11px",color:gearLibStatus.startsWith("Error")?"#e08080":"#7db87d",fontFamily:"monospace",marginBottom:"8px"}}>{gearLibStatus}</div>}
+                <div style={{overflowY:"auto",flex:1}}>
+                  {gearLibLoading&&<div style={{padding:"20px",textAlign:"center",color:dim,fontFamily:"monospace",fontSize:"12px"}}>Loading…</div>}
+                  {!gearLibLoading&&gearLibItems.length===0&&<div style={{padding:"20px",textAlign:"center",color:dim,fontSize:"12px"}}>No items in this library yet.</div>}
+                  {!gearLibLoading&&gearLibItems.map(function(it){
+                    var bonuses=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];});
+                    return <div key={it.id} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"10px 12px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}}>
+                          <span style={{fontSize:"13px",color:txt,fontWeight:"bold"}}>{it.name}</span>
+                          <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{it.type}</span>
+                          <span style={{fontSize:"9px",color:it.role==="dm"?"#e0c080":"#80c0e0",fontFamily:"monospace"}}>{it.role==="dm"?"DM":"Player"}</span>
+                        </div>
+                        {bonuses.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"3px",marginTop:"4px"}}>
+                          {bonuses.map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;})}
+                        </div>}
+                        {it.description&&<div style={{fontSize:"10px",color:dim,marginTop:"3px",fontStyle:"italic"}}>{it.description.slice(0,100)}{it.description.length>100?"…":""}</div>}
+                      </div>
+                      <div style={{display:"flex",gap:"4px",flexShrink:0}}>
+                        <button onClick={function(){importFromLibrary(it);}}
+                          style={{padding:"3px 10px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Add</button>
+                        <button onClick={function(){removeFromLibrary(it.id);}}
+                          style={{padding:"3px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
+                      </div>
+                    </div>;
+                  })}
+                </div>
+              </div>
+            </div>}
+
+            {/* Header row */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px",flexWrap:"wrap",gap:"8px"}}>
               <Lbl dim={dim}>CUSTOM MAGIC ITEMS {gearItems.length>0&&<span style={{color:"#666",fontWeight:"normal"}}>({gearItems.length} created, {equippedGear.length} equipped)</span>}</Lbl>
-              {!gearForm&&<button onClick={newGearForm} style={{padding:"6px 16px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>+ Create Item</button>}
+              <div style={{display:"flex",gap:"6px"}}>
+                {supabase&&<button onClick={openLibrary}
+                  style={{padding:"5px 12px",background:"#1a1a28",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>☁ Browse Library</button>}
+                {!gearForm&&<button onClick={newGearForm}
+                  style={{padding:"5px 12px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>+ Create Item</button>}
+              </div>
             </div>
+            {gearLibStatus&&!gearLibOpen&&<div style={{fontSize:"11px",color:gearLibStatus.startsWith("Error")?"#e08080":"#7db87d",fontFamily:"monospace",marginBottom:"8px"}}>{gearLibStatus}</div>}
 
             {/* Active bonus summary */}
             {anyBonuses&&<div style={{background:"#0d1a0d",border:"1px solid #2a4a2a",borderRadius:"6px",padding:"10px 14px",marginBottom:"14px"}}>
@@ -1910,9 +2029,28 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               </div>
             </div>}
 
-            {/* Creator form */}
+            {/* Creator / editor form */}
             {gearForm&&<div style={{background:surf,border:"1px solid #2a2a4a",borderRadius:"8px",padding:"16px",marginBottom:"16px"}}>
               <div style={{color:g,fontWeight:"bold",marginBottom:"12px",fontVariant:"small-caps",letterSpacing:"1px",fontSize:"13px"}}>{gearForm.id?"Edit Item":"New Magic Item"}</div>
+
+              {/* AI generation panel (new items only) */}
+              {!gearForm.id&&<div style={{marginBottom:"14px",padding:"12px",background:"#0d0d1a",border:"1px solid #2a2a4a",borderRadius:"6px"}}>
+                <div style={{fontSize:"10px",color:"#80a0e0",fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>✦ AI ITEM GENERATOR</div>
+                <div style={{display:"flex",gap:"8px",alignItems:"flex-start"}}>
+                  <textarea value={gearAiPrompt} onChange={function(e){setGearAiPrompt(e.target.value);}}
+                    onKeyDown={function(e){if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))doGenerateItem();}}
+                    placeholder={"Describe the item you want…\ne.g. \"a ring that protects against fire and boosts constitution\"\nor \"a cursed sword that makes the wielder stronger but harder to hit\""}
+                    rows={3} style={{flex:1,padding:"7px 9px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"Georgia,serif",outline:"none",resize:"vertical",lineHeight:"1.5"}} />
+                  <button onClick={doGenerateItem} disabled={gearAiLoading||!gearAiPrompt.trim()}
+                    style={{padding:"7px 16px",background:gearAiLoading||!gearAiPrompt.trim()?"#1a1a28":"#1e1a2e",color:gearAiLoading||!gearAiPrompt.trim()?dim:g,border:"1px solid "+(gearAiLoading||!gearAiPrompt.trim()?brd:"#3a2a5a"),borderRadius:"4px",cursor:gearAiLoading||!gearAiPrompt.trim()?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"11px",whiteSpace:"nowrap"}}>
+                    {gearAiLoading?"Generating…":"✨ Generate"}
+                  </button>
+                </div>
+                {gearAiError&&<div style={{fontSize:"11px",color:"#e08080",fontFamily:"monospace",marginTop:"6px"}}>⚠ {gearAiError}</div>}
+                <div style={{fontSize:"10px",color:dim,marginTop:"5px",fontFamily:"monospace"}}>The AI fills in the fields below — you can edit anything before saving. Ctrl+Enter to generate.</div>
+              </div>}
+
+              {/* Manual fields */}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
                 <div>
                   <Lbl dim={dim}>Item Name</Lbl>
@@ -1932,7 +2070,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   placeholder="Flavor text or special powers…" rows={2}
                   style={{width:"100%",padding:"6px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"Georgia,serif",outline:"none",resize:"vertical"}} />
               </div>
-              <Lbl dim={dim}>Stat & Combat Effects <span style={{color:"#555",fontWeight:"normal"}}>(positive = bonus; negative = penalty; AC −2 means better AC)</span></Lbl>
+              <Lbl dim={dim}>Stat & Combat Effects <span style={{color:"#555",fontWeight:"normal"}}>(positive = better; AC +2 lowers your AC by 2; THAC0 +2 lowers it by 2)</span></Lbl>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"6px",marginBottom:"14px"}}>
                 {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"3px"}}>
                   <label style={{fontSize:"10px",color:EFFECT_COLORS[k],fontFamily:"monospace"}}>{EFFECT_LABELS[k]}</label>
@@ -1941,20 +2079,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
                 </div>;})}
               </div>
-              <div style={{display:"flex",gap:"8px"}}>
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
                 <button onClick={function(){saveGear(gearForm);}} disabled={!gearForm.name.trim()}
                   style={{padding:"7px 20px",background:gearForm.name.trim()?"#1e2a1e":"#111",color:gearForm.name.trim()?"#7db87d":dim,border:"1px solid "+(gearForm.name.trim()?"#3a5a3a":brd),borderRadius:"4px",cursor:gearForm.name.trim()?"pointer":"not-allowed",fontFamily:"monospace",fontSize:"11px"}}>Save Item</button>
-                <button onClick={function(){setGearForm(null);}}
+                <button onClick={function(){setGearForm(null);setGearAiPrompt("");setGearAiError("");}}
                   style={{padding:"7px 16px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>Cancel</button>
               </div>
             </div>}
 
-            {/* Item list */}
+            {/* Empty state */}
             {gearItems.length===0&&!gearForm&&<div style={{padding:"40px",textAlign:"center",color:dim}}>
               <div style={{fontSize:"32px",opacity:0.3,marginBottom:"10px"}}>⚔</div>
               <div style={{marginBottom:"6px"}}>No custom items yet.</div>
-              <div style={{fontSize:"11px"}}>Click <strong style={{color:txt}}>+ Create Item</strong> to forge a magic item with stat effects that auto-update the sheet.</div>
+              <div style={{fontSize:"11px"}}>Click <strong style={{color:txt}}>+ Create Item</strong> to forge a magic item with stat effects, or describe it to the AI and it will fill in the stats automatically.</div>
             </div>}
+
+            {/* Item list */}
             <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
               {gearItems.map(function(it){
                 var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];}).map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
@@ -1968,15 +2108,25 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     {bonusParts.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"5px"}}>{bonusParts}</div>}
                     {it.desc&&<div style={{fontSize:"11px",color:dim,marginTop:"4px",fontStyle:"italic"}}>{it.desc}</div>}
                   </div>
-                  <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                  <div style={{display:"flex",gap:"4px",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
                     <button onClick={function(){toggleEquip(it.id);}}
-                      style={{padding:"4px 12px",background:it.equipped?"#1a2a1a":"#1a1a28",color:it.equipped?"#7db87d":"#80a0e0",border:"1px solid "+(it.equipped?"#3a5a3a":"#2a2a5a"),borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
+                      style={{padding:"4px 10px",background:it.equipped?"#1a2a1a":"#1a1a28",color:it.equipped?"#7db87d":"#80a0e0",border:"1px solid "+(it.equipped?"#3a5a3a":"#2a2a5a"),borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
                       {it.equipped?"Unequip":"Equip"}
                     </button>
                     <button onClick={function(){setGearForm(Object.assign({},it,{effects:Object.assign({},it.effects)}));}}
-                      style={{padding:"4px 10px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Edit</button>
+                      style={{padding:"4px 8px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Edit</button>
+                    {supabase&&<div style={{position:"relative",display:"inline-block"}}>
+                      <button onClick={function(e){e.currentTarget.nextSibling.style.display=e.currentTarget.nextSibling.style.display==="block"?"none":"block";}}
+                        style={{padding:"4px 8px",background:"#1a1a28",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>☁</button>
+                      <div style={{display:"none",position:"absolute",right:0,top:"calc(100% + 4px)",background:"#12111a",border:"1px solid "+brd,borderRadius:"4px",zIndex:100,minWidth:"140px",boxShadow:"0 4px 12px rgba(0,0,0,0.5)"}}>
+                        <button onClick={function(e){saveToLibrary(it,"player");e.currentTarget.closest("[style*='position:absolute']").style.display="none";}}
+                          style={{display:"block",width:"100%",padding:"8px 12px",background:"transparent",color:"#80c0e0",border:"none",borderBottom:"1px solid "+brd,cursor:"pointer",fontFamily:"monospace",fontSize:"10px",textAlign:"left"}}>Save to Player Library</button>
+                        <button onClick={function(e){saveToLibrary(it,"dm");e.currentTarget.closest("[style*='position:absolute']").style.display="none";}}
+                          style={{display:"block",width:"100%",padding:"8px 12px",background:"transparent",color:"#e0c080",border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"10px",textAlign:"left"}}>Save to DM Library</button>
+                      </div>
+                    </div>}
                     <button onClick={function(){deleteGear(it.id);}}
-                      style={{padding:"4px 10px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
+                      style={{padding:"4px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
                   </div>
                 </div>;
               })}
