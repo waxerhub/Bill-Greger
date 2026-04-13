@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { exportCharacterSheet } from "./exportPDF.js";
 import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter, generateMagicItem } from "./claudeAI.js";
-import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash } from "./supabase.js";
+import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, signIn, signUp, signOut, onAuthStateChange, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash } from "./supabase.js";
 
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
@@ -707,7 +707,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _gearLibOpen=useState(false),gearLibOpen=_gearLibOpen[0],setGearLibOpen=_gearLibOpen[1];
   var _gearLibItems=useState([]),gearLibItems=_gearLibItems[0],setGearLibItems=_gearLibItems[1];
   var _gearLibLoading=useState(false),gearLibLoading=_gearLibLoading[0],setGearLibLoading=_gearLibLoading[1];
-  var _gearLibRole=useState(""),gearLibRole=_gearLibRole[0],setGearLibRole=_gearLibRole[1];
+  var _gearLibRole=useState("player"),gearLibRole=_gearLibRole[0],setGearLibRole=_gearLibRole[1];
   var _gearLibStatus=useState(""),gearLibStatus=_gearLibStatus[0],setGearLibStatus=_gearLibStatus[1];
   // DM password gate
   var _dmPwVerified=useState(false),dmPwVerified=_dmPwVerified[0],setDmPwVerified=_dmPwVerified[1];
@@ -727,12 +727,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var fr=useRef(null);
   var loadFileRef=useRef(null);
 
-  // Cloud / save state
-  var _cloudId=useState(function(){try{return localStorage.getItem("cf_active_id")||null;}catch{return null;}}),cloudId=_cloudId[0],setCloudId=_cloudId[1];
+  // Cloud / auth state
+  var _cloudId=useState(null),cloudId=_cloudId[0],setCloudId=_cloudId[1];
   var _cloudStatus=useState(""),cloudStatus=_cloudStatus[0],setCloudStatus=_cloudStatus[1];
-  var _cloudList=useState(null),cloudList=_cloudList[0],setCloudList=_cloudList[1];
-  var _cloudListOpen=useState(false),cloudListOpen=_cloudListOpen[0],setCloudListOpen=_cloudListOpen[1];
   var _pdfParsing=useState(false),pdfParsing=_pdfParsing[0],setPdfParsing=_pdfParsing[1];
+  // Auth
+  var _authUser=useState(null),authUser=_authUser[0],setAuthUser=_authUser[1];
+  var _authEmail=useState(""),authEmail=_authEmail[0],setAuthEmail=_authEmail[1];
+  var _authPassword=useState(""),authPassword=_authPassword[0],setAuthPassword=_authPassword[1];
+  var _authMode=useState("signin"),authMode=_authMode[0],setAuthMode=_authMode[1];
+  var _authError=useState(""),authError=_authError[0],setAuthError=_authError[1];
+  var _authLoading=useState(false),authLoading=_authLoading[0],setAuthLoading=_authLoading[1];
+  // Account modal (character list)
+  var _acctOpen=useState(false),acctOpen=_acctOpen[0],setAcctOpen=_acctOpen[1];
+  var _acctChars=useState([]),acctChars=_acctChars[0],setAcctChars=_acctChars[1];
+  var _acctLoading=useState(false),acctLoading=_acctLoading[0],setAcctLoading=_acctLoading[1];
+  var _acctStatus=useState(""),acctStatus=_acctStatus[0],setAcctStatus=_acctStatus[1];
 
   // Auto-save to localStorage on every change
   useEffect(function(){
@@ -750,6 +760,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       var raw=localStorage.getItem("cf_autosave");
       if(raw){var d=JSON.parse(raw);applyCharacterData(d);}
     }catch(_){}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  // Listen for Supabase auth state changes
+  useEffect(function(){
+    if(!supabase)return;
+    supabase.auth.getUser().then(function(r){setAuthUser(r.data.user||null);});
+    var unsub=onAuthStateChange(function(user){setAuthUser(user||null);});
+    return unsub;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -1196,45 +1215,66 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }
   }
 
-  // ── Cloud save / load ────────────────────────────────────────────────────
+  // ── Account / cloud save ─────────────────────────────────────────────────
+  async function doAuthSubmit(){
+    setAuthLoading(true);setAuthError("");
+    try{
+      if(authMode==="signup"){
+        await signUp(authEmail,authPassword);
+        setAuthError("Check your email to confirm your account, then sign in.");
+      }else{
+        var user=await signIn(authEmail,authPassword);
+        setAuthUser(user);
+        setAuthEmail("");setAuthPassword("");
+        // Immediately load their character list
+        await refreshAcctChars();
+      }
+    }catch(e){setAuthError(e.message);}
+    setAuthLoading(false);
+  }
+  async function doSignOut(){
+    try{await signOut();}catch(_){}
+    setAuthUser(null);setCloudId(null);setAcctChars([]);setAcctStatus("");
+  }
+  async function refreshAcctChars(){
+    setAcctLoading(true);
+    try{var list=await listMyCharacters();setAcctChars(list||[]);}
+    catch(e){setAcctStatus("Error: "+e.message);}
+    setAcctLoading(false);
+  }
+  async function openAcctModal(){
+    setAcctOpen(true);setAcctStatus("");
+    if(authUser)await refreshAcctChars();
+  }
   async function cloudSave(){
-    if(!supabase){setCloudStatus("⚠ Add VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY to .env");return;}
+    if(!authUser){setAcctOpen(true);return;}
     setCloudStatus("Saving…");
     try{
       var rec=await supabaseSave(getCharacterSnapshot(),cloudId||undefined);
       setCloudId(rec.id);
-      try{localStorage.setItem("cf_active_id",rec.id);}catch(_){}
-      addMyId(rec.id);
       setCloudStatus("Saved ✓");
-    }catch(err){setCloudStatus("Save error: "+err.message);}
+      setTimeout(function(){setCloudStatus("");},2500);
+      // Refresh list in background
+      refreshAcctChars();
+    }catch(err){setCloudStatus("Error: "+err.message);}
   }
-  async function openCloudList(){
-    if(!supabase){setCloudStatus("⚠ Supabase not configured");return;}
-    setCloudStatus("Loading list…");
-    try{
-      var list=await listMyCharacters();
-      setCloudList(list);setCloudListOpen(true);setCloudStatus("");
-    }catch(err){setCloudStatus("Load error: "+err.message);}
-  }
-  async function loadCloudChar(id){
-    setCloudListOpen(false);setCloudStatus("Loading…");
+  async function loadAcctChar(id){
+    setAcctOpen(false);setCloudStatus("Loading…");
     try{
       var rec=await loadCharacterById(id);
       applyCharacterData(rec.data);
       setCloudId(id);
-      try{localStorage.setItem("cf_active_id",id);}catch(_){}
       setCloudStatus("Loaded ✓");
-    }catch(err){setCloudStatus("Load error: "+err.message);}
+      setTimeout(function(){setCloudStatus("");},2000);
+    }catch(err){setCloudStatus("Error: "+err.message);}
   }
-  async function deleteCloudChar(id,e){
+  async function deleteAcctChar(id,e){
     e.stopPropagation();
-    if(!supabase)return;
     try{
       await supabase.from("characters").delete().eq("id",id);
-      removeMyId(id);
-      if(cloudId===id){setCloudId(null);try{localStorage.removeItem("cf_active_id");}catch(_){}}
-      setCloudList(function(l){return l.filter(function(c){return c.id!==id;});});
-    }catch(err){setCloudStatus("Delete error: "+err.message);}
+      if(cloudId===id)setCloudId(null);
+      setAcctChars(function(l){return l.filter(function(c){return c.id!==id;});});
+    }catch(err){setAcctStatus("Error: "+err.message);}
   }
 
   // Styles
@@ -1266,24 +1306,71 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           <button onClick={saveJSON} title="Download character as JSON" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a2a",color:"#80a0e0",border:"1px solid #2a2a5a"}}>💾 Save</button>
           <button onClick={function(){loadFileRef.current&&loadFileRef.current.click();}} disabled={pdfParsing} title="Load from JSON or import from PDF" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a2a",color:pdfParsing?"#555":"#80a0e0",border:"1px solid #2a2a5a"}}>{pdfParsing?"…":"📂 Load"}</button>
           <input ref={loadFileRef} type="file" accept=".json,.pdf" onChange={handleLoadFile} style={{display:"none"}} />
-          <button onClick={cloudSave} title="Save to cloud (Supabase)" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Cloud Save</button>
-          <button onClick={openCloudList} title="Load a saved character from cloud" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Cloud Load</button>
+          {supabase&&<button onClick={cloudSave} title="Save character to your account" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a"}}>☁ Save</button>}
+          {supabase&&<button onClick={openAcctModal} title="Account & saved characters" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a28",color:authUser?"#80c0e0":"#8080a0",border:"1px solid #2a2a5a"}}>{authUser?"👤 "+authUser.email.split("@")[0]:"👤 Sign In"}</button>}
           <a href="https://github.com/waxerhub/Bill-Greger/blob/claude/access-character-forge-CaPe1/character-forge/GUIDE.md" target="_blank" rel="noopener noreferrer" title="Open feature guide" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"transparent",color:dim,border:"1px solid transparent",textDecoration:"none"}}>? Guide</a>
         </div>
       </div>
       {/* Status bar */}
       {cloudStatus&&<div style={{padding:"4px 16px",background:"#0a0a18",borderBottom:"1px solid "+brd,fontSize:"11px",color:cloudStatus.startsWith("⚠")||cloudStatus.startsWith("Error")||cloudStatus.includes("error")?"#e08080":"#7db87d",fontFamily:"monospace"}}>{cloudStatus}</div>}
-      {/* Cloud character list modal */}
-      {cloudListOpen&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={function(){setCloudListOpen(false);}}>
-        <div style={{background:"#12111a",border:"1px solid "+brd,borderRadius:"8px",padding:"20px",minWidth:"320px",maxWidth:"480px",width:"90%"}} onClick={function(e){e.stopPropagation();}}>
-          <div style={{color:g,fontWeight:"bold",marginBottom:"14px",fontVariant:"small-caps",letterSpacing:"1px"}}>Cloud Characters</div>
-          {(!cloudList||cloudList.length===0)
-            ?<div style={{color:dim,fontSize:"12px",fontFamily:"monospace"}}>No saved characters found.</div>
-            :cloudList.map(function(c){return <div key={c.id} onClick={function(){loadCloudChar(c.id);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",marginBottom:"6px",background:surf,border:"1px solid "+(cloudId===c.id?"#3a5a3a":brd),borderRadius:"4px",cursor:"pointer"}}>
-              <div><div style={{fontSize:"13px",color:txt}}>{c.name||"Unnamed"}</div><div style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{new Date(c.updated_at).toLocaleString()}</div></div>
-              <button onClick={function(e){deleteCloudChar(c.id,e);}} style={{background:"transparent",border:"none",color:"#664444",cursor:"pointer",fontSize:"16px",padding:"0 4px"}}>×</button>
-            </div>;})}
-          <button onClick={function(){setCloudListOpen(false);}} style={{marginTop:"10px",padding:"6px 16px",background:"#1a1a2a",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace"}}>Close</button>
+      {/* Account modal */}
+      {acctOpen&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={function(){setAcctOpen(false);}}>
+        <div style={{background:"#12111a",border:"1px solid "+brd,borderRadius:"8px",padding:"24px",minWidth:"320px",maxWidth:"420px",width:"90%"}} onClick={function(e){e.stopPropagation();}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
+            <div style={{color:g,fontWeight:"bold",fontVariant:"small-caps",letterSpacing:"1px"}}>My Account</div>
+            <button onClick={function(){setAcctOpen(false);}} style={{background:"transparent",border:"none",color:dim,cursor:"pointer",fontSize:"18px",padding:"0 4px"}}>×</button>
+          </div>
+          {!authUser?(
+            /* ── Sign in / sign up form ── */
+            <div>
+              <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
+                {["signin","signup"].map(function(m){
+                  return <button key={m} onClick={function(){setAuthMode(m);setAuthError("");}}
+                    style={{flex:1,padding:"6px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:authMode===m?"#1a1a30":"transparent",color:authMode===m?g:dim,border:authMode===m?"1px solid #2a2a4a":"1px solid #1a1a2a"}}>
+                    {m==="signin"?"Sign In":"Create Account"}
+                  </button>;
+                })}
+              </div>
+              <input type="email" value={authEmail} onChange={function(e){setAuthEmail(e.target.value);setAuthError("");}}
+                onKeyDown={function(e){if(e.key==="Enter")doAuthSubmit();}}
+                placeholder="Email" autoComplete="username"
+                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+              <input type="password" value={authPassword} onChange={function(e){setAuthPassword(e.target.value);setAuthError("");}}
+                onKeyDown={function(e){if(e.key==="Enter")doAuthSubmit();}}
+                placeholder="Password" autoComplete={authMode==="signup"?"new-password":"current-password"}
+                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+              {authError&&<div style={{fontSize:"11px",color:authError.startsWith("Check")?"#7db87d":"#e08080",fontFamily:"monospace",marginBottom:"8px"}}>{authError}</div>}
+              <button onClick={doAuthSubmit} disabled={authLoading||!authEmail.trim()||!authPassword.trim()}
+                style={{width:"100%",padding:"9px",background:authLoading?"#1a1a28":"#1e1a2e",color:authLoading?dim:g,border:"1px solid "+(authLoading?brd:"#3a2a5a"),borderRadius:"4px",cursor:authLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"12px"}}>
+                {authLoading?"Working…":authMode==="signin"?"Sign In":"Create Account"}
+              </button>
+            </div>
+          ):(
+            /* ── Signed-in: character list ── */
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                <div style={{fontSize:"11px",color:"#80c0e0",fontFamily:"monospace"}}>{authUser.email}</div>
+                <button onClick={doSignOut} style={{padding:"3px 10px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Sign Out</button>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px"}}>SAVED CHARACTERS</div>
+                <button onClick={cloudSave} style={{padding:"3px 10px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>☁ Save Current</button>
+              </div>
+              {acctStatus&&<div style={{fontSize:"11px",color:acctStatus.startsWith("Error")?"#e08080":"#7db87d",fontFamily:"monospace",marginBottom:"8px"}}>{acctStatus}</div>}
+              {acctLoading&&<div style={{padding:"16px",textAlign:"center",color:dim,fontSize:"12px",fontFamily:"monospace"}}>Loading…</div>}
+              {!acctLoading&&acctChars.length===0&&<div style={{padding:"16px",textAlign:"center",color:dim,fontSize:"12px"}}>No saved characters yet. Hit ☁ Save to save this one.</div>}
+              {!acctLoading&&acctChars.map(function(c){
+                return <div key={c.id} onClick={function(){loadAcctChar(c.id);}}
+                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",marginBottom:"6px",background:surf,border:"1px solid "+(cloudId===c.id?"#3a5a3a":brd),borderRadius:"4px",cursor:"pointer"}}>
+                  <div>
+                    <div style={{fontSize:"13px",color:txt}}>{c.name||"Unnamed"}{cloudId===c.id&&<span style={{fontSize:"9px",color:"#7db87d",fontFamily:"monospace",marginLeft:"6px"}}>current</span>}</div>
+                    <div style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{new Date(c.updated_at).toLocaleString()}</div>
+                  </div>
+                  <button onClick={function(e){deleteAcctChar(c.id,e);}} style={{background:"transparent",border:"none",color:"#664444",cursor:"pointer",fontSize:"16px",padding:"0 4px"}}>×</button>
+                </div>;
+              })}
+            </div>
+          )}
         </div>
       </div>}
       {/* Character bar */}
@@ -1944,8 +2031,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             setGearLibLoading(false);
           }
           async function openLibrary(){
-            setGearLibOpen(true);setGearLibLoading(true);setGearLibStatus("");
-            try{var items=await listGearLibrary(gearLibRole==="dm"&&!dmPwVerified?"":gearLibRole);setGearLibItems(items||[]);}
+            setGearLibOpen(true);setGearLibStatus("");
+            // Always open on Library tab; if currently on DM and not verified, stay but don't fetch
+            if(gearLibRole==="dm"&&!dmPwVerified){setGearLibItems([]);return;}
+            setGearLibLoading(true);
+            try{var items=await listGearLibrary(gearLibRole);setGearLibItems(items||[]);}
             catch(e){setGearLibStatus("Error: "+e.message);}
             setGearLibLoading(false);
           }
@@ -2046,7 +2136,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 </div>
                 {/* Role tabs */}
                 <div style={{display:"flex",gap:"6px",marginBottom:"12px"}}>
-                  {[["","All"],["player","Player"],["dm","DM"]].map(function(pair){
+                  {[["player","Library"],["dm","DM \uD83D\uDD12"]].map(function(pair){
                     return <button key={pair[0]} onClick={function(){fetchLibrary(pair[0]);}}
                       style={{padding:"4px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:gearLibRole===pair[0]?"#1a2a3a":"transparent",color:gearLibRole===pair[0]?"#80c0e0":dim,border:gearLibRole===pair[0]?"1px solid #2a4a6a":"1px solid transparent"}}>{pair[1]}</button>;
                   })}

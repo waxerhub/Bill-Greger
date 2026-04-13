@@ -1,27 +1,44 @@
-// supabase.js — Supabase client for cloud character storage
+// supabase.js — Supabase client, auth, and cloud storage for Character Forge
 // Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
-// The anon key is safe to expose in the browser (it's a public read/write key
-// restricted to the characters table).
 //
-// Supabase table setup — run this SQL in your Supabase SQL editor:
+// ── Database setup ───────────────────────────────────────────────────────────
+// Run the following SQL in your Supabase SQL editor once:
 //
+//   -- Enable email auth under Authentication → Providers in the dashboard.
+//
+//   -- Characters table:
 //   create table characters (
 //     id uuid default gen_random_uuid() primary key,
+//     user_id uuid references auth.users(id) on delete cascade,
 //     name text not null default 'Unnamed',
 //     data jsonb not null,
 //     updated_at timestamptz default now()
 //   );
-//   create index on characters (updated_at desc);
+//   create index on characters (user_id, updated_at desc);
+//   alter table characters enable row level security;
+//   create policy "Users see own" on characters
+//     for select using (auth.uid() = user_id);
+//   create policy "Users insert own" on characters
+//     for insert with check (auth.uid() = user_id);
+//   create policy "Users update own" on characters
+//     for update using (auth.uid() = user_id);
+//   create policy "Users delete own" on characters
+//     for delete using (auth.uid() = user_id);
 //
-// Gear library table (shared DM + Player item database):
+//   -- If upgrading an existing characters table (no user_id yet):
+//   alter table characters
+//     add column if not exists user_id uuid references auth.users(id) on delete cascade;
+//   create index if not exists on characters (user_id, updated_at desc);
+//   -- then enable RLS + create the four policies above.
 //
+//   -- Gear library table:
 //   create table gear_library (
 //     id uuid default gen_random_uuid() primary key,
 //     name text not null,
 //     type text,
 //     description text,
 //     effects jsonb default '{}',
-//     role text default 'player',   -- 'dm' or 'player'
+//     role text default 'player',   -- 'player', 'dm', or '_config' (internal)
 //     created_at timestamptz default now()
 //   );
 //   create index on gear_library (role, created_at desc);
@@ -35,12 +52,9 @@ import { createClient } from '@supabase/supabase-js';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Returns null if env vars aren't set or invalid — cloud features disabled gracefully.
-// Wrapped in try/catch so a bad VITE_SUPABASE_URL never crashes the whole app.
 function makeClient() {
   if (!url || !key) return null;
   try {
-    // Basic sanity-check: must look like a URL before calling createClient
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
     return createClient(url, key);
@@ -51,11 +65,48 @@ function makeClient() {
 }
 export const supabase = makeClient();
 
-// Save or update a character. Returns the saved record (with id).
-// Pass an existing id to update, omit to insert a new row.
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export async function signUp(email, password) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw new Error(error.message);
+  return data.user;
+}
+
+export async function signIn(email, password) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+  return data.user;
+}
+
+export async function signOut() {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.signOut();
+  if (error) throw new Error(error.message);
+}
+
+// Subscribe to auth state changes. Returns an unsubscribe function.
+export function onAuthStateChange(callback) {
+  if (!supabase) return () => {};
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(session?.user ?? null);
+  });
+  return () => subscription.unsubscribe();
+}
+
+// ── Characters ───────────────────────────────────────────────────────────────
+
+// Save or update a character for the currently signed-in user.
+// Pass existingId to update an existing row; omit to insert a new one.
 export async function saveCharacter(charData, existingId) {
-  if (!supabase) throw new Error('Supabase not configured — add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env');
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Sign in to save characters to the cloud');
+
   const row = {
+    user_id: user.id,
     name: charData.charName || 'Unnamed',
     data: charData,
     updated_at: new Date().toISOString(),
@@ -72,7 +123,7 @@ export async function saveCharacter(charData, existingId) {
   return data;
 }
 
-// Load a single character by id.
+// Load a single character by id (user must own it — enforced by RLS).
 export async function loadCharacterById(id) {
   if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase
@@ -84,40 +135,22 @@ export async function loadCharacterById(id) {
   return data;
 }
 
-// List all characters stored for this browser (ids tracked in localStorage).
+// List all characters belonging to the signed-in user.
 export async function listMyCharacters() {
   if (!supabase) throw new Error('Supabase not configured');
-  const ids = getMyIds();
-  if (ids.length === 0) return [];
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
   const { data, error } = await supabase
     .from('characters')
     .select('id, name, updated_at')
-    .in('id', ids)
+    .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
   if (error) throw new Error(error.message);
   return data;
 }
 
-// ── localStorage ID tracking ─────────────────────────────────────────────────
-const LS_KEY = 'cf_character_ids';
+// ── Gear Library (shared cloud item database) ─────────────────────────────────
 
-export function getMyIds() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
-}
-
-export function addMyId(id) {
-  const ids = getMyIds();
-  if (!ids.includes(id)) localStorage.setItem(LS_KEY, JSON.stringify([id, ...ids]));
-}
-
-export function removeMyId(id) {
-  localStorage.setItem(LS_KEY, JSON.stringify(getMyIds().filter(i => i !== id)));
-}
-
-// ── Gear Library (shared DM / Player item database) ──────────────────────────
-
-// Save a gear item to the shared library.
-// role: 'dm' | 'player'
 export async function saveGearToLibrary(item, role) {
   if (!supabase) throw new Error('Supabase not configured');
   const row = {
@@ -136,8 +169,8 @@ export async function saveGearToLibrary(item, role) {
   return data;
 }
 
-// List all gear items, optionally filtered by role ('dm', 'player', or '' for all).
-// Always excludes internal _config rows.
+// List gear items. Pass role='dm' to get only DM items, or omit/'' for all
+// non-config items.
 export async function listGearLibrary(role) {
   if (!supabase) throw new Error('Supabase not configured');
   let query = supabase
@@ -151,9 +184,14 @@ export async function listGearLibrary(role) {
   return data;
 }
 
-// ── DM Password (stored as a SHA-256 hex hash in a _config row) ──────────────
+export async function deleteGearFromLibrary(id) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.from('gear_library').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
 
-// Returns the stored hash string, or null if no password has been set.
+// ── DM Password (SHA-256 hash stored as a _config row) ────────────────────────
+
 export async function getDmPasswordHash() {
   if (!supabase) throw new Error('Supabase not configured');
   const { data } = await supabase
@@ -165,10 +203,8 @@ export async function getDmPasswordHash() {
   return data ? data.description : null;
 }
 
-// Stores (or replaces) the DM password hash. Pass null to remove the password.
 export async function setDmPasswordHash(hash) {
   if (!supabase) throw new Error('Supabase not configured');
-  // Remove any existing config row first
   await supabase.from('gear_library').delete()
     .eq('role', '_config').eq('name', 'dm_password');
   if (hash) {
@@ -176,11 +212,4 @@ export async function setDmPasswordHash(hash) {
       .insert({ name: 'dm_password', role: '_config', description: hash });
     if (error) throw new Error(error.message);
   }
-}
-
-// Delete a gear item from the library by id.
-export async function deleteGearFromLibrary(id) {
-  if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('gear_library').delete().eq('id', id);
-  if (error) throw new Error(error.message);
 }
