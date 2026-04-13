@@ -702,6 +702,166 @@ var STARTER_KITS={
   ],
 };
 var KIT_LABELS={traveler:"Traveler",scholar:"Scholar",dungeoneer:"Dungeoneer"};
+
+// ======== PHB EQUIPMENT DATABASE ========
+// {name, category, cost, weight (lb per unit)}
+var PHB_EQUIPMENT=[
+  // ── Weapons ──────────────────────────────────────────────────────────────
+  {name:"Arquebus",category:"Weapons",cost:"500gp",weight:10},
+  {name:"Bardiche",category:"Weapons",cost:"7gp",weight:7},
+  {name:"Bastard Sword",category:"Weapons",cost:"25gp",weight:10},
+  {name:"Broad Sword",category:"Weapons",cost:"10gp",weight:7},
+  {name:"Club",category:"Weapons",cost:"5sp",weight:3},
+  {name:"Composite Long Bow",category:"Weapons",cost:"100gp",weight:3},
+  {name:"Composite Short Bow",category:"Weapons",cost:"75gp",weight:2},
+  {name:"Crossbow, Heavy",category:"Weapons",cost:"50gp",weight:14},
+  {name:"Crossbow, Light",category:"Weapons",cost:"35gp",weight:7},
+  {name:"Dagger",category:"Weapons",cost:"2gp",weight:1},
+  {name:"Dart",category:"Weapons",cost:"5sp",weight:0.5},
+  {name:"Footman's Flail",category:"Weapons",cost:"15gp",weight:15},
+  {name:"Footman's Mace",category:"Weapons",cost:"8gp",weight:10},
+  {name:"Footman's Pick",category:"Weapons",cost:"8gp",weight:6},
+  {name:"Glaive-Guisarme",category:"Weapons",cost:"10gp",weight:10},
+  {name:"Guisarme",category:"Weapons",cost:"5gp",weight:8},
+  {name:"Guisarme-Voulge",category:"Weapons",cost:"8gp",weight:15},
+  {name:"Halberd",category:"Weapons",cost:"10gp",weight:15},
+  {name:"Hand Axe",category:"Weapons",cost:"1gp",weight:5},
+  {name:"Harpoon",category:"Weapons",cost:"20gp",weight:6},
+  {name:"Horseman's Flail",category:"Weapons",cost:"8gp",weight:5},
+  {name:"Horseman's Mace",category:"Weapons",cost:"5gp",weight:6},
+  {name:"Horseman's Pick",category:"Weapons",cost:"5gp",weight:4},
+  {name:"Javelin",category:"Weapons",cost:"5sp",weight:2},
+  {name:"Khopesh",category:"Weapons",cost:"10gp",weight:7},
+  {name:"Knife",category:"Weapons",cost:"5sp",weight:0.5},
+  {name:"Lance, Heavy",category:"Weapons",cost:"15gp",weight:15},
+  {name:"Lance, Light",category:"Weapons",cost:"6gp",weight:5},
+  {name:"Lance, Medium",category:"Weapons",cost:"10gp",weight:10},
+  {name:"Long Bow",category:"Weapons",cost:"75gp",weight:3},
+  {name:"Long Sword",category:"Weapons",cost:"15gp",weight:4},
+  {name:"Lucern Hammer",category:"Weapons",cost:"7gp",weight:15},
+  {name:"Military Fork",category:"Weapons",cost:"5gp",weight:7},
+  {name:"Morning Star",category:"Weapons",cost:"10gp",weight:12},
+  {name:"Quarterstaff",category:"Weapons",cost:"5sp",weight:4},
+  {name:"Ranseur",category:"Weapons",cost:"4gp",weight:7},
+  {name:"Scimitar",category:"Weapons",cost:"15gp",weight:4},
+  {name:"Scourge",category:"Weapons",cost:"1gp",weight:2},
+  {name:"Short Bow",category:"Weapons",cost:"30gp",weight:2},
+  {name:"Short Sword",category:"Weapons",cost:"10gp",weight:3},
+  {name:"Sickle",category:"Weapons",cost:"6sp",weight:3},
+  {name:"Sling",category:"Weapons",cost:"5cp",weight:0},
+  {name:"Sling Bullet (10)",category:"Weapons",cost:"2sp",weight:5},
+  {name:"Spear",category:"Weapons",cost:"5sp",weight:5},
+  {name:"Spetum",category:"Weapons",cost:"5gp",weight:7},
+  {name:"Throwing Axe",category:"Weapons",cost:"1gp",weight:5},
+  {name:"Trident",category:"Weapons",cost:"15gp",weight:5},
+  {name:"Two-Handed Sword",category:"Weapons",cost:"50gp",weight:15},
+  {name:"Voulge",category:"Weapons",cost:"2gp",weight:12},
+  {name:"Warhammer",category:"Weapons",cost:"2gp",weight:10},
+  {name:"Whip",category:"Weapons",cost:"1gp",weight:2},
+  {name:"Arrow, Flight (12)",category:"Weapons",cost:"75sp",weight:1},
+  {name:"Arrow, Sheaf (12)",category:"Weapons",cost:"1gp",weight:1.5},
+  {name:"Bolt, Hand Quarrel (10)",category:"Weapons",cost:"1gp",weight:1},
+  // ── Armor ─────────────────────────────────────────────────────────────────
+  {name:"Padded Armor",category:"Armor",cost:"4gp",weight:10},
+  {name:"Leather Armor",category:"Armor",cost:"5gp",weight:15},
+  {name:"Studded Leather",category:"Armor",cost:"20gp",weight:25},
+  {name:"Hide Armor",category:"Armor",cost:"15gp",weight:30},
+  {name:"Brigandine",category:"Armor",cost:"120gp",weight:35},
+  {name:"Ring Mail",category:"Armor",cost:"100gp",weight:40},
+  {name:"Scale Mail",category:"Armor",cost:"120gp",weight:40},
+  {name:"Chain Mail",category:"Armor",cost:"75gp",weight:40},
+  {name:"Splint Mail",category:"Armor",cost:"80gp",weight:40},
+  {name:"Banded Mail",category:"Armor",cost:"200gp",weight:35},
+  {name:"Plate Mail",category:"Armor",cost:"400gp",weight:50},
+  {name:"Field Plate",category:"Armor",cost:"2000gp",weight:60},
+  {name:"Full Plate",category:"Armor",cost:"4000gp",weight:70},
+  {name:"Helm, Basinet",category:"Armor",cost:"8gp",weight:5},
+  {name:"Helm, Great",category:"Armor",cost:"30gp",weight:10},
+  {name:"Shield, Small",category:"Armor",cost:"3gp",weight:3},
+  {name:"Shield, Medium",category:"Armor",cost:"7gp",weight:10},
+  {name:"Shield, Body",category:"Armor",cost:"30gp",weight:15},
+  // ── Adventuring Gear ──────────────────────────────────────────────────────
+  {name:"Backpack",category:"Gear",cost:"2gp",weight:2},
+  {name:"Barrel, Small",category:"Gear",cost:"2gp",weight:30},
+  {name:"Bedroll",category:"Gear",cost:"1sp",weight:5},
+  {name:"Belt Pouch, Large",category:"Gear",cost:"1gp",weight:0},
+  {name:"Belt Pouch, Small",category:"Gear",cost:"7sp",weight:0},
+  {name:"Block and Tackle",category:"Gear",cost:"5gp",weight:5},
+  {name:"Candle",category:"Gear",cost:"1cp",weight:0},
+  {name:"Chain (per ft)",category:"Gear",cost:"4gp",weight:3},
+  {name:"Chest, Light",category:"Gear",cost:"2gp",weight:25},
+  {name:"Chest, Medium",category:"Gear",cost:"5gp",weight:50},
+  {name:"Crampons",category:"Gear",cost:"4gp",weight:2},
+  {name:"Crowbar",category:"Gear",cost:"2gp",weight:5},
+  {name:"Fishhook",category:"Gear",cost:"1sp",weight:0},
+  {name:"Fishing Net (10 ft sq)",category:"Gear",cost:"4gp",weight:5},
+  {name:"Flint and Steel",category:"Gear",cost:"1gp",weight:0},
+  {name:"Glass Bottle",category:"Gear",cost:"10gp",weight:1},
+  {name:"Grappling Hook",category:"Gear",cost:"8gp",weight:4},
+  {name:"Hammer, Small",category:"Gear",cost:"5sp",weight:2},
+  {name:"Holy Symbol, Wood",category:"Gear",cost:"1gp",weight:0},
+  {name:"Holy Symbol, Silver",category:"Gear",cost:"25gp",weight:0},
+  {name:"Holy Water (vial)",category:"Gear",cost:"25gp",weight:1},
+  {name:"Hourglass",category:"Gear",cost:"25gp",weight:1},
+  {name:"Iron Pot",category:"Gear",cost:"5sp",weight:10},
+  {name:"Iron Spike",category:"Gear",cost:"1sp",weight:0.5},
+  {name:"Ladder (10 ft)",category:"Gear",cost:"5gp",weight:20},
+  {name:"Lantern, Bullseye",category:"Gear",cost:"12gp",weight:3},
+  {name:"Lantern, Hooded",category:"Gear",cost:"7gp",weight:2},
+  {name:"Lock, Good",category:"Gear",cost:"100gp",weight:1},
+  {name:"Magnifying Glass",category:"Gear",cost:"100gp",weight:0},
+  {name:"Map/Scroll Case",category:"Gear",cost:"8sp",weight:0.5},
+  {name:"Merchant's Scale",category:"Gear",cost:"2gp",weight:1},
+  {name:"Mirror, Small Metal",category:"Gear",cost:"10gp",weight:0},
+  {name:"Oil, Flask",category:"Gear",cost:"2sp",weight:1},
+  {name:"Oil, Greek Fire",category:"Gear",cost:"10gp",weight:2},
+  {name:"Parchment (sheet)",category:"Gear",cost:"3sp",weight:0},
+  {name:"Paper (sheet)",category:"Gear",cost:"2sp",weight:0},
+  {name:"Piton",category:"Gear",cost:"3cp",weight:0.5},
+  {name:"Quill",category:"Gear",cost:"1cp",weight:0},
+  {name:"Quiver",category:"Gear",cost:"1gp",weight:1},
+  {name:"Rations, Iron (1 week)",category:"Gear",cost:"5gp",weight:5},
+  {name:"Rations, Standard (1 week)",category:"Gear",cost:"3gp",weight:10},
+  {name:"Rope, Hemp (50 ft)",category:"Gear",cost:"1gp",weight:20},
+  {name:"Rope, Silk (50 ft)",category:"Gear",cost:"10gp",weight:8},
+  {name:"Sack, Large",category:"Gear",cost:"2sp",weight:1},
+  {name:"Sack, Small",category:"Gear",cost:"5cp",weight:0},
+  {name:"Sealing Wax",category:"Gear",cost:"1gp",weight:1},
+  {name:"Signet Ring",category:"Gear",cost:"5gp",weight:0},
+  {name:"Tent, Large (10 persons)",category:"Gear",cost:"25gp",weight:20},
+  {name:"Tent, Small (1 person)",category:"Gear",cost:"5gp",weight:5},
+  {name:"Torch",category:"Gear",cost:"1cp",weight:1},
+  {name:"Waterskin",category:"Gear",cost:"1gp",weight:1},
+  {name:"Whetstone",category:"Gear",cost:"2cp",weight:1},
+  {name:"Winter Blanket",category:"Gear",cost:"5sp",weight:3},
+  {name:"Writing Ink (vial)",category:"Gear",cost:"8gp",weight:0},
+  // ── Clothing ──────────────────────────────────────────────────────────────
+  {name:"Belt",category:"Clothing",cost:"3sp",weight:1},
+  {name:"Boots, Hard",category:"Clothing",cost:"2gp",weight:5},
+  {name:"Boots, Soft",category:"Clothing",cost:"1gp",weight:3},
+  {name:"Cloak",category:"Clothing",cost:"1sp",weight:1},
+  {name:"Gloves",category:"Clothing",cost:"1gp",weight:0.5},
+  {name:"Hat",category:"Clothing",cost:"5sp",weight:0.5},
+  {name:"Robe",category:"Clothing",cost:"9sp",weight:2},
+  {name:"Shoes",category:"Clothing",cost:"1sp",weight:2},
+  {name:"Surcoat",category:"Clothing",cost:"2sp",weight:1},
+  {name:"Tabard",category:"Clothing",cost:"6sp",weight:1},
+  {name:"Tunic",category:"Clothing",cost:"8sp",weight:1},
+  // ── Food & Lodging ────────────────────────────────────────────────────────
+  {name:"Ale, Gallon",category:"Food",cost:"2sp",weight:8},
+  {name:"Bread, Loaf",category:"Food",cost:"2cp",weight:0.5},
+  {name:"Meat, Meal",category:"Food",cost:"3sp",weight:0.5},
+  {name:"Wine, Common (pitcher)",category:"Food",cost:"2cp",weight:3},
+  {name:"Wine, Fine (bottle)",category:"Food",cost:"10gp",weight:2},
+  // ── Tack & Transport ──────────────────────────────────────────────────────
+  {name:"Bit and Bridle",category:"Tack",cost:"15sp",weight:3},
+  {name:"Cart Harness",category:"Tack",cost:"2gp",weight:10},
+  {name:"Horseshoes & Shoeing",category:"Tack",cost:"10gp",weight:4},
+  {name:"Saddle, Riding",category:"Tack",cost:"10gp",weight:30},
+  {name:"Saddle, Pack",category:"Tack",cost:"5gp",weight:15},
+  {name:"Saddle Bags",category:"Tack",cost:"4gp",weight:8},
+  {name:"Saddle Blanket",category:"Tack",cost:"3sp",weight:3},
+];
 // Auto-pick kit by class group
 function defaultKitForClass(cls){
   var g=(CLASSES[cls]||{}).group;
@@ -751,6 +911,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _inventory=useState([]),inventory=_inventory[0],setInventory=_inventory[1];
   var _invSearch=useState(""),invSearch=_invSearch[0],setInvSearch=_invSearch[1];
   var _invForm=useState(null),invForm=_invForm[0],setInvForm=_invForm[1];
+  var _invBrowse=useState(false),invBrowse=_invBrowse[0],setInvBrowse=_invBrowse[1];
+  var _invBrowseQ=useState(""),invBrowseQ=_invBrowseQ[0],setInvBrowseQ=_invBrowseQ[1];
+  var _invBrowseCat=useState(""),invBrowseCat=_invBrowseCat[0],setInvBrowseCat=_invBrowseCat[1];
   var _suggestDone=useState(false),suggestDone=_suggestDone[0],setSuggestDone=_suggestDone[1];
   var _expandedSpell=useState(null),expandedSpell=_expandedSpell[0],setExpandedSpell=_expandedSpell[1];
   var _rolling=useState(false),isRolling=_rolling[0],setIsRolling=_rolling[1];
@@ -2530,24 +2693,83 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             });
           }
           var BLANK_INV={id:null,name:"",qty:1,weight:0,cost:"",notes:""};
+          var phbCats=["All"].concat(Array.from(new Set(PHB_EQUIPMENT.map(function(x){return x.category;}))));
+          var phbFiltered=PHB_EQUIPMENT.filter(function(x){
+            var catOk=!invBrowseCat||invBrowseCat==="All"||x.category===invBrowseCat;
+            var qOk=!invBrowseQ.trim()||x.name.toLowerCase().includes(invBrowseQ.toLowerCase());
+            return catOk&&qOk;
+          });
+          function addPhbItem(item){
+            var existing=inventory.find(function(x){return x.name===item.name;});
+            if(existing){
+              setInventory(function(prev){return prev.map(function(x){return x.id===existing.id?Object.assign({},x,{qty:x.qty+1}):x;});});
+            }else{
+              setInventory(function(prev){return prev.concat([{id:Date.now()+"_"+Math.random().toString(36).slice(2),name:item.name,qty:1,weight:item.weight,cost:item.cost,notes:""}]);});
+            }
+          }
           return <div>
             {/* Header */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px",flexWrap:"wrap",gap:"8px"}}>
               <Lbl dim={dim}>INVENTORY{inventory.length>0&&<span style={{color:"#666",fontWeight:"normal"}}> ({inventory.length} items · {totalWt.toFixed(1)} lb)</span>}</Lbl>
               <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
-                {Object.keys(KIT_LABELS).map(function(k){
-                  return <button key={k} onClick={function(){applyKit(k);}}
-                    style={{padding:"4px 10px",background:"#1a1a28",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
-                    + {KIT_LABELS[k]} Kit
-                  </button>;
-                })}
-                {!invForm&&<button onClick={function(){setInvForm(Object.assign({},BLANK_INV));}}
-                  style={{padding:"4px 12px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Add Item</button>}
+                <button onClick={function(){setInvBrowse(function(v){return !v;});setInvForm(null);}}
+                  style={{padding:"4px 12px",background:invBrowse?"#1a2a3a":"#1a1a28",color:invBrowse?"#80c0e0":"#80a0e0",border:"1px solid "+(invBrowse?"#2a4a6a":"#2a2a5a"),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
+                  {invBrowse?"✕ Close List":"📋 Equipment List"}
+                </button>
+                {!invBrowse&&!invForm&&<button onClick={function(){setInvForm(Object.assign({},BLANK_INV));}}
+                  style={{padding:"4px 12px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Custom Item</button>}
               </div>
             </div>
 
-            {/* Add / edit form */}
+            {/* PHB Equipment Browser */}
+            {invBrowse&&<div style={{background:"#0d0d18",border:"1px solid #2a2a4a",borderRadius:"6px",padding:"12px",marginBottom:"14px"}}>
+              <div style={{fontSize:"10px",color:"#80a0e0",fontFamily:"monospace",letterSpacing:"1px",marginBottom:"8px"}}>PHB EQUIPMENT — click any item to add it</div>
+              {/* Search + category filter */}
+              <div style={{display:"flex",gap:"6px",marginBottom:"8px",flexWrap:"wrap"}}>
+                <input value={invBrowseQ} onChange={function(e){setInvBrowseQ(e.target.value);}}
+                  placeholder="Search…" autoFocus
+                  style={{flex:1,minWidth:"120px",padding:"5px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",outline:"none"}}/>
+                <select value={invBrowseCat} onChange={function(e){setInvBrowseCat(e.target.value);}}
+                  style={Object.assign({},ss(brd,txt),{fontSize:"11px",padding:"4px 8px"})}>
+                  {phbCats.map(function(c){return <option key={c} value={c==="All"?"":c}>{c}</option>;})}
+                </select>
+              </div>
+              {/* Starter kit shortcuts */}
+              <div style={{display:"flex",gap:"5px",marginBottom:"10px",flexWrap:"wrap"}}>
+                <span style={{fontSize:"10px",color:dim,fontFamily:"monospace",alignSelf:"center"}}>Quick kits:</span>
+                {Object.keys(KIT_LABELS).map(function(k){
+                  return <button key={k} onClick={function(){applyKit(k);}}
+                    style={{padding:"3px 9px",background:"transparent",color:dim,border:"1px solid #2a2a3a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
+                    + {KIT_LABELS[k]}
+                  </button>;
+                })}
+              </div>
+              {/* Item rows */}
+              <div style={{maxHeight:"300px",overflowY:"auto",display:"flex",flexDirection:"column",gap:"2px"}}>
+                {phbFiltered.length===0&&<div style={{padding:"12px",textAlign:"center",color:dim,fontSize:"12px"}}>No items match.</div>}
+                {phbFiltered.map(function(item){
+                  var alreadyHave=inventory.find(function(x){return x.name===item.name;});
+                  return <div key={item.name} onClick={function(){addPhbItem(item);}}
+                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 8px",borderRadius:"4px",cursor:"pointer",background:alreadyHave?"#0d1a0d":"transparent",border:"1px solid "+(alreadyHave?"#1a3a1a":"transparent")}}
+                    onMouseEnter={function(e){if(!alreadyHave)e.currentTarget.style.background="#12121e";}}
+                    onMouseLeave={function(e){e.currentTarget.style.background=alreadyHave?"#0d1a0d":"transparent";}}>
+                    <div style={{display:"flex",gap:"8px",alignItems:"baseline",flex:1,minWidth:0}}>
+                      <span style={{fontSize:"12px",color:alreadyHave?"#7db87d":txt}}>{item.name}</span>
+                      <span style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>{item.category}</span>
+                    </div>
+                    <div style={{display:"flex",gap:"10px",alignItems:"center",flexShrink:0}}>
+                      {item.cost&&<span style={{fontSize:"10px",color:"#e0c080",fontFamily:"monospace"}}>{item.cost}</span>}
+                      {item.weight>0&&<span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{item.weight} lb</span>}
+                      <span style={{fontSize:"12px",color:alreadyHave?"#7db87d":"#555",fontFamily:"monospace"}}>{alreadyHave?"✓ ×"+alreadyHave.qty:"+"}</span>
+                    </div>
+                  </div>;
+                })}
+              </div>
+            </div>}
+
+            {/* Custom add / edit form */}
             {invForm&&<div style={{background:surf,border:"1px solid #2a2a4a",borderRadius:"6px",padding:"14px",marginBottom:"14px"}}>
+              <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",marginBottom:"8px"}}>{invForm.id?"EDIT ITEM":"CUSTOM ITEM"}</div>
               <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:"8px",marginBottom:"8px"}}>
                 <div>
                   <Lbl dim={dim}>Item Name</Lbl>
@@ -2583,13 +2805,13 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               </div>
             </div>}
 
-            {/* Search */}
+            {/* Inventory search */}
             {inventory.length>4&&<input value={invSearch} onChange={function(e){setInvSearch(e.target.value);}}
               placeholder="Search inventory…"
               style={{width:"100%",boxSizing:"border-box",padding:"6px 10px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"10px"}}/>}
 
-            {/* Item list */}
-            {inventory.length===0&&<div style={{padding:"24px",textAlign:"center",color:dim,fontSize:"12px"}}>No items yet. Add one or apply a starter kit above.</div>}
+            {/* Inventory list */}
+            {inventory.length===0&&!invBrowse&&<div style={{padding:"24px",textAlign:"center",color:dim,fontSize:"12px"}}>No items yet — open the Equipment List to browse PHB gear, or add a Custom Item.</div>}
             <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
               {filteredInv.map(function(it){
                 return <div key={it.id} style={{background:surf,border:"1px solid "+brd,borderRadius:"5px",padding:"8px 12px",display:"flex",alignItems:"center",gap:"10px"}}>
@@ -2603,7 +2825,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     {it.notes&&<div style={{fontSize:"10px",color:dim,marginTop:"2px",fontStyle:"italic"}}>{it.notes}</div>}
                   </div>
                   <div style={{display:"flex",gap:"4px",flexShrink:0}}>
-                    <button onClick={function(){setInvForm(Object.assign({},it));}}
+                    <button onClick={function(){setInvForm(Object.assign({},it));setInvBrowse(false);}}
                       style={{padding:"3px 8px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Edit</button>
                     <button onClick={function(){delInvItem(it.id);}}
                       style={{padding:"3px 6px",background:"transparent",color:"#664444",border:"none",cursor:"pointer",fontSize:"14px"}}>×</button>
