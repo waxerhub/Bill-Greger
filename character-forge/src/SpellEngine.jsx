@@ -743,6 +743,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _acctChars=useState([]),acctChars=_acctChars[0],setAcctChars=_acctChars[1];
   var _acctLoading=useState(false),acctLoading=_acctLoading[0],setAcctLoading=_acctLoading[1];
   var _acctStatus=useState(""),acctStatus=_acctStatus[0],setAcctStatus=_acctStatus[1];
+  var _acctSearch=useState(""),acctSearch=_acctSearch[0],setAcctSearch=_acctSearch[1];
 
   // Auto-save to localStorage on every change
   useEffect(function(){
@@ -1255,9 +1256,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       setCloudId(rec.id);
       setCloudStatus("Saved ✓");
       setTimeout(function(){setCloudStatus("");},2500);
-      // Refresh list in background
       refreshAcctChars();
     }catch(err){setCloudStatus("Error: "+err.message);}
+  }
+  async function cloneCurrentChar(){
+    if(!authUser){setAcctOpen(true);return;}
+    setAcctStatus("Cloning…");
+    try{
+      var snap=getCharacterSnapshot();
+      snap.charName=(snap.charName||"Unnamed")+" (Copy)";
+      var rec=await supabaseSave(snap); // no existingId → always inserts new
+      setCloudId(rec.id);
+      setCharName(snap.charName);
+      setAcctStatus("Cloned ✓");
+      setTimeout(function(){setAcctStatus("");},2500);
+      refreshAcctChars();
+    }catch(err){setAcctStatus("Error: "+err.message);}
   }
   async function loadAcctChar(id){
     setAcctOpen(false);setCloudStatus("Loading…");
@@ -1349,27 +1363,37 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           ):(
             /* ── Signed-in: character list ── */
             <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
                 <div style={{fontSize:"11px",color:"#80c0e0",fontFamily:"monospace"}}>{authUser.email}</div>
                 <button onClick={doSignOut} style={{padding:"3px 10px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Sign Out</button>
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px"}}>SAVED CHARACTERS</div>
-                <button onClick={cloudSave} style={{padding:"3px 10px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>☁ Save Current</button>
+              <div style={{display:"flex",gap:"6px",marginBottom:"10px"}}>
+                <button onClick={cloudSave} style={{padding:"4px 10px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>☁ Save Current</button>
+                <button onClick={cloneCurrentChar} title="Save a copy of the current character as a new entry" style={{padding:"4px 10px",background:"#1a1a2a",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>⎘ Clone</button>
               </div>
               {acctStatus&&<div style={{fontSize:"11px",color:acctStatus.startsWith("Error")?"#e08080":"#7db87d",fontFamily:"monospace",marginBottom:"8px"}}>{acctStatus}</div>}
+              <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>SAVED CHARACTERS{acctChars.length>0&&<span style={{color:"#555",fontWeight:"normal",letterSpacing:0}}> ({acctChars.length})</span>}</div>
+              {acctChars.length>4&&<input value={acctSearch} onChange={function(e){setAcctSearch(e.target.value);}}
+                placeholder="Filter characters…"
+                style={{width:"100%",boxSizing:"border-box",padding:"6px 9px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>}
               {acctLoading&&<div style={{padding:"16px",textAlign:"center",color:dim,fontSize:"12px",fontFamily:"monospace"}}>Loading…</div>}
               {!acctLoading&&acctChars.length===0&&<div style={{padding:"16px",textAlign:"center",color:dim,fontSize:"12px"}}>No saved characters yet. Hit ☁ Save to save this one.</div>}
-              {!acctLoading&&acctChars.map(function(c){
-                return <div key={c.id} onClick={function(){loadAcctChar(c.id);}}
-                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",marginBottom:"6px",background:surf,border:"1px solid "+(cloudId===c.id?"#3a5a3a":brd),borderRadius:"4px",cursor:"pointer"}}>
-                  <div>
-                    <div style={{fontSize:"13px",color:txt}}>{c.name||"Unnamed"}{cloudId===c.id&&<span style={{fontSize:"9px",color:"#7db87d",fontFamily:"monospace",marginLeft:"6px"}}>current</span>}</div>
-                    <div style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{new Date(c.updated_at).toLocaleString()}</div>
-                  </div>
-                  <button onClick={function(e){deleteAcctChar(c.id,e);}} style={{background:"transparent",border:"none",color:"#664444",cursor:"pointer",fontSize:"16px",padding:"0 4px"}}>×</button>
-                </div>;
-              })}
+              <div style={{maxHeight:"300px",overflowY:"auto"}}>
+                {!acctLoading&&acctChars.filter(function(c){
+                  return !acctSearch.trim()||(c.name||"").toLowerCase().includes(acctSearch.toLowerCase());
+                }).map(function(c){
+                  return <div key={c.id} onClick={function(){loadAcctChar(c.id);}}
+                    style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",marginBottom:"6px",background:surf,border:"1px solid "+(cloudId===c.id?"#3a5a3a":brd),borderRadius:"4px",cursor:"pointer"}}>
+                    <div>
+                      <div style={{fontSize:"13px",color:txt}}>{c.name||"Unnamed"}{cloudId===c.id&&<span style={{fontSize:"9px",color:"#7db87d",fontFamily:"monospace",marginLeft:"6px"}}>current</span>}</div>
+                      <div style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>{new Date(c.updated_at).toLocaleString()}</div>
+                    </div>
+                    <button onClick={function(e){deleteAcctChar(c.id,e);}} style={{background:"transparent",border:"none",color:"#664444",cursor:"pointer",fontSize:"16px",padding:"0 4px"}}>×</button>
+                  </div>;
+                })}
+                {!acctLoading&&acctSearch.trim()&&acctChars.filter(function(c){return(c.name||"").toLowerCase().includes(acctSearch.toLowerCase());}).length===0&&
+                  <div style={{padding:"12px",textAlign:"center",color:dim,fontSize:"12px"}}>No characters match "{acctSearch}".</div>}
+              </div>
             </div>
           )}
         </div>
