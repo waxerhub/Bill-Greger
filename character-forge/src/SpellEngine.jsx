@@ -929,6 +929,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _iCat=useState(""),itemCat=_iCat[0],setItemCat=_iCat[1];
   var _iUsable=useState(""),itemUsable=_iUsable[0],setItemUsable=_iUsable[1];
   var _iExpanded=useState(null),expandedItem=_iExpanded[0],setExpandedItem=_iExpanded[1];
+  var _itemsSub=useState("tome"),itemsSub=_itemsSub[0],setItemsSub=_itemsSub[1];
   // Gear (custom items) state
   var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
@@ -1541,7 +1542,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
   // Styles
   var g="#c9a84c",bg="#08080d",surf="#111118",brd="#1e1e2e",dim="#666050",txt="#ccc8b8";
-  var tabs=["stats","combat","spells","✦ CP","sheet","notes","inv","items","gear","✦ AI"];
+  var tabs=["stats","combat","spells","✦ CP","sheet","notes","inv","items","✦ AI"];
 
   return (
     <div style={{minHeight:"100vh",background:bg,color:txt,fontFamily:"Georgia,serif",display:"flex",flexDirection:"column"}}>
@@ -2206,7 +2207,18 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             return true;
           });
           return <div>
-            <Lbl dim={dim}>TOME OF MAGIC — MAGIC ITEMS <span style={{color:"#666",fontWeight:"normal"}}>({allItems.length} items)</span></Lbl>
+            {/* Sub-tab bar */}
+            <div style={{display:"flex",gap:"6px",marginBottom:"16px",borderBottom:"1px solid "+brd,paddingBottom:"10px"}}>
+              {[["tome","📖 Tome of Magic"],["custom","⚔ Custom Magic Items"]].map(function(pair){
+                return <button key={pair[0]} onClick={function(){setItemsSub(pair[0]);}}
+                  style={{padding:"5px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",letterSpacing:"1px",background:itemsSub===pair[0]?"#1a1a30":"transparent",color:itemsSub===pair[0]?g:dim,border:itemsSub===pair[0]?"1px solid #2a2a4a":"1px solid transparent"}}>
+                  {pair[1]}
+                </button>;
+              })}
+            </div>
+
+            {itemsSub==="tome"&&<div>
+            <Lbl dim={dim}>MAGIC ITEM COMPENDIUM <span style={{color:"#666",fontWeight:"normal"}}>({allItems.length} items)</span></Lbl>
             {/* Filters */}
             <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"14px",alignItems:"center"}}>
               <input value={itemSearch} onChange={function(e){setItemSearch(e.target.value);}} placeholder="Search items…"
@@ -2251,11 +2263,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 </div>;
               })}
             </div>
-          </div>;
-        })()}
+            </div>}
 
-        {/* ═══ GEAR TAB ═══ */}
-        {tab==="gear"&&(function(){
+            {itemsSub==="custom"&&(function(){
           var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor/Shield","Wand/Staff/Rod","Misc"];
           var EFFECT_LABELS={str:"STR",dex:"DEX",con:"CON",int:"INT",wis:"WIS",cha:"CHA",ac:"AC bonus",thac0:"THAC0 bonus",dmg:"Damage bonus",saves:"Saves bonus",hp:"HP bonus"};
           var EFFECT_COLORS={str:"#e08080",dex:"#80e0a0",con:"#e0a060",int:"#80c0e0",wis:"#c080e0",cha:"#e0c080",ac:"#80a0e0",thac0:"#e0c080",dmg:"#e09060",saves:"#a0e0a0",hp:"#e08080"};
@@ -2660,6 +2670,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 </div>;
               })}
             </div>
+          </div>;
+        })()}
           </div>;
         })()}
 
