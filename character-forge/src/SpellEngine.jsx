@@ -1047,6 +1047,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
+    setCloudId(null);
   }
 
   function exportPDF() {
