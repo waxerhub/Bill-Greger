@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { exportCharacterSheet } from "./exportPDF.js";
 import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter, generateMagicItem } from "./claudeAI.js";
-import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary } from "./supabase.js";
+import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, addMyId, removeMyId, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash } from "./supabase.js";
 
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
@@ -709,6 +709,14 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _gearLibLoading=useState(false),gearLibLoading=_gearLibLoading[0],setGearLibLoading=_gearLibLoading[1];
   var _gearLibRole=useState(""),gearLibRole=_gearLibRole[0],setGearLibRole=_gearLibRole[1];
   var _gearLibStatus=useState(""),gearLibStatus=_gearLibStatus[0],setGearLibStatus=_gearLibStatus[1];
+  // DM password gate
+  var _dmPwVerified=useState(false),dmPwVerified=_dmPwVerified[0],setDmPwVerified=_dmPwVerified[1];
+  var _dmPwInput=useState(""),dmPwInput=_dmPwInput[0],setDmPwInput=_dmPwInput[1];
+  var _dmPwConfirm=useState(""),dmPwConfirm=_dmPwConfirm[0],setDmPwConfirm=_dmPwConfirm[1];
+  var _dmPwError=useState(""),dmPwError=_dmPwError[0],setDmPwError=_dmPwError[1];
+  var _dmPwLoading=useState(false),dmPwLoading=_dmPwLoading[0],setDmPwLoading=_dmPwLoading[1];
+  var _dmPwHashExists=useState(null),dmPwHashExists=_dmPwHashExists[0],setDmPwHashExists=_dmPwHashExists[1];
+  var _dmChangePw=useState(false),dmChangePw=_dmChangePw[0],setDmChangePw=_dmChangePw[1];
   // CP state
   var _cpBudget=useState(120),cpBudget=_cpBudget[0],setCpBudget=_cpBudget[1];
   var _cpMajor=useState([]),cpMajor=_cpMajor[0],setCpMajor=_cpMajor[1];
@@ -1925,17 +1933,77 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             setGearAiLoading(false);
           }
 
+          async function sha256hex(str){
+            var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+          }
+          async function loadDmItems(){
+            setGearLibLoading(true);
+            try{var items=await listGearLibrary("dm");setGearLibItems(items||[]);}
+            catch(e){setGearLibStatus("Error: "+e.message);}
+            setGearLibLoading(false);
+          }
           async function openLibrary(){
             setGearLibOpen(true);setGearLibLoading(true);setGearLibStatus("");
-            try{var items=await listGearLibrary(gearLibRole);setGearLibItems(items||[]);}
+            try{var items=await listGearLibrary(gearLibRole==="dm"&&!dmPwVerified?"":gearLibRole);setGearLibItems(items||[]);}
             catch(e){setGearLibStatus("Error: "+e.message);}
             setGearLibLoading(false);
           }
           async function fetchLibrary(role){
-            setGearLibRole(role);setGearLibLoading(true);setGearLibStatus("");
+            setGearLibRole(role);setGearLibStatus("");setDmPwError("");
+            if(role==="dm"&&!dmPwVerified){
+              // Check whether a DM password has been set
+              setDmPwLoading(true);
+              try{var h=await getDmPasswordHash();setDmPwHashExists(h!==null);}
+              catch(e){setGearLibStatus("Error: "+e.message);}
+              setDmPwLoading(false);
+              setGearLibItems([]);
+              return;
+            }
+            setGearLibLoading(true);
             try{var items=await listGearLibrary(role);setGearLibItems(items||[]);}
             catch(e){setGearLibStatus("Error: "+e.message);}
             setGearLibLoading(false);
+          }
+          async function verifyDmPassword(){
+            if(!dmPwInput.trim())return;
+            setDmPwLoading(true);setDmPwError("");
+            try{
+              var stored=await getDmPasswordHash();
+              var entered=await sha256hex(dmPwInput);
+              if(entered===stored){
+                setDmPwVerified(true);setDmPwInput("");
+                await loadDmItems();
+              }else{
+                setDmPwError("Incorrect password.");
+              }
+            }catch(e){setDmPwError(e.message);}
+            setDmPwLoading(false);
+          }
+          async function saveDmPassword(){
+            if(!dmPwInput.trim()){setDmPwError("Password cannot be empty.");return;}
+            if(dmPwInput!==dmPwConfirm){setDmPwError("Passwords do not match.");return;}
+            setDmPwLoading(true);setDmPwError("");
+            try{
+              var hash=await sha256hex(dmPwInput);
+              await setDmPasswordHash(hash);
+              setDmPwHashExists(true);setDmPwVerified(true);
+              setDmPwInput("");setDmPwConfirm("");setDmChangePw(false);
+              setGearLibStatus("DM password set \u2713");
+              setTimeout(function(){setGearLibStatus("");},3000);
+              await loadDmItems();
+            }catch(e){setDmPwError(e.message);}
+            setDmPwLoading(false);
+          }
+          async function removeDmPassword(){
+            setDmPwLoading(true);setDmPwError("");
+            try{
+              await setDmPasswordHash(null);
+              setDmPwHashExists(false);setDmChangePw(false);
+              setGearLibStatus("DM password removed \u2713");
+              setTimeout(function(){setGearLibStatus("");},3000);
+            }catch(e){setDmPwError(e.message);}
+            setDmPwLoading(false);
           }
           async function saveToLibrary(item,role){
             setGearLibStatus("Saving…");
@@ -1984,34 +2052,89 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   })}
                 </div>
                 {gearLibStatus&&<div style={{fontSize:"11px",color:gearLibStatus.startsWith("Error")?"#e08080":"#7db87d",fontFamily:"monospace",marginBottom:"8px"}}>{gearLibStatus}</div>}
-                <div style={{overflowY:"auto",flex:1}}>
-                  {gearLibLoading&&<div style={{padding:"20px",textAlign:"center",color:dim,fontFamily:"monospace",fontSize:"12px"}}>Loading…</div>}
-                  {!gearLibLoading&&gearLibItems.length===0&&<div style={{padding:"20px",textAlign:"center",color:dim,fontSize:"12px"}}>No items in this library yet.</div>}
-                  {!gearLibLoading&&gearLibItems.map(function(it){
-                    var bonuses=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];});
-                    var libBdl=bonusDmgLabel(it);
-                    return <div key={it.id} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"10px 12px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}}>
-                          <span style={{fontSize:"13px",color:txt,fontWeight:"bold"}}>{it.name}</span>
-                          <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{it.type}</span>
-                          <span style={{fontSize:"9px",color:it.role==="dm"?"#e0c080":"#80c0e0",fontFamily:"monospace"}}>{it.role==="dm"?"DM":"Player"}</span>
+
+                {/* DM password gate */}
+                {gearLibRole==="dm"&&!dmPwVerified?(
+                  <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 10px"}}>
+                    <div style={{color:"#e0c080",fontSize:"14px",fontVariant:"small-caps",letterSpacing:"1px",marginBottom:"4px"}}>
+                      {dmPwHashExists===false?"Secure DM Library":"DM Library"}
+                    </div>
+                    <div style={{color:dim,fontSize:"11px",marginBottom:"20px",textAlign:"center"}}>
+                      {dmPwHashExists===false
+                        ?"No password set. Create one to prevent players from viewing DM items."
+                        :"Enter the DM password to access this library."}
+                    </div>
+                    {dmPwLoading&&dmPwHashExists===null
+                      ?<div style={{color:dim,fontFamily:"monospace",fontSize:"12px"}}>Checking…</div>
+                      :<div style={{width:"100%",maxWidth:"300px"}}>
+                        <input type="password" value={dmPwInput} onChange={function(e){setDmPwInput(e.target.value);setDmPwError("");}}
+                          onKeyDown={function(e){if(e.key==="Enter")dmPwHashExists===false?saveDmPassword():verifyDmPassword();}}
+                          placeholder="Password"
+                          style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"6px"}}/>
+                        {dmPwHashExists===false&&<input type="password" value={dmPwConfirm} onChange={function(e){setDmPwConfirm(e.target.value);setDmPwError("");}}
+                          onKeyDown={function(e){if(e.key==="Enter")saveDmPassword();}}
+                          placeholder="Confirm password"
+                          style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"6px"}}/>}
+                        {dmPwError&&<div style={{fontSize:"11px",color:"#e08080",fontFamily:"monospace",marginBottom:"6px"}}>{dmPwError}</div>}
+                        <button onClick={dmPwHashExists===false?saveDmPassword:verifyDmPassword}
+                          disabled={dmPwLoading||!dmPwInput.trim()}
+                          style={{width:"100%",padding:"8px",background:dmPwLoading||!dmPwInput.trim()?"#1a1a28":"#1e1a2e",color:dmPwLoading||!dmPwInput.trim()?dim:"#e0c080",border:"1px solid "+(dmPwLoading||!dmPwInput.trim()?brd:"#4a3a0a"),borderRadius:"4px",cursor:dmPwLoading||!dmPwInput.trim()?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"12px"}}>
+                          {dmPwLoading?"Working…":dmPwHashExists===false?"Set DM Password":"Unlock"}
+                        </button>
+                      </div>
+                    }
+                  </div>
+                ):(
+                  <div style={{overflowY:"auto",flex:1}}>
+                    {/* Verified DM toolbar */}
+                    {gearLibRole==="dm"&&dmPwVerified&&<div style={{marginBottom:"10px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px"}}>
+                      <span style={{fontSize:"10px",color:"#e0c080",fontFamily:"monospace"}}>🔓 DM Access</span>
+                      {!dmChangePw
+                        ?<button onClick={function(){setDmChangePw(true);setDmPwInput("");setDmPwConfirm("");setDmPwError("");}}
+                            style={{padding:"2px 10px",background:"transparent",color:dim,border:"1px solid #2a2a3a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Change Password</button>
+                        :<div style={{display:"flex",gap:"4px",alignItems:"center",flexWrap:"wrap"}}>
+                            <input type="password" value={dmPwInput} onChange={function(e){setDmPwInput(e.target.value);setDmPwError("");}}
+                              placeholder="New password" style={{padding:"3px 7px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",width:"120px"}}/>
+                            <input type="password" value={dmPwConfirm} onChange={function(e){setDmPwConfirm(e.target.value);setDmPwError("");}}
+                              placeholder="Confirm" style={{padding:"3px 7px",background:"#0a0a12",border:"1px solid "+(dmPwError?"#e08080":brd),borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",width:"100px"}}/>
+                            <button onClick={saveDmPassword} disabled={dmPwLoading}
+                              style={{padding:"3px 8px",background:"#1e1a2e",color:"#e0c080",border:"1px solid #4a3a0a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Save</button>
+                            <button onClick={removeDmPassword} disabled={dmPwLoading}
+                              style={{padding:"3px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Remove</button>
+                            <button onClick={function(){setDmChangePw(false);setDmPwInput("");setDmPwConfirm("");setDmPwError("");}}
+                              style={{padding:"3px 6px",background:"transparent",color:dim,border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"12px"}}>✕</button>
+                            {dmPwError&&<div style={{fontSize:"10px",color:"#e08080",fontFamily:"monospace",width:"100%"}}>{dmPwError}</div>}
+                          </div>
+                      }
+                    </div>}
+                    {gearLibLoading&&<div style={{padding:"20px",textAlign:"center",color:dim,fontFamily:"monospace",fontSize:"12px"}}>Loading…</div>}
+                    {!gearLibLoading&&gearLibItems.length===0&&<div style={{padding:"20px",textAlign:"center",color:dim,fontSize:"12px"}}>No items in this library yet.</div>}
+                    {!gearLibLoading&&gearLibItems.map(function(it){
+                      var bonuses=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];});
+                      var libBdl=bonusDmgLabel(it);
+                      return <div key={it.id} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"10px 12px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}}>
+                            <span style={{fontSize:"13px",color:txt,fontWeight:"bold"}}>{it.name}</span>
+                            <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{it.type}</span>
+                            <span style={{fontSize:"9px",color:it.role==="dm"?"#e0c080":"#80c0e0",fontFamily:"monospace"}}>{it.role==="dm"?"DM":"Player"}</span>
+                          </div>
+                          {(bonuses.length>0||libBdl)&&<div style={{display:"flex",flexWrap:"wrap",gap:"3px",marginTop:"4px"}}>
+                            {bonuses.map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;})}
+                            {libBdl&&<span style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[it.effects.bonusDmgType]||"#e0c080",background:"#0a0a12",border:"1px solid #2a1a0a",borderRadius:"3px",padding:"1px 5px"}}>+{libBdl}</span>}
+                          </div>}
+                          {it.description&&<div style={{fontSize:"10px",color:dim,marginTop:"3px",fontStyle:"italic"}}>{it.description.slice(0,100)}{it.description.length>100?"…":""}</div>}
                         </div>
-                        {(bonuses.length>0||libBdl)&&<div style={{display:"flex",flexWrap:"wrap",gap:"3px",marginTop:"4px"}}>
-                          {bonuses.map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;})}
-                          {libBdl&&<span style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[it.effects.bonusDmgType]||"#e0c080",background:"#0a0a12",border:"1px solid #2a1a0a",borderRadius:"3px",padding:"1px 5px"}}>+{libBdl}</span>}
-                        </div>}
-                        {it.description&&<div style={{fontSize:"10px",color:dim,marginTop:"3px",fontStyle:"italic"}}>{it.description.slice(0,100)}{it.description.length>100?"…":""}</div>}
-                      </div>
-                      <div style={{display:"flex",gap:"4px",flexShrink:0}}>
-                        <button onClick={function(){importFromLibrary(it);}}
-                          style={{padding:"3px 10px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Add</button>
-                        <button onClick={function(){removeFromLibrary(it.id);}}
-                          style={{padding:"3px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
-                      </div>
-                    </div>;
-                  })}
-                </div>
+                        <div style={{display:"flex",gap:"4px",flexShrink:0}}>
+                          <button onClick={function(){importFromLibrary(it);}}
+                            style={{padding:"3px 10px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Add</button>
+                          <button onClick={function(){removeFromLibrary(it.id);}}
+                            style={{padding:"3px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
+                        </div>
+                      </div>;
+                    })}
+                  </div>
+                )}
               </div>
             </div>}
 

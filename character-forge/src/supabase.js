@@ -137,6 +137,7 @@ export async function saveGearToLibrary(item, role) {
 }
 
 // List all gear items, optionally filtered by role ('dm', 'player', or '' for all).
+// Always excludes internal _config rows.
 export async function listGearLibrary(role) {
   if (!supabase) throw new Error('Supabase not configured');
   let query = supabase
@@ -144,9 +145,37 @@ export async function listGearLibrary(role) {
     .select('*')
     .order('created_at', { ascending: false });
   if (role) query = query.eq('role', role);
+  else query = query.neq('role', '_config');
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data;
+}
+
+// ── DM Password (stored as a SHA-256 hex hash in a _config row) ──────────────
+
+// Returns the stored hash string, or null if no password has been set.
+export async function getDmPasswordHash() {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data } = await supabase
+    .from('gear_library')
+    .select('description')
+    .eq('role', '_config')
+    .eq('name', 'dm_password')
+    .maybeSingle();
+  return data ? data.description : null;
+}
+
+// Stores (or replaces) the DM password hash. Pass null to remove the password.
+export async function setDmPasswordHash(hash) {
+  if (!supabase) throw new Error('Supabase not configured');
+  // Remove any existing config row first
+  await supabase.from('gear_library').delete()
+    .eq('role', '_config').eq('name', 'dm_password');
+  if (hash) {
+    const { error } = await supabase.from('gear_library')
+      .insert({ name: 'dm_password', role: '_config', description: hash });
+    if (error) throw new Error(error.message);
+  }
 }
 
 // Delete a gear item from the library by id.
