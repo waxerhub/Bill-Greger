@@ -2090,11 +2090,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           <div style={{marginBottom:"12px"}}>
             <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>ABILITY SCORES</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:"4px",textAlign:"center"}}>
-              {["Str","Dex","Con","Int","Wis","Cha"].map(function(a){var adj=raceData.adj[a]||0;var fin=stats[a]+adj;var buff=a==="Str"?buffStr:0;var disp=fin+buff;
-                return <div key={a} style={{border:"1px solid "+(buff>0?"#2a4a2a":"#333"),padding:"4px",borderRadius:"4px",background:buff>0?"#0a150a":"transparent"}}>
+              {["Str","Dex","Con","Int","Wis","Cha"].map(function(a){
+                var adj=raceData.adj[a]||0;
+                var base=stats[a]+adj;
+                var gearBonus=a==="Str"?gearStr:(adjStats[a]-base);
+                var spellBonus=a==="Str"?(buffStr+buffStrLvl):0;
+                var isBuffed=gearBonus>0||spellBonus>0;
+                var disp=a==="Str"?effStr:adjStats[a];
+                var pct=a==="Str"?(effStrPct>0?effStrPct:(exStr?strPct:0)):0;
+                return <div key={a} style={{border:"1px solid "+(isBuffed?"#2a4a2a":"#333"),padding:"4px",borderRadius:"4px",background:isBuffed?"#0a150a":"transparent"}}>
                   <div style={{fontSize:"9px",color:dim}}>{a.toUpperCase()}</div>
-                  <div style={{fontSize:"16px",color:buff>0?"#7db87d":g,fontWeight:"bold"}}>{disp}</div>
-                  {buff>0&&<div style={{fontSize:"8px",color:"#7db87d"}}>+{buff} spell</div>}
+                  <div style={{fontSize:"16px",color:isBuffed?"#7db87d":g,fontWeight:"bold"}}>
+                    {a==="Str"&&pct>0?"18/"+(pct===100?"00":String(pct).padStart(2,"0")):disp}
+                  </div>
+                  {gearBonus>0&&spellBonus>0&&<div style={{fontSize:"8px",color:"#7db87d"}}>+{gearBonus} gear +{spellBonus} spell</div>}
+                  {gearBonus>0&&spellBonus===0&&<div style={{fontSize:"8px",color:"#7db87d"}}>+{gearBonus} gear</div>}
+                  {spellBonus>0&&gearBonus===0&&<div style={{fontSize:"8px",color:"#7db87d"}}>+{spellBonus} spell</div>}
                   {adj!==0&&<div style={{fontSize:"8px",color:dim}}>({stats[a]}{adj>0?"+":""}{adj})</div>}
                 </div>;
               })}
