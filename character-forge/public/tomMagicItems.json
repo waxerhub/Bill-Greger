@@ -1,0 +1,913 @@
+[
+  {
+    "name": "Aroma of Dreams",
+    "category": "Potion/Oil",
+    "xpValue": 300,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "All creatures who come within 5' of the wearer of this oil are put to sleep. Potential victims are allowed a saving throw vs. spell. If successful, the victim suffers no effect and may remain near the wearer without need ot further saving throws. If the roil is failed, the creature slumps to the ground, the victim of a magical slumber that lasts ld4 +4 rounds. When an application of the oil is worn, the scent is potent for 3d4 rounds. After this time, the perfume evaporates and another dose must be applied if the wearer wishes to renew the effect."
+  },
+  {
+    "name": "Curdled Death",
+    "category": "Potion/Oil",
+    "xpValue": 750,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "Perhaps the most powerful of all aromatic oils, the smell of curdled death has the ability to slay all living creatures of 3 or fewer Hit Dice or experience levels who come within 5' of the wearer. Magical, undead, and extraplanar creatures are immune to this oil, as are all creatures of 4 or more Hit Dice or experience levels. Upon smelling the oil, potential victims are allowed a saving throw vs. spell. If successful, a creature suffers no effect and may remain near the wearer without need of further saving throws. Those who fail the save drop dead in their tracks. When a dose is worn, it remains potent enough to kill creatures for ld3 rounds."
+  },
+  {
+    "name": "Murdock's Insect Ward",
+    "category": "Potion/Oil",
+    "xpValue": 200,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This fragrance is a boon to travelers, since it repels insectoid creatures (both norma] and monstrous) that come within 5 feet of the wearer of this fragrance. Insectoid monsters with Intelligence scores of 5 or more are allowed a saving throw vs, spell. If successful, they suffer no effects and may remain near the wearer without need of further saving throws. If the save is failed, the creature cannot approach within 5 feet of the wearer, (Note that this still may be dose enough to cause harm.) One dose is effective for ld3 + 1 hours."
+  },
+  {
+    "name": "Oil of Elemental Plane Invulnerability",
+    "category": "Potion/Oil",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These precious oils provide total invulnerability against the elemental forces on one inner plane, as well as off ering the same protection as the oil of elemental invulnerability, Any character covered in the oil suffers no ill effects from the harsh environments of the elemental, para-elemental, and quasi- element a I planes. Attacks by elemental creatures are effective, but with a \u201c1 penalty per die of damage. A flask of oil contains enough oil to coat one man-sized creature six times or six individuals once. An application is effective for 24 hours. The protection the oil offers is determined randomly with two die rolls."
+  },
+  {
+    "name": "Oil of Preservation",
+    "category": "Potion/Oil",
+    "xpValue": 750,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "Any nonliving, non-magkal object may be coated with a layer of oil of preservation. If every surface of the object is covered, it will suffer no ill effects from the passage of time. Thus, wood will not rot, metal will not rusk and masonry will not crumble. The oil provides pro- Magical powders are usually stored in small paper packets, doth pouches, or hollow blow tubes made of glass, wood, metal, or bone, A packet or pouch can be shaken out to cover the area all around the user to a radius of 5 feet. This action lasts an entire round. Note that powders used in this manner can affect the user."
+  },
+  {
+    "name": "Potion of Elemental Control",
+    "category": "Potion/Oil",
+    "xpValue": 600,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When this potion is consumed, the imbiber can influence one or two elemental in a manner similar to a charm monster spell. The elemental must be within 60 feet of the imbiber and are allowed a saving throw vs. petrification to avoid the effect. If only one elemental is influenced, it is subject to a _ 4 penalty on its save. If two are influenced, their saving throws gain a +2 bonus because the effect of the potion is weakened, If either elemental is controlled by another wizard, it gains a +2 bonus to its saving throw. Note that if the elemental was summoned by the 5th- level conjure elemental spell, the summoner has a 50% chance of dispelling the creature. Control lasts for 5d6 rounds. I ."
+  },
+  {
+    "name": "Starella's Aphrodisiac",
+    "category": "Potion/Oil",
+    "xpValue": 250,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "Any creature of a similar race and opposite sex who approaches within 5 feet of the wearer becomes thoroughly enamored with the wearer as if under the effect of a powerful charm. Potential victims are allowed a saving throw vs. spell. If the roll is successful, the victim suffers no effects and may remain near the wearer without need of further saving throws. If the save is failed, the creature is charmed as long as he or she remains within 5f of the wearer (as long as the aphrodisiac is still potent) plus 2d4 turns outside that area. An affected creature regards the wearer as a trusted friend, ally, and romantic interest to be heeded and protected."
+  },
+  {
+    "name": "Ring of Affliction",
+    "category": "Ring",
+    "xpValue": 0,
+    "cursed": true,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When an identify spell is used on this cursed ring, it will appear to be a ring of resistance . The ring will function as such until the wearer makes a saving throw to any school in opposition to the school represented by the ring. The school of magic represented can be determined by rolling ld8 on the table below. D6 Roll Represented School 1 Abjuration 2 Alteration 3 Conjuration/Summoning 4 Enchantment/ Charm 5 Illusion/Phantasm 6 Invocation/Evocarion 7 Lesser/Greater Divination 8 Necromancy The first time the wearer of a ring of affliction makes a saving throw against any school in opposition to the school of the ring worn, the ring of afflictions true properties are revealed."
+  },
+  {
+    "name": "Ring of Armoring",
+    "category": "Ring",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "A wizard wearing this ring gains an additional + 1 bonus to any AC bonus he receives trom casting a spell upon himself. Thus, an armor spell grants the wizard AC 5 instead of AC 6, and a shield spell grants the wizard AC 1 versus hand-hurled missiles instead of AC 2. Restrictions that apply to a spell (for example, armor does not affect a character already wearing armor) are in no way altered through use of this ring."
+  },
+  {
+    "name": "Ring of Bureaucratic Wizardry",
+    "category": "Ring",
+    "xpValue": 0,
+    "cursed": true,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This cursed ring is indistinguishable from a ring of wizardry , but has one important difference. When a wizard casts any spell while wearing the ring, a sheaf of papers and a quill pen suddenly appear in his hand. The papers are forms that must be filled out in triplicate explaining the effects of the spell, why the wizard wishes to cast it, whether it is for business or pleasure, and so on. The forms must be filled out before the effects of the spell will occur, The higher the level of the spell cast, the more complicated the forms become, Filling out the forms requires one round per level of spell."
+  },
+  {
+    "name": "Ring of Elemental Metamorphosis",
+    "category": "Ring",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "There are four types of these rings, each corresponding to one of the four elements. When one of these rings is discovered, the type is determined randomly D4 Roll Element 1 Air 2 Earth 3 Fire 4 Water Each of these rings has the power to polymorph the wearer into an elemental of the appropriate type. When the transformation occurs, the subject's equipment is absorbed into his new form. The affected character retains his mental abilities, but cannot cast spells. Characters who are not accustomed to the new form suffer a ~2 penalty on attack rolls until they successfully strike an opponent in two consecutive combat rounds. After this occurs, it Is assumed they have mastered their new shape."
+  },
+  {
+    "name": "Ring of Fortitude",
+    "category": "Ring",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When worn, the ring of fortitude grants the wearer a bonus of +4 to one randomly selected ability score (roll ld!2: 1-6 = Dexterity 7-11 = Wisdom, 12 = Constitution) for the purposes of spell resolution only. It does not affect ability checks or other aspects of ability scores, except those as a direct result of spells or spell-like abilities. For example, a character with a natural Constitution of 14 would have an enhanced score of IS while wearing such a ring. He does not gain any extra hit points from wearing it, but his system shock for resolving the polymorph other spell is increased to 99%."
+  },
+  {
+    "name": "Ring of Randomness",
+    "category": "Ring",
+    "xpValue": 0,
+    "cursed": true,
+    "usableBy": [
+      "Priest"
+    ],
+    "description": "When an identify spell is cast on this cursed clerical ring, it radiates the aura of a beneficial ring to disguise its nature. The DM should roll IdlOO to determine the ring's power. D100 Roll Power 01-25 protection from evil 26-40 continual light 41-60 bless 61-70 cure light wounds 71-30 remove fear 81-90 heat metal 91-100 cure blindness or deafness A ring can be used three times per day at the 12th level of ability. Each ring functions normally half the time, providing the indicated power. However, the ring's curse causes the reverse of the desired effect to manifest 50% of the time."
+  },
+  {
+    "name": "Ring of Resistance",
+    "category": "Ring",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This ring grants a wizard a saving throw bonus identical to the bonus gained by a specialist in a particular school of magic. The magical school affected is randomly determined on the table below by rolling IdS. D 8 Roll Affected School 1 Abjuration 2 Alteration 3 Conjuration/Summoning 4 Enchantment /Charm 5 Ill usion / Phan tasm 6 Invocation/Evocation 7 Lesser /Greater Divination 8 Necromancy When required to save against a spell from that school, the wearer gains a + 1 bonus to his saving throw. When the wearer casts a spell from that school, his opponent suffers a -1 modifier to all saving throws, This ring does not allow a wizard to cast spells from a school in opposition to his own."
+  },
+  {
+    "name": "Rod of Distortion",
+    "category": "Rod/Staff/Wand",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This unpredictable device is capable of affecting the operation of all rods, staves, and wands within a 20-foot radius for a single round. The wielder rolls ld20. On a roll of 1-15, the rod of distortion does not influence other items. On a roll of 16-19, it acts as a wand of negation and rods, staves, and wands within 20 feet simply do not function during that round {but are otherwise unaffected). On a roll of 20, the rod of distortion completely disrupts the functioning of rods, staves, and wands. This distortion results in the backfiring of these devices, causing maximum damage to their users if the item is used during that round (e.g."
+  },
+  {
+    "name": "Staff of the Elements",
+    "category": "Rod/Staff/Wand",
+    "xpValue": 10000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This powerful item appears to be a staff +2. If it is grasped by an elementalist, however, its true powers become evident, A staff of the elements is charged by the life- force of an elemental trapped within it. The staff has charges equal to the number of Hit Dice of the elemental multiplied by 2. Thus, a staff holding a 12 HD elemental has 24 charges. Every time two charges are expended, the elemental loses one Hit Die. When all charges are used, the elemental dies and the staff becomes dormant. If a dormant staff is used to successfully strike an elemental, the creature must immediately attempt a saving throw vs. rods, staves, and wands."
+  },
+  {
+    "name": "Wand of Corridors",
+    "category": "Rod/Staff/Wand",
+    "xpValue": 4000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This wand allows its user to clear short corridors through the plane of elemental Earth and the quasi-elemental plane of Minerals* It does not function on any other plane, although it radiates magic. It is especially useful on the plane of minerals since travelers need not contact the sharp edges of the minerals* One charge clears a lG'xiO'xSO' path. The corridor is completed in 1 turn. The wand has no effect on animals or living creatures. Thus, if the wand clears a path through ar space occupied by an earth elemental the creature is unharmed, but is alerted to persons in the corridor The wand can be recharged."
+  },
+  {
+    "name": "Wand of Element Transmogrification",
+    "category": "Rod/Staff/Wand",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This wand changes a quantity of one element into an equal amount of another element (water into fire, earth into air, etc.)* The element to be affected must be within 60 feet of the wielder, who merely points the wand at the element and speaks the command word. For every 10 cubic feel (or portion thereof) transformed, one charge is drained from the wand. The transmogrification is permanent unless a successful dispel magic is cast on the element. Elements created by this wand have special characteristics. Fire requires no fuel to burn."
+  },
+  {
+    "name": "Wand of Misplaced Objects",
+    "category": "Rod/Staff/Wand",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This wand emits a multitude of golden orbs that rush toward a tar- gel creature. The orbs surround the victim and swirl around him wildly for 1 round. During this time the victim is confused and can take no action* At the end of the round, the orbs vanish and the victim is free to act. He discovers, however, that all objects on his person have been moved. Some items are inconveniently located, while others are nowhere to be seen. A warrior might find his magical ring on one of his toes, his sword in his pants, his gold pieces in the sheath of his sivord, and his breastplate on his head."
+  },
+  {
+    "name": "Wand of Prime Material Pocket",
+    "category": "Rod/Staff/Wand",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This wand allows a spherical pocket to be created in any plane* The conditions within the pocket are similar to the environment of the wielder s Prime Material plane. The pocket typically contains ground, air, and a controlled temperature. The lower third of the sphere is usually occupied by land and water, while the upper portion of the 131 Magical Items (Miscellaneous Magic sphere is usually occupied by atmosphere. The surface of the pocket is semipermeable, allowing creatures to exit and enter the sphere, but keeps the elemental conditions of the pocket completely separate from the elemental plane. One charge creates a sphere 10' in diameter."
+  },
+  {
+    "name": "Manual of Dogmatic Methods",
+    "category": "Book",
+    "xpValue": 0,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This silver- bound book, studded with jewels, appears to be a tome of considerable value. The book is actually cursed, although this is not immediately obvious* The manual has the power to provide advice on any action that its owner might consider tak~ ing* The owner need only open to any page in the book, and there before him wifi be a list of actions, most of them ritualistic in nature, to insure the success of any project he undertakes* The first time the book is used, the owner is suddenly struck with the idea that he now owns a source of information that can give him valuable advice on any matter. It becomes a guide for his whole life."
+  },
+  {
+    "name": "Tome of Mystical Equations",
+    "category": "Book",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Priest"
+    ],
+    "description": "This book is indistinguishable from other magical tomes. It contains charts and equations relating to several of the spells belonging to the sphere of Numbers, It can be used as the materia) component for the spells persons) reading, telethaumaturgy, and addition r, If it is used in this manner, the casting time for the spell is halved, and any saving throw that the subject of the spell might be entitled to suffers a ~2 penalty,"
+  },
+  {
+    "name": "Trimia's Catalogue of Outer Plane Artifacts",
+    "category": "Book",
+    "xpValue": 12000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This magical device is a large book bound in heavy wooden covers that do not reveal the title or nature of the work. Upon opening to the first page, the owner finds the title of the book along with a table of contents listing the various outer planes. Upon opening the book to the desired page, the owner finds either a blank page (25% chance} or a description of a magical device (75% chance) that provides transportation to that particular plane."
+  },
+  {
+    "name": "Amulet of Extension",
+    "category": "Jewelry",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "When desired by the caster, this amulet can be used to increase the duration of 1st- and 2nd-level spells by 50%, and the duration of 3rd- and 4th-level spells by 25%. Fractions of one-half and above are rounded up (e.g,, a spell with duration of 1 round extended to IV2 rounds is rounded to 2 rounds). Fractions less than one-half are rounded down (e.g., a spell with 1 round duration extended to l*Ai rounds is rounded down to 1 round and thus gains no benefit from the amulet). The amulet has no effect on spells with instantaneous or permanent durations. A maximum of ldl0 + 4 spell levels can be affected by the amulet each day."
+  },
+  {
+    "name": "Amulet of Far Reaching",
+    "category": "Jewelry",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "When willed by the caster, this amulet increases the range of lst-level spells by 30%, 2nddevel spells by 20%, and 3rd- and 4th-Ievel spells by 10%. Fractions of one-half and greater are rounded up; all others are rounded down. The amulet affects only range and does not alter a spell's area of effect. The amulet cannot affect spells with ranges of 0 or touch. A maximum of IdlO +4 spell levels can be affected by the amulet each day. Each amulet has its own individual limit, secretly determined when it is found."
+  },
+  {
+    "name": "Amulet of Leadership",
+    "category": "Jewelry",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This pendant or brooch bestows a character of any level the ability of a 9th-level fighter to attract men-at-arms. The amulet does not attract additional men-at-arms to a fighter who has already gained his followers. A fighter normally gains troops at 9th level because his name is so well known that he attracts the loyalty of other warriors. The amulet works in much the same way. When a stranger meets a character wearing the amulet, the stranger perceives the character to be a leader who is destined for greatness, regardless of the characters class. Just as the reputation of a 9th-level fighter spreads, so the reputation of the person wearing the amulet spreads."
+  },
+  {
+    "name": "Amulet of Magic Resistance",
+    "category": "Jewelry",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This powerful amulet grants the wearer a degree of magic resistance ranging from 5% to 30% . The level of magic resistance is determined when the amulet is found by rolling ld6 and multiplying the result by 5. Any time the amulet is worn and a spell is cast at the wearer, the wearer is allowed a percentile roll to avoid the full effects of the spell. Only 50% of all such amulets confer magic re- W \u2022 4 sistance against all spells, The remaining 50% extend magic resistance only to spells of 1st through 6th levels. Such amulets have no effect on spells more powerful than these. The DM should secretly determine this information when the ring is discovered."
+  },
+  {
+    "name": "Amulet of Metaspell Influence",
+    "category": "Jewelry",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This amulet does not appear to have any magical function (although it radiates magic if detected) until it is worn by someone using one of the dilation, far- reaching , or extension spells. When such a spell is cast, the amulet adds 50% to the functional effect of the spell. For example, if extension / is used to increase the duration of a 3rd-level spell by 50% , the wearer of this amulet can add one-half (50% ) to that effect size, raising it to a 75% extension effect."
+  },
+  {
+    "name": "Amulet of Perpetual Youth",
+    "category": "Jewelry",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This amulet glows continuously with a faint, blue light. The wTearer has temporary immunity to the effects of both natural and magical aging; the amulet grows older instead of the wearer. As the amulet ages, it gradually becomes dimmer. The amulet can absorb 5-30 (5d6) years of aging, at which time its light dims completely, its magic is negated, and the wearer resumes aging at his normal rate. Bag of Bones: This item, usable only by priests, is a small, ordinary-looking leather pouch that contains a number of tiny bones. When these bones are scattered over a 40 by 20 yard area and the word of command is spoken, a unit of skeletons immediately springs from the ground."
+  },
+  {
+    "name": "Brooch of Number Numbing",
+    "category": "Jewelry",
+    "xpValue": 4000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This silver or golden brooch (15% are set with jewels) is used to fasten a cloak or a cape. It magically clouds the mind of anyone conversing with the wearer of the brooch, with the confusion applying only to numbers. The brooch must be in plain sight to have any effect. Anyone conversing with someone wearing the brooch is allowed a saving throw vs. spell to avoid the effects. If the save is failed, the victim falls under the brooch's special enchantment. The victim forgets the relative value of numbers. He cannot remember if five is greater than three or if tens are smaller than hundreds. Further, the victim does not recognize his inability to remember the values of numbers."
+  },
+  {
+    "name": "Gem of Retaliation",
+    "category": "Jewelry",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "The holder of this gem gains a special protection against Evocation spells directed at him. The owner of the gem gains a +4 bonus to any saving throw made against such a spell, and also acquires a base save of IS (but not the +4 bonus) against any Evocation spell which normally does not allow a saving throw (such as ice storm). All standard modifiers (mig of protection, Dexterity, etc.) apply. Additionally, if the saving throw is successful, the incoming spell is converted into outgoing magic missiles. The number of missiles is equal to one-half the level of the spell negated, rounding fractions up."
+  },
+  {
+    "name": "Medallion of Spell Exchange",
+    "category": "Jewelry",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This medallion allows the spellcaster to exchange one memorized spell of up to 6th level for others of lower levels, rather in the manner of M orden kainen's lucubration. The wizard loses the sacrificed spell and recalls one or more spells from those he had memorized and cast within the past 24 hours. The total levels of these spells must be one less in sum than the spell sacrificed, For example, by sacrificing a 5th-level spell, a wizard could recall one 1 stand one 3rd-level spell two 2nd-level spells, four lst-level spells, and so on. The medallion can function only once per day* The wizard must have available any spell components required for exchanged spells."
+  },
+  {
+    "name": "Necklace of Memory Enhancement",
+    "category": "Jewelry",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "The wearer of this brass necklace receives two benefits. \u2022 The wearer is immune to all memory loss, from both natural and magical causes (such as a forget spell). The necklace has no effect on a wizard's spell memorization. \u2022 The wearer can recall with absolute clarity any sight or conversation he experienced or any book he read within the previous seven days. Memories prior to seven days ago are recalled with only normal clarity. The necklace affects 141 & 3& I Magical Item (Miscellaneous Magic] only events that occurred while the necklace was worn by the user."
+  },
+  {
+    "name": "Scarab of Uncertainty",
+    "category": "Jewelry",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This scarab has a specific and potentially powerful effect, if the wearer is within range of a monster summoning or similar spell (invisible stalker, conjure animals \u201e etc,) when cast by another creature or character, the summoned creatures make a saving throw versus spell the instant they appear, If the summoned creatures fail this saving throw, they mistakenly believe that the wearer of the scarab is the individual who summoned them and will then serve the scarab wearer as best they can, rather than the caster of the spell. School Cap: The wearer of this cap gains a +2 bonus to saving throws against spells of one particular school of magic."
+  },
+  {
+    "name": "Talisman of Memorization",
+    "category": "Jewelry",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This talisman allows a wizard to memorize spells in half the normal time (i.e., 5 minutes per spell level). Half of these amulets (1-5 on IdlO) affect memorization of spells only of levels 1-5* The remaining half affect memorization of spells of levels 1-8. Spells of 9th level are never affected by this talisman. 144 Magical Item (Miscellaneous Magic Tapestry of Disease Warding: This is a 3-foot- square cotton tapestry bearing the image of a rainbow . When hung in a house or other building (10,000 square feet or less), it protects the occupants from nonmagical diseases."
+  },
+  {
+    "name": "Bracers of Brandishing",
+    "category": "Wearable",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These unpredictable and bewildering items appear similar to other magical bracers, but their magic is revealed only when the character wearing them uses a charged rod, staff, or wand. When a charge is expended from such an item, the bracers of brandishing alter the charge expenditure and the local balance of magical forces in a chaotic manner. The drain on the charged rod, staff, or wand is actually in the range of 5 charges to \u201c4 (i.e.r the item is recharged), The number of charges used is ldlO -5 (with negative results indicating that charges are restored). If an item is reduced below zero charges by a drain, it crumbles into dust immediately."
+  },
+  {
+    "name": "Fur of Warmth",
+    "category": "Wearable",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These large, white furs (5' by S') arc reportedly taken from the skins of creatures native to the para-elemental plane of Ice. A person wearing the fur still feels cold in a cold environment (such as the para -elemental plane of ice), but does not suffer damage from exposure. Anyone wrapped in the fur is immune to the natural effects of cold, including the environments of the inner planes. Anyone wearing the fur takes half-damage from coldbased attacks. The wearer need not be covered completely by the fur to receive the enchanted protection; the fur must simply be draped over him like a cape. If the fur is cut into more than one piece, it loses its magical property."
+  },
+  {
+    "name": "Reglar's Gloves of Freedom",
+    "category": "Wearable",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These gloves appear to be thick, leather, combat gloves* Silvered pearls are sewn along the stitching.. A character under the influence of a charm spell or similar enchantment can be freed of the enchantment by shaking hands with the wearer of the gloves. This item frees only characters who are enchanted against their will. Those who have willingly submitted to a charm (such as a qt4est) are not affected by the gloves. The former victim retains all memories of his enchantment. The gloves do not protect or release the wearer from such spells."
+  },
+  {
+    "name": "Robe of Repetition",
+    "category": "Wearable",
+    "xpValue": 6000,
+    "cursed": false,
+    "usableBy": [
+      "Priest",
+      "Wizard"
+    ],
+    "description": "This ordinary-looking robe radiates strong alteration magic if magic is detected. The wearer of this robe acquires a unique and powerful augmentation to his magic. After casting a spell, there is a percentage chance that a mnemonic /harmonic effect occurs so that the magical energies liberated in spellcasting are amplified and retained briefly. The wizard is then able to cast the same spell a second time. This must be done on the succeeding round or the bonus spell is lost. Once the spell has been cast a second time, the energy is completely liberated. There is no possibility of a third casting. In all cases, the spell is lost from the wizard's memory until the wizard memorizes it again."
+  },
+  {
+    "name": "School Cap",
+    "category": "Wearable",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "The wearer of this cap gains a +2 bonus to saving throws against spells of one particular school of magic. In addition, specialists of the designated school do not inflict a -1 penalty on a wearers saving throws against their specialist spells. The nature of the school cap is determined using a ld8 roll. Ds Roil Affected School 1 Abjuration 2 Conjuration/Summoning 3 Greater Divination 4 Enchantment /Charm 5 Illusion 6 Invocation /Evocation 7 Necromancy 8 Alteration Of these caps, 10% are mixed blessings since they have a cursed side-effect: The wearer suffers a ~1 penalty to saving throws against spells of the opposition school (s)."
+  },
+  {
+    "name": "Bag of Bones",
+    "category": "Container",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "Priest"
+    ],
+    "description": "This item, usable only by priests, is a small, ordinary-looking leather pouch that contains a number of tiny bones. When these bones are scattered over a 40 by 20 yard area and the word of command is spoken, a unit of skeletons immediately springs from the ground. This unit comprises eight BATTLESYSTEM rules figures of skeletons (SO skeletons) armed with swords. (The statistics for this unit are: AD 6, AR 8. Hits lr ML n/a, MV 12\". Hits from piercing and slashing weapons are reduced by half.) The unit unconditionally obeys the combat orders of the priest, never checking morale."
+  },
+  {
+    "name": "Flatbox",
+    "category": "Container",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "A practical example of hypergeometry and hypermathematics, the flathox appears to be a wooden box about 3' long, 2' wide, and twro inches deep. It weighs eight pounds. The top of the box is a hinged lid. When the lid is opened, the interior of the box is filled with impenetrable darkness. This darkness cannot be dispelled by any form of magic; it is a characteristic of the hypergeometrical topography of the box. Although from the outside the flathox appears to be only two inches deep, it actually has the internal volume of a box six feet deep, (Thus, it has a volume of 36 cubic feet.) The maximum weight that can be loaded into a flatbox is 500 pounds."
+  },
+  {
+    "name": "Jar of Preserving",
+    "category": "Container",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This piece of magical glassware is able to hold up to one cubic foot of material. The round jar is equipped with a glass lid that screws into place* Any animal or vegetable matter placed in a jar of preserving enters a form of suspended animation* A rosebud never wilts, for example, and a small animal never ages and does not require food, water, or air. Spell components placed in the jar never lose potency. Law's Banner; This blazing red standard has the magical ability to raise the morale of troops when held at the front of a lawful army. The banner inspires any soldier in the army who is within a quarter-mile of the banner and can see the flag."
+  },
+  {
+    "name": "Nefradina's Identifier",
+    "category": "Container",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This highly valued item is a magical test kit used to identify potions, powders, and other alchemical substances. It consists of a wooden box (typically measuring 1' X V X 3'} containing an assortment of vials, flasks, and beakers in small, padded compartments. Also in the box is a copy of a text called Mefradinas Codex. This book instructs the owner on how to use the test kit* When the owner wishes to identify a potion, powder, oik perfume, or similar liquid or powdered magical item, he looks up the substance s characteristics (odor, color, consistency, and so on) in the codex and follows the directions given to create a test mixture by combining a number of ingredients found in the kit."
+  },
+  {
+    "name": "Tenser's Portmanteau of Frugality",
+    "category": "Container",
+    "xpValue": 6000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "manteau. For every two potions, applications of dust, or similar substances that are treated by the portmanteau, a third active dose or use can be extracted, Any such item may be affected only once by the power of the portmanteau. Single doses <a single potion, etc.) do not provide sufficient magic for treatment by the portmanteau. The process of extracting the magic is not a simple task. The work takes 2d6 hours to complete. At the end of this time, the wizard must make an Intelligence check. If successful, the third dose is created."
+  },
+  {
+    "name": "Thought Bottle",
+    "category": "Container",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This item usually takes the form of a metal flask similar in appearance to an efreeti bottle. Bottle and stopper are usually engraved with intricate runes. The bottle can be used to store and protect important memories and thoughts, and is often used by powerful characters as a way of managing their (potentially cluttered) memories. To use the bottle, a character concentrates on the thought or memory to be stored. He then uncorks the bottle and speaks the word of command. The thought or memory is then transferred from the character s brain into the bottle. All details of the thought or memory are held within the bottle."
+  },
+  {
+    "name": "Candle of Propitiousness",
+    "category": "Powder/Candle",
+    "xpValue": 750,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This candle enhances attacks against a particular enemy within a defined area. The user lights the candle while speaking the exact name of a single foe. If the exact name is not known, the user must precisely identify the foe; saying, 'the evil warrior\" isn t precise enough, but stating, \"the evil warrior who rules the village of Fair Meadows and carries a golden shield\" is sufficient. All characters who remain within a 50-foot- radius of the lighted candle receive a +2 bonus to all attack rolls made against the stated foe, regardless of whether the foe is within 50 feet of the candle. Characters who venture outside the area of effect lose the bonus."
+  },
+  {
+    "name": "Dust of Mind Dulling",
+    "category": "Powder/Candle",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This harmless-looking dust is the bane of spellcasters. One pinch of this dust can be flung up to 30 feet from the user and will scatter to fill a 5-foot-radius sphere. All spellcasters within the area must make a saving throw versus spell or find their minds dulled and their wits slowed. All casting times less than 1 round are increased by 2 as the wizards hesitate, trying to remember the procedures. Spells which normally require 1 round to cast now require 1 full round plus a casting time of 5 on the following round: spells which normally have a casting time of 2 rounds or longer now require 50% longer than normal to cast. The dust persists in the area tor 1 turn unless somehow removed (e."
+  },
+  {
+    "name": "Powder of the Black Veil",
+    "category": "Powder/Candle",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This sooty black powder causes temporary magical blindness to all those in the area of effect. If a creature's saving throw is successful, he suffers no effects* If the roll fails, the creature is blinded and suffers a -4 penalty to attack rolls, a ^4 penalty to Armor Class, and a +2 penalty to initiative rolls. Blindness persists each round until the victim succeeds at a saving throw vs, spell, at which time the effect is instantly negated. An entire packet or blow tube must be used for each application. Powder of Coagulation; When placed on an open wound, a pinch of this yellow' powder stops all bleeding and heals Xd6 hit points of damage. Each pouch or packet contains 4d4 pinches."
+  },
+  {
+    "name": "Powder of Coagulation",
+    "category": "Powder/Candle",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When placed on an open wound, a pinch of this yellow' powder stops all bleeding and heals Xd6 hit points of damage. Each pouch or packet contains 4d4 pinches. A blow tube contains one use, but stops bleeding and heals Id4 hit points for all creatures in the area of effect. Powder of the"
+  },
+  {
+    "name": "Powder of the Hero's Heart",
+    "category": "Powder/Candle",
+    "xpValue": 750,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When used, this dull red powder instills bravery in all creatures within the area of effect (both friends and enemies). It grants such creatures a morale bonus of +2 and negates the effects of magical fear. The effect lasts for 5d4 rounds, An entire packet, pouch, or blow tube must be used for each application."
+  },
+  {
+    "name": "Powder of Magic Detection",
+    "category": "Powder/Candle",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "Under dose inspection, this ordinary-looking powder can be seen 127 \u2019 , Magical Items (Rings) for what it truly is\u2014 an extremely fine powder of minute, crystalline granules. When this powder contacts a magical object, the crystals spark and flash with a rainbow of colors. This effect does not reveal the nature or intensity of the enchantment\u2014 only that the item is magical, A small pinch of powder is needed for each use, no matter how large or small the object. Each packet contains Idl0 + 10 pinches. Powder that is placed on a nonmagical item yields no effect and cannot be reused."
+  },
+  {
+    "name": "Puchezma's Powder of Edible Objects",
+    "category": "Powder/Candle",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "An inveterate traveler who was notoriously cheap, Pu- chezma could never bring himself to spend money on decent provisions or hire a quality chef for his long wilderness excursions. In his efforts to create a seasoning that would make the bland dishes of his second-rate cooks more palatable, Puchezma stumbled on a formula for the powder of edible objects . This powder, which resembles normal salt, causes any normally indigestible material to be- 142 Magical Item Descriptions (Miscellaneous Magic 4 come edible, nutritious food."
+  },
+  {
+    "name": "Salves of Far Seeing",
+    "category": "Powder/Candle",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These salves allow a character who puts a drop of the salve into each of his eyes to see as well as he would on a brightly lit day on his Prime Material plane. The proper salve also serves as a protection against blindness on planes where protection is necessary. Several types of salves exist for the different elemental, para-elemental, and quasi-elemental planes. The salves have no effect on normal or magical blindness. The salves are found in small metal containers made of precious metals. A container contains 4dl2 drops of salve."
+  },
+  {
+    "name": "Warp Marble",
+    "category": "Powder/Candle",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This item is a small (Vz-inch diameter) sphere of fine crystal, often appearing with a rich blue or aquamarine hue- Each marble has three words of command associated with it. The first command triggers the marble to create an extradimensional space large enough to contain a single large-sized creature. When this word is spoken, the closest creature to the marble is instantly transported to and imprisoned within this space. Similar to the seclusion spell, the inhabitant of this space can see and hear events in the \u2018\"real world;' but can do nothing to affect anything outside the prison. Spellcasting and use of psionics are impossible while within the prison."
+  },
+  {
+    "name": "Crucible of Melting",
+    "category": "Household/Tool",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "A crucible is a small bowi, usually made of tired clay or porcelain, used for heating substances to extreme temperatures. The bowl is usually placed on a furnace. The crucible of melting , however, requires no furnace, it melts any metals placed within it when the command word is spoken. It takes one turn to bring the crucible to a sufficient temperature to melt metals placed within it. It has no effect on substances other than metals. The average crucible of melting can hold up to one cubic foot of material. Note that magical items are allowed an item saving throw vs. magical fire to avoid destruction."
+  },
+  {
+    "name": "Everbountiful Soup Kettle",
+    "category": "Household/Tool",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When this two-gallon metal kettle is filled with water, the liquid is transformed into steaming, nutritious vegetable soup. One full kettle is sufficient to provide a single meal for up to six normal appetites. No ingredients are required for the soup, nor is heat necessary. Any nonmagical, itonpoisonous liquid can be used in place of water. The everbountiful soup kettle can be used once per day. Flatbox: A practical example of hypergeometry and hypermathematics, the flathox appears to be a wooden box about 3' long, 2' wide, and twro inches deep. It weighs eight pounds. The top of the box is a hinged lid. When the lid is opened, the interior of the box is filled with impenetrable darkness."
+  },
+  {
+    "name": "Forge of Metal Protection",
+    "category": "Household/Tool",
+    "xpValue": 10000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "The first of these heavy (1,000 lb.) forges was created an unknown number of centuries ago. Because of the specific magical properties involved, it is believed that a wizard, assisted by a number of dwarves (all of whom were interested in planar research), constructed the device. Although the secret of the construction has since spread, the forge is an extremely rare magical item. The forge is a furnace made up of enchanted rocks held together with a network of steel rods. When metal armor and weapons are placed within the furnace and heated to glowing red, the armor becomes immune to the effects of heat on the inner planes."
+  },
+  {
+    "name": "Glass of Preserved Words",
+    "category": "Household/Tool",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This magical magnifying glass has a band of silver around the lens and an ivory handle. The glass has the ability to make illegible written words readable. Words that were carved into stone but worn away through time, inked letters blurred due to moisture, messages clouded by magic, and magical and normal writings all become dear when read through the glass. The actual words remain illegible; they are not altered in any way. Only a character looking at them through the glass can read them dearly."
+  },
+  {
+    "name": "Horn of Valor",
+    "category": "Household/Tool",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This golden horn is indistinguishable from any other magical horn until it is sounded. When sounded, each unit hearing it who is allied with or loyal to the character sounding the horn gains the following benefits. First, the unit gains a +2 bonus to its morale for ld4 BATTLES YSTEM rules turns. Second, any routed friendly unit who hears it immediately makes a rally check with a bonus of 2 to its morale (for that check only). (This check is made when the horn is sounded \u2014 during the magic phase\u2014 rather than in the rally phase. If this additional check is failed, the unit is entitled to a second check in the rally phase, as normal."
+  },
+  {
+    "name": "Hourglass of Fire and Ice",
+    "category": "Household/Tool",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This small, woodenframed hourglass looks quite ordinary, but radiates invocation/evocation magic if detected. Half these hourglasses contain red sand and half contain blue sand. An hourglass containing red sand in the lower portion enables a spellcaster to cast fire-based spells with increased potency: + 1 per die of dam* age. Further, victims suffer a -1 penalty to all saves against such spells, and even saving throws 138 Magical Items (Miscellaneous Magic against illusions of fire are made at -1. When the hourglass is tilted, the red sand flows slowly through the aperture, turning blue as it does so, The hourglass takes 6 turns to fill with blue sand."
+  },
+  {
+    "name": "Lens of Speed Reading",
+    "category": "Household/Tool",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "While looking through this lens, the user can read any book, document, or other written material at three times his normal speed with full comprehension* When used in conjunction with read magic , the lens of speed reading enables the user to quickly scan scrolls and magical tomes to learn their contents, but it has no effect on the time required to cast spells* The lens will not decipher codes, improve illegible writing, or allow magic to be read without the proper spells."
+  },
+  {
+    "name": "Lorloveim's Obsidian Mortar and Pestle",
+    "category": "Household/Tool",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This magical tool allows the wielder to grind even the hardest materials into a fine pow\u2019der. Rocks, metals, and even gemstones of all types may be ground to dust in as little as Id4 rounds. Magical items pounded beneath the pestle are allowed a saving throw vs* disintegration. If the save is successful, the enchanted item cannot be destroyed in this fashion* If the saving throw fails, the item is reduced to nonmagical powder. The obsidian mortar is commonly used by wizards in the preparation of spell components and ingredients for magical Items. Neither the mortar nor the pestle is effective without the other*"
+  },
+  {
+    "name": "Mirror of Retention",
+    "category": "Household/Tool",
+    "xpValue": 1200,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This appears to be an ordinary round silver mirror, about 12 inches in diameter. When the mirror of retention is hung in a 50 foot x 50 foot or smaller room and the command word is spoken, the mirror records all events occurring in the room for 24 hours. During this time, the mirror of retention appears to be a normal mirror. When the command word is spoken again, the mirror replays all the events it recorded. The events appear as a series of silent images in the surface of the mirror. By rotating the mirror clockwise, the images can be accelerated, appearing as much as 10 times as fast as they occurred. Rotating the mirror counter-clockwise causes the images to appear in reverse."
+  },
+  {
+    "name": "Mirror of Simple Order",
+    "category": "Household/Tool",
+    "xpValue": 0,
+    "cursed": true,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When a character steps in front of this mirror, he sees a strangely distorted image of himself. The reflection moves as he does, but the face reflected in the mirror is the image of an ordinary face* There are eyes, a mouth, and a nose, but all lack character. Although the figure moves as the character does, it is shorter or taller than he is, adjusted in whatever direction approaches the average height of the character's race. Any clothing worn by the character is altered as well Bright colors will be muted, appearing to be shades of grey* Any ornamental work on armor, weapons, or clothing will be gone."
+  },
+  {
+    "name": "Mordom's Cauldron of Air",
+    "category": "Household/Tool",
+    "xpValue": 3000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "of Ain Mordom's cauldron of air is a round pot about two feet in diameter, weighing 60 pounds. There are two handles on either side of the pot and a compartment built like a small shelf under the cauldron. The compartment can be filled with wood or coal to heat the cauldron. Although the device is heavy and bulky, the cauldron is valuable for characters planning an expedition to a place with little or no air. The cauldron functions as an air generator. To operate the device, the cauldron is filled with water and a fire is lit in the compartment. When the water boils, vapor is released."
+  },
+  {
+    "name": "Philosopher's Egg",
+    "category": "Household/Tool",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This item is an enchanted retort: a long-necked piece of glassware in which substances are distilled. It is a highly prized addition to a wizard's laboratory, for it has two very important uses. The first use of the philosopher's egg is in the creation of any magical or mundane fluid* The time required to create such a fluid is cut in half through use of the philosopher's egg. The egg's second use is as a required component for creating the substance that turns lead into gold\u2014 the legendary philosophers stone. Thus, it is sometimes said by wizards that \u201c'the stone hatches from the egg '"
+  },
+  {
+    "name": "Pick of Earth Parting",
+    "category": "Household/Tool",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This enchanted pick allows its wielder to cut through elemental earth quickly. The wielder of the pick must have strength of 17 or better. By repeatedly swinging the pick at elemental earth, the wielder can carve out a 10' x 10' x 60' tunnel per round. The pick\u2019s magical properties create a smooth, dean surface regardless of the mining skill of the user* All rubble from the excavation magically disappears, leaving a dear passage. Portable Canoe: This ordinary, canvas-covered canoe is capable of comfortably holding two passengers. The canoe includes two wooden paddles* The portable canoe can be folded into a 6-inch-square packet, about an inch thick, weighing just under a pound."
+  },
+  {
+    "name": "Skies Locks and Bolts",
+    "category": "Household/Tool",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "are sometimes found in the homes of wealthy merchants and secretive wizards. Talisman of Memorization: This talisman allows a wizard to memorize spells in half the normal time (i.e., 5 minutes per spell level). Half of these amulets (1-5 on IdlO) affect memorization of spells only of levels 1-5* The remaining half affect memorization of spells of levels 1-8. Spells of 9th level are never affected by this talisman. 144 Magical Item (Miscellaneous Magic Tapestry of Disease Warding: This is a 3-foot- square cotton tapestry bearing the image of a rainbow ."
+  },
+  {
+    "name": "Tapestry of Disease Warding",
+    "category": "Household/Tool",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This is a 3-foot- square cotton tapestry bearing the image of a rainbow . When hung in a house or other building (10,000 square feet or less), it protects the occupants from nonmagical diseases. It has no effect on persons already suffering from diseases, but protects healthy characters from contracting contagious diseases ranging from common colds to deadly plagues. The tapestry offers no protection against any disease caused by magic or of a magical nature. The tapestry of disease warding is subject to rips, fire, and other damage that could be sustained by a normal tapestry, although it is allowed a saving throw. Its magic is permanent only as long as it remains intact."
+  },
+  {
+    "name": "Zwann's Watering Can",
+    "category": "Household/Tool",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "Priest"
+    ],
+    "description": "otherwise ordinary watering can is activated when the user fills it with two gallons of water and lets it stand undisturbed for 30 days. At the end of that period, the user may sprinkle the water from Zwann s watering can over a patch of tilled soil no larger than a 25-foot square. Seeds subsequently planted in this treated soil grow normally- but are permanently immune to disease- drought (the plants never need to be watered again), insects, bad weather (such as hailstorms and early frost} and all other forms of nonmagical trauma. The plants can be harvested normally by the planter."
+  },
+  {
+    "name": "Air Spores",
+    "category": "Weird",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "Rumors indicate that the famed wizard Mordom created these odd, pollenlike spores. Only a few mages know how to make them today, Air spores that still exist are usually sequestered as specimens of study in the labs oi powerful wizards. When air spores are ingested by a creature, the spores work their way into the creature's lungs. There they grow, reproduce, and die. While living out their lives, they create oxygen that the host body can use to breathe when deprived of oxygen from the environment. The spore colony can live for 2d4 days."
+  },
+  {
+    "name": "Bell's Palette of Identity",
+    "category": "Weird",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This device offers protection against polymorph spells and other magi- cal effects that change a person's physical appearance. The item is an artist's palette covered with bright, mystical paints. To use the item, a person must paint a self-portrait. The painting does not need to be created with any expertise, but the painter must believe that the portrait is accurate. Any time a character carries his self-portrait on his person, the portrait suffers the effects of unsuccessful saving throws for him when mass- morph, polymorph other , polymorph any object , or seeming spells are cast on him. The portrait also suffers the effects if a character steps in front of a mirror of simple order."
+  },
+  {
+    "name": "Claw of Magic Stealing",
+    "category": "Weird",
+    "xpValue": 3500,
+    "cursed": false,
+    "usableBy": [
+      "Wizard"
+    ],
+    "description": "This peculiar item is usually fashioned in the form of a miniature silver hand or daw. An attempt to identify it will suggest that it is an item capable of casting the 2nd- level wizard spell spectral hand three times per day. The claw can indeed do this, but this is only its secondary function. The claws real purpose is to steal spells from other spellcasters. If the victim of the spectral hand spell is a wizard, he must make a saving throw versus spell. Failure to make this save means that a randomly selected spell is drained from his memory and its energy is transferred to the daw's owner."
+  },
+  {
+    "name": "Contracts of Nepthas",
+    "category": "Weird",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These magical contracts are written in black ink on golden-brown vellum, The contracts are usually found in ivory tubes, each tube containing ld6 contracts. The con- tracts are blank and can be filled in by the user. The contracts will radiate magic if detected, but carry no overt signs of their special nature. The contract of Nepthas automatically places an enchantment upon any persons who sign It in order to insure that both parties hold to the agreement. Anyone who has signed a contract of Nepthas and breaks the contract is struck deaf, blind, and dumb. The effects of the punishment last until they are removed with a remove curse ."
+  },
+  {
+    "name": "Crystal Parrot",
+    "category": "Weird",
+    "xpValue": 1500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This is a 12-inch-high statue of a parrot made of clear crystal that is useful in the detection of trespassers. The crystal patrot is typically placed high on a bookcase, shelf, or a similar location that gives the parrot an unobstructed view cl the area it is to oversee. To activate the parrot, the user speaks the command word, causing a soft red glow to appear behind the parrot's eyes. Unless the crystal parrot is destroyed, it remains active for 30 days. The user may also choose to deactivate it with a second command word, at which time the red glow in its eyes disappears. Once deactivated, it cannot be activated again until 30 additional days have passed."
+  },
+  {
+    "name": "Dimensional Mine",
+    "category": "Weird",
+    "xpValue": 0,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This nasty device can take the form of any small item, but most often appears as a small figure carved of jet or other black stone, similar to a figurine of wondrous power As soon as the mine is taken into an extradimen- sional space, such as that created by a rope trick, extradimensional pocket , or a hag of holding , it ruptures that space. Everything in the space, including the mine itself, is spewed into the Astral plane and is lost unless someone can retrieve it. If the extradimensional space was created by a magical item, such as a bag of holding, that item is destroyed."
+  },
+  {
+    "name": "Disintegration Chamber",
+    "category": "Weird",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These frightful devices range in size from a lfxi'xr box to a 10'xiQ'x 10' room. They are always made of iron, with the interior walls covered with mirrored tiles. They are used to cause matter to vanish, as per the 6t h-level disintegrate spell. The amount of material to be affected is limited only by the size of the chamber. Each use drains the device of one charge. Disintegration chambers generally have 81-100 charges (ld20 + 80) and may be recharged. The material to be obliterated is placed inside the chamber, the door is dosed, and the activation button is depressed."
+  },
+  {
+    "name": "Elemental Compass",
+    "category": "Weird",
+    "xpValue": 10000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This device aids travelers seeking the elemental planes of Fire, Air. Water, or Earth. The compass, a small urn carved of stone and containing hollow pockets, works only in the Ethereal plane, an inner plane, or the Prime Material plane. To make the compass work, a representative sample of material from the plane sought must be placed in the um and the lid sealed. Thus, to find the elemental plane of Fire, a small, burning fire must be place in the urn. Once sealed, the fire will bum until the lid is opened (just as water will not evaporate from the urn as long as the lid is sealed)."
+  },
+  {
+    "name": "Globe of Purification",
+    "category": "Weird",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "Priest"
+    ],
+    "description": "These enchanted glass spheres, 6 inches in diameter, contain the swirling blue-grey essence of a cloud of purification spell. When the globe is broken, the cloud billows forth, acting exactly as if the spell had been cast by a 12th -level priest. These devices are often given to a city's sanitation crews, who descend upon the streets and sewers during the wee hours of the morning."
+  },
+  {
+    "name": "Globe of Serenity",
+    "category": "Weird",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "Priest"
+    ],
+    "description": "These glass orbs look very much like crystal balls. However, a globe of serenity emits a continuous, inaudible tone that affects all living creatures within 50 feet who fail a saving throw vs. spell. While in the area of effect^ affected creatures feel the utmost serenity and self-control. Strong emotions such as joy, love, and hatred are totally subdued. Creatures affected by the globe gain a +3 saving throw bonus to resist spells and special attacks that affect emotions (such as charm, fear \u25a0 or emotion ). At the same time, they suffer a \u201c2 to all Intelligence checks, the spark of insight also repressed ."
+  },
+  {
+    "name": "Law's Banner",
+    "category": "Weird",
+    "xpValue": 5000,
+    "cursed": false,
+    "usableBy": [
+      "Warrior"
+    ],
+    "description": "This blazing red standard has the magical ability to raise the morale of troops when held at the front of a lawful army. The banner inspires any soldier in the army who is within a quarter-mile of the banner and can see the flag. Troops inspired in this manner receive a +2 modifier to their base morale as per BATTLES YSTEM rules* In order for an army to be considered lawful, at least 90% of the troops must be of lawful alignment and no more than 1% can be chaotic* If the banner falls, the effects are lost immediately If the banner is raised within 1 turn, the effect returns."
+  },
+  {
+    "name": "Liquid Road",
+    "category": "Weird",
+    "xpValue": 500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "When sprinkled on water, swampland, quicksand, or a similar surface, liquid road causes the terrain to harden to the density of granite, enabling easy passage, Liquid road is also effective in negating the effects of spells such as transmute rock to mud . The liquid road stays hard for one hour, after which the terrain returns to its original state. One flask of liquid road can harden a5^5' surface (for example, a path 25' long and V wide). Lorioveim's Obsidian Mortar and Pestle: This magical tool allows the wielder to grind even the hardest materials into a fine pow\u2019der. Rocks, metals, and even gemstones of all types may be ground to dust in as little as Id4 rounds."
+  },
+  {
+    "name": "Mist Tent",
+    "category": "Weird",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "A mist tent is contained in a small glass flask. Removing the stopper causes a stream of white mist to pour from the flask. One round later, the mist shapes itself into the form of a 10r x 12' tent with a single, open flap in the front. The stopper must be replaced in the flask as soon as the mist tent takes shape, or the tent will dissipate as described below. The mist tent has the density of a cloud when unoccupied. When one or more characters enter the mist tent , the flap can be closed ; from the inside, the flap has the density of canvas. From the inside, the walls and ceiling of the mist tent appear as opaque white mist, and the floor is transparent."
+  },
+  {
+    "name": "Mouse Cart",
+    "category": "Weird",
+    "xpValue": 3500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "A mouse cart resembles a miniature wooden cart with two wooden wheels and a tiny leather harness. When a normal mouse is secured in the harness, the cart expands to the size of a normal cart (roughly 5 square feet). The mouse retains its normal size, but becomes enchanted, acquiring the ability to pull the cart plus 250 pounds of cargo at a movement rate of 12. As long as the mouse remains in the harness, it is compelled to obey all oral commands from the person who put him in the harness. The mouse will run forward, stop, turn, and obey all similar commands; it will not attack or take any action that a mouse is normally incapable of performing."
+  },
+  {
+    "name": "Portable Canoe",
+    "category": "Weird",
+    "xpValue": 2000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This ordinary, canvas-covered canoe is capable of comfortably holding two passengers. The canoe includes two wooden paddles* The portable canoe can be folded into a 6-inch-square packet, about an inch thick, weighing just under a pound. With the exception of the paddles, the portable canoe must be emptied of all other objects before it can be folded. Folding the canoe requires 5 rounds: unfolding requires 2 rounds."
+  },
+  {
+    "name": "Prism of Light Splitting",
+    "category": "Weird",
+    "xpValue": 1500,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This useful device retracts light into the three primary colors of light\u2014 red, blue, and green. The user can choose the color of light that is emitted by the prism. When creating a magical fluid or powder, the wizard casts the enchant an item spell. Following this, the wizard may use the prism of light splitting to shine a blue, red, or green beam of light on the mixture. The light must shine on the substance for one full day."
+  },
+  {
+    "name": "Quill of Law",
+    "category": "Weird",
+    "xpValue": 7000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This magical pen is used by despots and good rulers alike to ensure that their laws and proclamations are obeyed. Anyone reading a posted proclamation or la w that was written with the pen must obey the law, regardless of whether it is a good law. This effect applies only to persons who actually see the written message. If a person knows about the law but has not read a notice written with the quill, he still has the option to obey or break the law. Once he has read it, however, he must obey it. The magical effect is limited in that only the three most recent law's written with the quill maintain this power."
+  },
+  {
+    "name": "Saddle of Flying",
+    "category": "Weird",
+    "xpValue": 4000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "This saddle resembles a normal leather saddle with a small, silver buckle near the pommel. When the saddle Is secured to a horse or any other nonmagical mount and the silver buckle is fastened, the mount sprouts wings and acquires the ability to fly at its normal movement rate (Maneuverability Class Dh The flying mount can carry its normal encumbrance. The saddle of flying functions for only one hour per day. When the silver buckle is unfastened or the duration expires, the wings disap- 143 Magical Item (Miscellaneous Magic pear and all flying ability is immediately lost, regardless of whether the mount is airborne or on the ground."
+  },
+  {
+    "name": "Teleportation Chamber",
+    "category": "Weird",
+    "xpValue": 10000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "These devices are used to teleport matter (as per the Sth-leve) teleport spell) and vary in size from a r x i' x y box to a 10' X 10'X IO1 room. They are usually made of ornate wood, but can be fashioned of stone or metal. In any case, the interior walls are always covered with mirrored tiles much like disintegration chambers . A small, green sphere is fastened to the outside of the chamber near the door, and another sphere is positioned on an inside wall. To activate the device, a creature must touch one of the spheres while concentrating on a mental image of the destination."
+  },
+  {
+    "name": "Time Bomb",
+    "category": "Weird",
+    "xpValue": 1000,
+    "cursed": false,
+    "usableBy": [
+      "All"
+    ],
+    "description": "A time bomb resembles a small hourglass without sand . To set the bomb, the user removes one base from the hourglass and fills one end with an amount of sand of the user's choice (ranging from one minute's worth of sand to one hours worth). When the hourglass is set on a flat surface so that the sand begins to trickle from one end to the other, the time bomb is activated. When all the sand has trickled to the bottom of the hourglass, it explodes in a ball of flame equal to a fireball spell cast at 5th level, delivering 5d6 points of damage and filling a 20-foot radius. Victims within this area who make a successful saving throw vs, spell suffer only half damage."
+  }
+]

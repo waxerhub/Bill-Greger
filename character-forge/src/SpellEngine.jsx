@@ -694,6 +694,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _iCat=useState(""),itemCat=_iCat[0],setItemCat=_iCat[1];
   var _iUsable=useState(""),itemUsable=_iUsable[0],setItemUsable=_iUsable[1];
   var _iExpanded=useState(null),expandedItem=_iExpanded[0],setExpandedItem=_iExpanded[1];
+  // Gear (custom items) state
+  var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
+  var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
+  var BLANK_GEAR={id:null,name:"",type:"Ring",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0}};
+  function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
   // CP state
   var _cpBudget=useState(120),cpBudget=_cpBudget[0],setCpBudget=_cpBudget[1];
   var _cpMajor=useState([]),cpMajor=_cpMajor[0],setCpMajor=_cpMajor[1];
@@ -715,11 +720,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   useEffect(function(){
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed};
+        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed]);
+     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems]);
 
   // Restore autosave on first load
   useEffect(function(){
@@ -759,6 +764,23 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var wBonus=classData.spells==="priest"?wisBonus(adjStats.Wis):[];
   var adjSlots=slots.map(function(s,i){return s+(wBonus[i]||0);});
 
+  // Equipped custom gear bonuses
+  var equipped=gearItems.filter(function(g){return g.equipped;});
+  var gearStr=equipped.reduce(function(s,g){return s+(g.effects.str||0);},0);
+  var gearDex=equipped.reduce(function(s,g){return s+(g.effects.dex||0);},0);
+  var gearCon=equipped.reduce(function(s,g){return s+(g.effects.con||0);},0);
+  var gearInt=equipped.reduce(function(s,g){return s+(g.effects.int||0);},0);
+  var gearWis=equipped.reduce(function(s,g){return s+(g.effects.wis||0);},0);
+  var gearCha=equipped.reduce(function(s,g){return s+(g.effects.cha||0);},0);
+  var gearAC=equipped.reduce(function(s,g){return s+(g.effects.ac||0);},0);
+  var gearThac0=equipped.reduce(function(s,g){return s+(g.effects.thac0||0);},0);
+  var gearDmg=equipped.reduce(function(s,g){return s+(g.effects.dmg||0);},0);
+  var gearSaves=equipped.reduce(function(s,g){return s+(g.effects.saves||0);},0);
+  var gearHP=equipped.reduce(function(s,g){return s+(g.effects.hp||0);},0);
+  // Apply gear stat bonuses on top of racial adjustments
+  adjStats.Str+=gearStr; adjStats.Dex+=gearDex; adjStats.Con+=gearCon;
+  adjStats.Int+=gearInt; adjStats.Wis+=gearWis; adjStats.Cha+=gearCha;
+
   // Active spell buffs
   var buffStr=0,buffStrLvl=0,buffAC=0,buffSave=0,activeBuffs=[];
   activeCasts.forEach(function(m){
@@ -785,7 +807,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     effStrPct=exStr?Math.min(100,strPct+overflowPct):overflowPct;
   }
   var effStrB=effStrPct>0?strExBonus(effStrPct):strBonus(effStr);
-  var effAC=ac-buffAC;
+  // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
+  var effAC=ac-buffAC-gearAC;
+  var effThac0=thac0-strB.hit-gearThac0;
+  var effSaves={};
+  Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-gearSaves-buffSave;});
+  var effHP=hp+gearHP;
 
   // Active abilities/limits based on class group
   var activeAbilities=isPriest?PRIEST_ABILITIES:isWizard?WIZARD_ABILITIES:{};
@@ -1090,7 +1117,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,_version:1};
   }
   function applyCharacterData(d){
     if(!d)return;
@@ -1116,6 +1143,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(d.totemAnimal!==undefined)setTotemAnimal(d.totemAnimal);
     if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
     if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
+    if(d.gearItems)setGearItems(d.gearItems);
   }
 
   // ── JSON save / load ─────────────────────────────────────────────────────
@@ -1193,7 +1221,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
   // Styles
   var g="#c9a84c",bg="#08080d",surf="#111118",brd="#1e1e2e",dim="#666050",txt="#ccc8b8";
-  var tabs=["stats","combat","spells","✦ CP","sheet","notes","items","✦ AI"];
+  var tabs=["stats","combat","spells","✦ CP","sheet","notes","items","gear","✦ AI"];
 
   return (
     <div style={{minHeight:"100vh",background:bg,color:txt,fontFamily:"Georgia,serif",display:"flex",flexDirection:"column"}}>
@@ -1245,9 +1273,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         <input value={charName} onChange={function(e){setCharName(e.target.value);}} placeholder="Character Name" style={{padding:"4px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"3px",color:g,fontSize:"14px",fontFamily:"Georgia,serif",width:"160px",outline:"none"}} />
         <span style={{color:dim}}>{race} {cls}{kit?" ("+kit+")":""}</span>
         <span style={{color:dim}}>Lvl {level}</span>
-        <span style={{color:"#e08080"}}>HP {hp}</span>
-        <span style={{color:"#80a0e0"}}>AC {ac}</span>
-        <span style={{color:"#e0c080"}}>THAC0 {thac0}</span>
+        <span style={{color:"#e08080"}}>HP {effHP}</span>
+        <span style={{color:"#80a0e0"}}>AC {effAC}</span>
+        <span style={{color:"#e0c080"}}>THAC0 {effThac0}</span>
         {(isPriest||isWizard)&&<span style={{color:cpRemaining<0?"#e06060":cpRemaining===0?"#60e060":"#80a0e0",fontFamily:"monospace",fontSize:"11px"}}>CP: {cpSpent-cpRefund}/{cpBudget}</span>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
@@ -1436,15 +1464,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {/* ═══ COMBAT TAB ═══ */}
         {tab==="combat"&&<div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px",marginBottom:"20px"}}>
-            <SB label="THAC0" value={thac0} color="#e0c080" sub={(exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0"))+" ":"")+("Hit: "+(strB.hit>=0?"+":"")+strB.hit)} />
-            <SB label="AC" value={ac} color="#80a0e0" sub={"Dex: "+dexAC(adjStats.Dex)} />
-            <SB label="HP" value={hp} color="#e08080" sub={"d"+classData.hd} />
-            <SB label="DMG ADJ" value={(strB.dmg>=0?"+":"")+strB.dmg} color="#e0a080" sub={exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0")):"Str "+adjStats.Str} />
+            <SB label="THAC0" value={effThac0} color="#e0c080" sub={"Hit: "+(strB.hit>=0?"+":"")+strB.hit+(gearThac0?" Gear:"+(gearThac0>0?"+":"")+gearThac0:"")} />
+            <SB label="AC" value={effAC} color="#80a0e0" sub={"Dex: "+dexAC(adjStats.Dex)+(gearAC?" Gear:"+(gearAC>0?"+":"")+gearAC:"")} />
+            <SB label="HP" value={effHP} color="#e08080" sub={"d"+classData.hd+(gearHP?" +"+gearHP+" gear":"")} />
+            <SB label="DMG ADJ" value={(effStrB.dmg+gearDmg>=0?"+":"")+(effStrB.dmg+gearDmg)} color="#e0a080" sub={exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0")):"Str "+adjStats.Str} />
           </div>
           <Lbl dim={dim}>SAVING THROWS</Lbl>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px",marginBottom:"20px"}}>
-            {Object.keys(saves).map(function(s){var n={Para:"Para/Poison",Rod:"Rod/Staff",Pet:"Petrify",Breath:"Breath",Spell:"Spell"};
-              return <div key={s} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"8px",textAlign:"center"}}><div style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>{n[s]}</div><div style={{fontSize:"18px",color:g,fontWeight:"bold",marginTop:"4px"}}>{saves[s]}</div></div>;
+            {Object.keys(effSaves).map(function(s){var n={Para:"Para/Poison",Rod:"Rod/Staff",Pet:"Petrify",Breath:"Breath",Spell:"Spell"};
+              return <div key={s} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"8px",textAlign:"center"}}><div style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>{n[s]}</div><div style={{fontSize:"18px",color:g,fontWeight:"bold",marginTop:"4px"}}>{effSaves[s]}</div></div>;
             })}
           </div>
           {adjSlots.length>0&&<div><Lbl dim={dim}>SPELL SLOTS</Lbl><div style={{display:"flex",gap:"8px",marginBottom:"10px"}}>{adjSlots.map(function(s,i){var u=memoCount(i+1);return <div key={i} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"8px 12px",textAlign:"center",minWidth:"50px"}}><div style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>LVL {i+1}</div><div style={{fontSize:"16px",color:u>=s?"#e08080":g,fontWeight:"bold"}}>{u}/{s}</div></div>;})}</div></div>}
@@ -1694,11 +1722,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>
             <div>
               <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SAVING THROWS</div>
-              {Object.keys(saves).map(function(s){var n={Para:"Para/Poison/Death",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:"Spell"};
-                var sbuff=buffSave>0&&s!=="Spell"?buffSave:0;
+              {Object.keys(effSaves).map(function(s){var n={Para:"Para/Poison/Death",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:"Spell"};
                 var wisAdj2=(s==="Spell"||s==="Rod")?wisAdj:0;
-                var sv=saves[s]-sbuff-wisAdj2;
-                var note=sbuff>0?"* ":wisAdj2!==0?(wisAdj2>0?"\u2665 ":"\u2666 "):"";
+                var sv=effSaves[s]-wisAdj2;
+                var note=wisAdj2!==0?(wisAdj2>0?"\u2665 ":"\u2666 "):"";
                 return <Row key={s} l={note+(n[s]||s)} v={sv} l2="" v2="" />;
               })}
             </div>
@@ -1844,6 +1871,113 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   {isOpen&&<div style={{padding:"8px 14px 12px 14px",borderTop:"1px solid "+brd,fontSize:"12px",color:"#b8b4a8",lineHeight:"1.7",fontStyle:"italic"}}>
                     {it.description||<span style={{color:dim,fontFamily:"monospace",fontStyle:"normal"}}>No description available.</span>}
                   </div>}
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
+
+        {/* ═══ GEAR TAB ═══ */}
+        {tab==="gear"&&(function(){
+          var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor/Shield","Wand/Staff/Rod","Misc"];
+          var EFFECT_LABELS={str:"STR",dex:"DEX",con:"CON",int:"INT",wis:"WIS",cha:"CHA",ac:"AC bonus",thac0:"THAC0 bonus",dmg:"Damage bonus",saves:"Saves bonus",hp:"HP bonus"};
+          var EFFECT_COLORS={str:"#e08080",dex:"#80e0a0",con:"#e0a060",int:"#80c0e0",wis:"#c080e0",cha:"#e0c080",ac:"#80a0e0",thac0:"#e0c080",dmg:"#e09060",saves:"#a0e0a0",hp:"#e08080"};
+          function saveGear(form){
+            var item=Object.assign({},form,{id:form.id||Date.now()+"_"+Math.random().toString(36).slice(2),equipped:form.equipped||false});
+            setGearItems(function(prev){var idx=prev.findIndex(function(g){return g.id===item.id;});return idx>=0?prev.map(function(g,i){return i===idx?item:g;}):prev.concat([item]);});
+            setGearForm(null);
+          }
+          function deleteGear(id){setGearItems(function(prev){return prev.filter(function(g){return g.id!==id;})});}
+          function toggleEquip(id){setGearItems(function(prev){return prev.map(function(g){return g.id===id?Object.assign({},g,{equipped:!g.equipped}):g;});});}
+          function setEffect(key,val){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{[key]:parseInt(val)||0})});});}
+          var equippedGear=gearItems.filter(function(g){return g.equipped;});
+          var anyBonuses=equippedGear.length>0;
+          return <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px",flexWrap:"wrap",gap:"8px"}}>
+              <Lbl dim={dim}>CUSTOM MAGIC ITEMS {gearItems.length>0&&<span style={{color:"#666",fontWeight:"normal"}}>({gearItems.length} created, {equippedGear.length} equipped)</span>}</Lbl>
+              {!gearForm&&<button onClick={newGearForm} style={{padding:"6px 16px",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>+ Create Item</button>}
+            </div>
+
+            {/* Active bonus summary */}
+            {anyBonuses&&<div style={{background:"#0d1a0d",border:"1px solid #2a4a2a",borderRadius:"6px",padding:"10px 14px",marginBottom:"14px"}}>
+              <div style={{fontSize:"10px",color:"#7db87d",fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>EQUIPPED BONUSES (applied to sheet)</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
+                {Object.keys(EFFECT_LABELS).map(function(k){
+                  var total=equippedGear.reduce(function(s,g){return s+(g.effects[k]||0);},0);
+                  if(!total)return null;
+                  return <span key={k} style={{fontSize:"11px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 8px"}}>{EFFECT_LABELS[k]}: {total>0?"+":""}{total}</span>;
+                })}
+              </div>
+            </div>}
+
+            {/* Creator form */}
+            {gearForm&&<div style={{background:surf,border:"1px solid #2a2a4a",borderRadius:"8px",padding:"16px",marginBottom:"16px"}}>
+              <div style={{color:g,fontWeight:"bold",marginBottom:"12px",fontVariant:"small-caps",letterSpacing:"1px",fontSize:"13px"}}>{gearForm.id?"Edit Item":"New Magic Item"}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+                <div>
+                  <Lbl dim={dim}>Item Name</Lbl>
+                  <input value={gearForm.name} onChange={function(e){setGearForm(function(f){return Object.assign({},f,{name:e.target.value});});}}
+                    placeholder="e.g. Ring of Protection +2" style={Object.assign({},is(brd,txt),{width:"100%"})} />
+                </div>
+                <div>
+                  <Lbl dim={dim}>Item Type</Lbl>
+                  <select value={gearForm.type} onChange={function(e){setGearForm(function(f){return Object.assign({},f,{type:e.target.value});});}} style={Object.assign({},ss(brd,txt),{width:"100%"})}>
+                    {GEAR_TYPES.map(function(t){return <option key={t}>{t}</option>;})}
+                  </select>
+                </div>
+              </div>
+              <div style={{marginBottom:"10px"}}>
+                <Lbl dim={dim}>Description / Notes</Lbl>
+                <textarea value={gearForm.desc} onChange={function(e){setGearForm(function(f){return Object.assign({},f,{desc:e.target.value});});}}
+                  placeholder="Flavor text or special powers…" rows={2}
+                  style={{width:"100%",padding:"6px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"Georgia,serif",outline:"none",resize:"vertical"}} />
+              </div>
+              <Lbl dim={dim}>Stat & Combat Effects <span style={{color:"#555",fontWeight:"normal"}}>(positive = bonus; negative = penalty; AC −2 means better AC)</span></Lbl>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"6px",marginBottom:"14px"}}>
+                {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                  <label style={{fontSize:"10px",color:EFFECT_COLORS[k],fontFamily:"monospace"}}>{EFFECT_LABELS[k]}</label>
+                  <input type="number" value={gearForm.effects[k]||0}
+                    onChange={function(e){setEffect(k,e.target.value);}}
+                    style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
+                </div>;})}
+              </div>
+              <div style={{display:"flex",gap:"8px"}}>
+                <button onClick={function(){saveGear(gearForm);}} disabled={!gearForm.name.trim()}
+                  style={{padding:"7px 20px",background:gearForm.name.trim()?"#1e2a1e":"#111",color:gearForm.name.trim()?"#7db87d":dim,border:"1px solid "+(gearForm.name.trim()?"#3a5a3a":brd),borderRadius:"4px",cursor:gearForm.name.trim()?"pointer":"not-allowed",fontFamily:"monospace",fontSize:"11px"}}>Save Item</button>
+                <button onClick={function(){setGearForm(null);}}
+                  style={{padding:"7px 16px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>Cancel</button>
+              </div>
+            </div>}
+
+            {/* Item list */}
+            {gearItems.length===0&&!gearForm&&<div style={{padding:"40px",textAlign:"center",color:dim}}>
+              <div style={{fontSize:"32px",opacity:0.3,marginBottom:"10px"}}>⚔</div>
+              <div style={{marginBottom:"6px"}}>No custom items yet.</div>
+              <div style={{fontSize:"11px"}}>Click <strong style={{color:txt}}>+ Create Item</strong> to forge a magic item with stat effects that auto-update the sheet.</div>
+            </div>}
+            <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+              {gearItems.map(function(it){
+                var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];}).map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
+                return <div key={it.id} style={{background:surf,border:"1px solid "+(it.equipped?"#2a4a2a":brd),borderRadius:"6px",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+                      <span style={{fontSize:"13px",color:it.equipped?g:txt,fontWeight:"bold"}}>{it.name}</span>
+                      <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{it.type}</span>
+                      {it.equipped&&<span style={{fontSize:"9px",color:"#7db87d",fontFamily:"monospace"}}>✓ equipped</span>}
+                    </div>
+                    {bonusParts.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"5px"}}>{bonusParts}</div>}
+                    {it.desc&&<div style={{fontSize:"11px",color:dim,marginTop:"4px",fontStyle:"italic"}}>{it.desc}</div>}
+                  </div>
+                  <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                    <button onClick={function(){toggleEquip(it.id);}}
+                      style={{padding:"4px 12px",background:it.equipped?"#1a2a1a":"#1a1a28",color:it.equipped?"#7db87d":"#80a0e0",border:"1px solid "+(it.equipped?"#3a5a3a":"#2a2a5a"),borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>
+                      {it.equipped?"Unequip":"Equip"}
+                    </button>
+                    <button onClick={function(){setGearForm(Object.assign({},it,{effects:Object.assign({},it.effects)}));}}
+                      style={{padding:"4px 10px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Edit</button>
+                    <button onClick={function(){deleteGear(it.id);}}
+                      style={{padding:"4px 10px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
+                  </div>
                 </div>;
               })}
             </div>
