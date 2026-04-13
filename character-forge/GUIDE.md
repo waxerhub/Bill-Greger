@@ -62,7 +62,7 @@ A free-text scratchpad that auto-saves with the character. Use it for equipment 
 
 ## Tab 7 — INV (Inventory)
 
-> *(Screenshot coming soon)*
+![INV tab](docs/07-inv.png)
 
 Track everything your character is carrying. Add custom items with **Name**, **Quantity**, **Weight**, **Cost**, and **Notes** fields. A running **total weight** keeps your encumbrance honest.
 
@@ -76,7 +76,7 @@ Existing inventory entries can be **edited or deleted** inline with the pencil a
 
 ## Tab 8 — ITEMS
 
-> *(Screenshot coming soon)*
+![ITEMS tab](docs/08-items.png)
 
 A two-sub-tab magic item hub combining an official reference compendium with a fully custom item builder.
 
