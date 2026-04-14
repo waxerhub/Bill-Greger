@@ -205,17 +205,76 @@ var WIZARD_LIMITS={"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Difficult mem
 
 // ======== ACTIVE SPELL EFFECTS ========
 var BUFF_SPELLS={
-  "Stone Strength":{level:1,strBonus:2,desc:"+2 STR (muscles harden like stone)"},
-  "Barkskin":{level:2,acBonus:2,saveBonus:1,desc:"AC +2 (bark-tough skin). Saves vs all attack forms except magic +1."},
-  "Oxen Strength":{level:3,strLvlBonus:true,desc:"+1 STR/level (max 18/00). Each 10% exceptional = 1 point. Unarmored AC 8."}
+  // 1st level
+  "Silverbeard -Dwarf":  {acBonus:2,desc:"AC 8 unarmored (or +2 bonus). Silver beard intercepts melee attacks"},
+  "Stone Strength":      {strBonus:2,desc:"+2 STR for 1 turn/level. Muscles harden like stone"},
+  // 2nd level
+  "Barkskin":            {acBonus:2,saveBonus:1,desc:"AC +2 (bark-tough skin). Saves vs all attack forms except magic +1"},
+  "Chant":               {thac0Bonus:1,dmgBonus:1,saveBonus:1,desc:"+1 attack/damage/saves to allies; -1 to enemies"},
+  "Draw Upon Holy Might":{strBonus:2,desc:"+1 STR (or DEX/CON/CHA) per 3 levels. Simplified: +2 STR"},
+  // 3rd level
+  "Negative Plane Protection":{saveBonus:2,desc:"Saves +2 vs. energy drain attacks from undead"},
+  "Oxen Strength":       {strLvlBonus:true,desc:"+1 STR/level (max 18/00). Each 10% exceptional = 1 point"},
+  "Prayer":              {thac0Bonus:1,dmgBonus:1,saveBonus:1,desc:"+1 attack/damage/saves to allies; -1 to enemies"},
+  "Strength of One":     {strBonus:4,desc:"Group gains highest member's STR bonus. Simplified: +4 STR"},
+  // 4th level
+  "Defensive Harmony":   {acBonus:3,desc:"+1 AC per additional ally sharing spell (max +5). Typical group: +3"},
+  "Dragon Scales":       {acBonus:2,desc:"Dragon scale plating: AC 4 base or +2 bonus, whichever better"},
+  "Recitation":          {thac0Bonus:2,saveBonus:2,desc:"+2 attack/saves to allies (+3 same faith); -2 penalty to enemies"},
+  // 6th level
+  "Heroes' Feast":       {thac0Bonus:1,saveBonus:1,desc:"Feast effects: +1 attack/saves, immune to fear for 12 hours"},
 };
 
-// Duration in rounds for known buff spells (function of caster level)
+// Legacy hardcoded durations — kept as fallback for 3 original buff spells
 var SPELL_DURATIONS={
   "Stone Strength":function(l){return l*10;},   // 1 turn/level
   "Barkskin":      function(l){return 4+l;},    // 4 rds + 1/level
   "Oxen Strength": function(l){return l;}       // 1 round/level
 };
+
+// Parse an AD&D 2E duration string → rounds (integer), null (permanent/ongoing), or 0 (unknown/special)
+// AD&D: 1 turn = 10 rounds, 1 hour = 60 rounds, 1 day = 600 rounds
+function parseDuration(durStr,lvl){
+  if(!durStr)return 0;
+  var s=durStr.toLowerCase().trim();
+  if(!s||s==="special"||s==="varies"||s==="see text"||s==="see below"||s==="0")return 0;
+  if(s==="permanent"||s==="instantaneous"||s==="until discharged"||
+     s==="until triggered"||s==="until used"||s==="until expended"||
+     s==="indefinite")return null;
+  var m;
+  // "X rounds/level"
+  m=s.match(/^(\d+)\s*rounds?\/level/);if(m)return +m[1]*lvl;
+  // "X turns/level"
+  m=s.match(/^(\d+)\s*turns?\/level/);if(m)return +m[1]*lvl*10;
+  // "X hours/level"
+  m=s.match(/^(\d+)\s*hours?\/level/);if(m)return +m[1]*lvl*60;
+  // "X days/level"
+  m=s.match(/^(\d+)\s*days?\/level/);if(m)return +m[1]*lvl*600;
+  // "X + Y rounds/level"
+  m=s.match(/^(\d+)\s*\+\s*(\d+)\s*rounds?\/level/);if(m)return +m[1]+ +m[2]*lvl;
+  // "X + Y turns/level"
+  m=s.match(/^(\d+)\s*\+\s*(\d+)\s*turns?\/level/);if(m)return +m[1]*10+ +m[2]*10*lvl;
+  // fixed rounds
+  m=s.match(/^(\d+)\s*rounds?\b/);if(m)return +m[1];
+  // fixed turns
+  m=s.match(/^(\d+)\s*turns?\b/);if(m)return +m[1]*10;
+  // fixed hours
+  m=s.match(/^(\d+)\s*hours?\b/);if(m)return +m[1]*60;
+  // plain integer → rounds
+  m=s.match(/^(\d+)$/);if(m)return +m[1];
+  // "X + Y round/level" compound via split
+  if(s.indexOf("+")>=0){
+    return s.split("+").reduce(function(acc,p){var v=parseDuration(p.trim(),lvl);return acc+(v||0);},0);
+  }
+  return 0;
+}
+
+// Format casting time for display (bare number = segments in AD&D 2E)
+function formatCastingTime(ct){
+  if(!ct)return "";
+  if(/^\d+$/.test(ct.trim()))return ct.trim()+" seg.";
+  return ct.trim();
+}
 
 // ======== DICE ROLLER COMPONENTS ========
 var DOT_POS={
@@ -1065,15 +1124,17 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var strB=exStr?strExBonus(strPct):strBonus(adjStats.Str);
 
   // Active spell buffs
-  var buffStr=0,buffStrLvl=0,buffAC=0,buffSave=0,activeBuffs=[];
+  var buffStr=0,buffStrLvl=0,buffAC=0,buffSave=0,buffThac0=0,buffDmg=0,activeBuffs=[];
   activeCasts.forEach(function(m){
     var sp=BUFF_SPELLS[m["Spell Name"]];
     if(sp){
       activeBuffs.push(m["Spell Name"]);
-      if(sp.strBonus)  buffStr+=sp.strBonus;
-      if(sp.strLvlBonus) buffStrLvl+=level; // Oxen Strength: +1 STR per caster level
-      if(sp.acBonus)   buffAC+=sp.acBonus;
-      if(sp.saveBonus) buffSave+=sp.saveBonus;
+      if(sp.strBonus)    buffStr+=sp.strBonus;
+      if(sp.strLvlBonus) buffStrLvl+=level; // +1 STR per caster level
+      if(sp.acBonus)     buffAC+=sp.acBonus;
+      if(sp.saveBonus)   buffSave+=sp.saveBonus;
+      if(sp.thac0Bonus)  buffThac0+=sp.thac0Bonus;
+      if(sp.dmgBonus)    buffDmg+=sp.dmgBonus;
     }
   });
   // Compute effective STR & exceptional percentile from buffs
@@ -1092,7 +1153,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var effStrB=effStrPct>0?strExBonus(effStrPct):strBonus(effStr);
   // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
   var effAC=ac-buffAC-gearAC;
-  var effThac0=thac0-effStrB.hit-gearThac0;
+  var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-gearSaves-buffSave;});
   var effHP=hp+gearHP;
@@ -1210,7 +1271,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   function memoCount(lv){return memorized.filter(function(m){return m.Level==lv;}).length;}
   // Open inline cast dialog; pre-fill rounds from SPELL_DURATIONS if known
   function initCast(s){
-    var autoRounds=SPELL_DURATIONS[s["Spell Name"]]?SPELL_DURATIONS[s["Spell Name"]](level):0;
+    var legacyFn=SPELL_DURATIONS[s["Spell Name"]];
+    var autoRounds=legacyFn?legacyFn(level):(parseDuration(s["Duration"]||"",level)||0);
     setCastingSpell({prepId:s.prepId,spell:s,rounds:autoRounds});
   }
   // Expend spell with no active tracking (instantaneous effect)
@@ -1319,7 +1381,32 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   function toggleSpellDesc(id){
     setExpandedSpell(function(prev){return prev===id?null:id;});
   }
-  var HIDDEN_FIELDS=new Set(["Spell Name","Level","Category","Sphere","School","Damage Dice","_type"]);
+  var HIDDEN_FIELDS=new Set(["Spell Name","Level","Category","Sphere","School","Damage Dice","_type",
+    "Duration","Range","Casting Time","Area of Effect","Components","Saving Throw"]);
+  // Render a wiki-style spell info card (Duration, Range, etc. then description)
+  function SpellCard({s,dim,txt,g}){
+    var CARD_FIELDS=[
+      ["Duration",      s["Duration"]],
+      ["Range",         s["Range"]],
+      ["Casting Time",  s["Casting Time"]?formatCastingTime(s["Casting Time"]):null],
+      ["Area of Effect",s["Area of Effect"]],
+      ["Components",    s["Components"]],
+      ["Saving Throw",  s["Saving Throw"]],
+    ].filter(function(f){return f[1]&&f[1]!==""&&f[1]!=="Unknown";});
+    var extras=spellExtraFields(s);
+    return <div style={{fontSize:"11px",color:"#b8b4a8",lineHeight:"1.7"}}>
+      {CARD_FIELDS.length>0&&<div style={{background:"#060610",border:"1px solid #1e2e1e",borderRadius:"4px",padding:"6px 10px",marginBottom:"8px"}}>
+        {CARD_FIELDS.map(function(f){return <div key={f[0]} style={{display:"flex",gap:"8px",lineHeight:"1.6"}}>
+          <span style={{color:"#607060",fontFamily:"monospace",minWidth:"90px",flexShrink:0,fontSize:"10px"}}>{f[0]}:</span>
+          <span style={{fontStyle:"normal",color:"#a0c0a0",fontSize:"11px"}}>{f[1]}</span>
+        </div>;})}
+      </div>}
+      <div style={{fontStyle:"italic",lineHeight:"1.6",color:"#b8b4a8"}}>{s.Description}</div>
+      {extras.length>0&&<div style={{marginTop:"6px",borderTop:"1px solid #1e2e1e",paddingTop:"4px"}}>
+        {extras.map(function(k){return <div key={k} style={{marginBottom:"2px"}}><span style={{color:dim,fontFamily:"monospace",marginRight:"6px"}}>{k}:</span><span style={{fontStyle:"normal",color:txt}}>{String(s[k])}</span></div>;})}
+      </div>}
+    </div>;
+  }
   function spellExtraFields(s){
     return Object.keys(s).filter(function(k){return !HIDDEN_FIELDS.has(k)&&s[k]!==""&&s[k]!==null&&s[k]!==undefined;});
   }
@@ -1903,11 +1990,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   <button onClick={function(){toggleSpellDesc(aId);}} title="Show description" style={{background:"transparent",border:"none",color:aOpen?g:dim,cursor:"pointer",fontSize:"12px",padding:"0 4px",lineHeight:1}}>{aOpen?"▼":"▶"}</button>
                   <button onClick={function(){dismissCast(c.castId);}} style={{background:"transparent",color:"#664444",border:"none",cursor:"pointer",fontSize:"14px",padding:"0 2px",lineHeight:"1"}}>×</button>
                 </div>
-                {aOpen&&<div style={{padding:"4px 14px 8px 44px",fontSize:"11px",color:"#b8b4a8",lineHeight:"1.6",fontStyle:"italic"}}>
-                  {(function(){var ef=spellExtraFields(c);
-                    if(ef.length===0)return <span style={{color:dim,fontFamily:"monospace"}}>No additional data — upload a richer XLSX to see spell details</span>;
-                    return ef.map(function(k){return <div key={k} style={{marginBottom:"2px"}}><span style={{color:dim,fontFamily:"monospace",marginRight:"6px"}}>{k}:</span><span style={{fontStyle:"normal",color:txt}}>{String(c[k])}</span></div>;});
-                  })()}
+                {aOpen&&<div style={{padding:"4px 14px 8px 44px"}}>
+                  <SpellCard s={c} dim={dim} txt={txt} g={g} />
                 </div>}
               </div>;
             })}
@@ -1921,8 +2005,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>
             {memorized.slice().sort(function(a,b){return a.Level-b.Level;}).map(function(s,i){
               var isBuff=!!BUFF_SPELLS[s["Spell Name"]];
-              var durFn=SPELL_DURATIONS[s["Spell Name"]];
-              var durLabel=durFn?(" · "+durFn(level)+" rds"):"";
+              var durLabel=s["Duration"]?(" · "+s["Duration"]):(SPELL_DURATIONS[s["Spell Name"]]?(" · "+SPELL_DURATIONS[s["Spell Name"]](level)+" rds"):"");
               var isCasting=castingSpell&&castingSpell.prepId===s.prepId;
               var pName=s["Spell Name"];var pId="prep_"+(s.prepId||i);var pOpen=expandedSpell===pId;
               return <div key={i} style={{borderBottom:"1px solid "+(isCasting?"#2a3a1e":"#1e1e2e"),background:isCasting?"#0d1a0d":pOpen?"#0e0e1c":"transparent"}}>
@@ -1941,11 +2024,20 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   <button onClick={function(){toggleSpellDesc(pId);}} title="Show description" style={{background:"transparent",border:"none",color:pOpen?g:dim,cursor:"pointer",fontSize:"12px",padding:"0 4px",lineHeight:1}}>{pOpen?"▼":"▶"}</button>
                   {!isCasting&&<button onClick={function(){removeFromMemo(s.prepId);}} style={{background:"transparent",color:"#664444",border:"none",cursor:"pointer",fontSize:"14px",padding:"0 2px",lineHeight:"1"}}>×</button>}
                 </div>
-                {pOpen&&<div style={{padding:"4px 14px 8px 44px",fontSize:"11px",color:"#b8b4a8",lineHeight:"1.6",fontStyle:"italic"}}>
-                  {(function(){var ef=spellExtraFields(s);
-                    if(ef.length===0)return <span style={{color:dim,fontFamily:"monospace"}}>No additional data — upload a richer XLSX to see spell details</span>;
-                    return ef.map(function(k){return <div key={k} style={{marginBottom:"2px"}}><span style={{color:dim,fontFamily:"monospace",marginRight:"6px"}}>{k}:</span><span style={{fontStyle:"normal",color:txt}}>{String(s[k])}</span></div>;});
-                  })()}
+                {isCasting&&(function(){
+                  var ct=s["Casting Time"]?formatCastingTime(s["Casting Time"]):null;
+                  var dur=s["Duration"]||null;
+                  var rng=s["Range"]||null;
+                  var fields=[[ct&&"CT",ct],[dur&&"Duration",dur],[rng&&"Range",rng]].filter(function(f){return f[0]&&f[1];});
+                  if(!fields.length)return null;
+                  return <div style={{padding:"0 12px 6px 44px"}}>
+                    <div style={{background:"#060610",border:"1px solid #1e3e1e",borderRadius:"4px",padding:"4px 10px",fontSize:"10px",fontFamily:"monospace",display:"flex",gap:"16px",flexWrap:"wrap"}}>
+                      {fields.map(function(f){return <span key={f[0]}><span style={{color:"#607060"}}>{f[0]}: </span><span style={{color:"#a0c0a0"}}>{f[1]}</span></span>;})}
+                    </div>
+                  </div>;
+                })()}
+                {pOpen&&<div style={{padding:"4px 14px 8px 44px"}}>
+                  <SpellCard s={s} dim={dim} txt={txt} g={g} />
                 </div>}
               </div>;
             })}
@@ -1972,11 +2064,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   {s["Damage Dice"]&&<span style={{fontSize:"9px",color:"#e08080",fontFamily:"monospace"}}>{s["Damage Dice"]}</span>}
                   <button onClick={function(){toggleSpellDesc(compId);}} title="Show description" style={{background:"transparent",border:"none",color:isOpen?g:dim,cursor:"pointer",fontSize:"12px",padding:"0 4px",lineHeight:1}}>{isOpen?"▼":"▶"}</button>
                 </div>
-                {isOpen&&<div style={{padding:"6px 14px 10px 58px",fontSize:"11px",color:"#b8b4a8",lineHeight:"1.6",fontStyle:"italic"}}>
-                  {(function(){var ef=spellExtraFields(s);
-                    if(ef.length===0)return <span style={{color:dim,fontFamily:"monospace"}}>No additional data — upload a richer XLSX to see spell details</span>;
-                    return ef.map(function(k){return <div key={k} style={{marginBottom:"2px"}}><span style={{color:dim,fontFamily:"monospace",marginRight:"6px"}}>{k}:</span><span style={{fontStyle:"normal",color:txt}}>{String(s[k])}</span></div>;});
-                  })()}
+                {isOpen&&<div style={{padding:"6px 14px 10px 58px"}}>
+                  <SpellCard s={s} dim={dim} txt={txt} g={g} />
                 </div>}
               </div>;
             })}
