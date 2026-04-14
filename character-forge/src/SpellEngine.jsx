@@ -1480,7 +1480,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setExpandedSpell(function(prev){return prev===id?null:id;});
   }
   var HIDDEN_FIELDS=new Set(["Spell Name","Level","Category","Sphere","School","Damage Dice","_type",
-    "Duration","Range","Casting Time","Area of Effect","Components","Saving Throw"]);
+    "Duration","Range","Casting Time","Area of Effect","Components","Saving Throw",
+    "Description","Damage Type","Source"]);
   // Render a wiki-style spell info card (Duration, Range, etc. then description)
   function SpellCard({s,dim,txt,g}){
     var CARD_FIELDS=[
