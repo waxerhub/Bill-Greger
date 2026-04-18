@@ -2495,6 +2495,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                         if(alreadyAdded){setItemsSub("custom");return;}
                         var newItem=Object.assign({},BLANK_GEAR,{id:Date.now()+"_"+Math.random().toString(36).slice(2),name:it.name,type:catToType[it.category]||"Misc",desc:it.description||"",effects:Object.assign({},BLANK_GEAR.effects),equipped:true});
                         setGearItems(function(prev){return prev.concat([newItem]);});
+                        if(!inventory.some(function(x){return x.name===it.name;})){
+                          setInventory(function(inv){return inv.concat([{id:Date.now()+"_"+Math.random().toString(36).slice(2),name:it.name,qty:1,weight:0,cost:0,notes:(it.category||"Magic Item")}]);});
+                        }
                         setItemsSub("custom");
                       }} style={{padding:"3px 8px",background:alreadyAdded?"#1a2a1a":"#1a1a28",color:alreadyAdded?"#7db87d":"#80a0e0",border:"1px solid "+(alreadyAdded?"#3a5a3a":"#2a2a5a"),borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px",flexShrink:0}}>
                         {alreadyAdded?"In Gear":"+ Equip"}
@@ -2533,7 +2536,14 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             setGearForm(null);setGearAiPrompt("");setGearAiError("");
           }
           function deleteGear(id){setGearItems(function(prev){return prev.filter(function(g){return g.id!==id;})});}
-          function toggleEquip(id){setGearItems(function(prev){return prev.map(function(g){return g.id===id?Object.assign({},g,{equipped:!g.equipped}):g;});});}
+          function toggleEquip(id){setGearItems(function(prev){return prev.map(function(g){
+            if(g.id!==id)return g;
+            var nowEquipped=!g.equipped;
+            if(nowEquipped&&!inventory.some(function(x){return x.name===g.name;})){
+              setInventory(function(inv){return inv.concat([{id:Date.now()+"_"+Math.random().toString(36).slice(2),name:g.name,qty:1,weight:0,cost:0,notes:(g.source?g.source+" — ":"")+(g.type||"Magic Item")}]);});
+            }
+            return Object.assign({},g,{equipped:nowEquipped});
+          });});}
           function setActiveTier(id,idx){setGearItems(function(prev){return prev.map(function(g){return g.id===id?Object.assign({},g,{activeTier:idx}):g;});});}
           function setEffect(key,val){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{[key]:parseInt(val)||0})});});}
 
