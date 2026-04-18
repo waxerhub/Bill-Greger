@@ -2830,7 +2830,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"6px",marginBottom:"14px"}}>
                 {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"3px"}}>
                   <label style={{fontSize:"10px",color:EFFECT_COLORS[k],fontFamily:"monospace"}}>{EFFECT_LABELS[k]}</label>
-                  <input type="number" value={gearForm.effects[k]||0}
+                  <input type="number" value={gearForm.effects[k]||""}
                     onChange={function(e){setEffect(k,e.target.value);}}
                     style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
                 </div>;})}
@@ -2858,7 +2858,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap",padding:"10px 12px",background:bg}}>
                     <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
                       <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Dice</label>
-                      <input type="number" min={0} max={30} value={gearForm.effects.bonusDmgDice||0}
+                      <input type="number" min={0} max={30} value={gearForm.effects.bonusDmgDice||""}
                         onChange={function(e){setEffect("bonusDmgDice",Math.max(0,parseInt(e.target.value)||0));}}
                         style={{width:"60px",padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center"}} />
                     </div>
