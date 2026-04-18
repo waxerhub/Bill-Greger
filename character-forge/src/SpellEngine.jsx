@@ -2871,7 +2871,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:"3px",flex:1,minWidth:"140px"}}>
                       <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Damage Type</label>
-                      <select value={gearForm.effects.bonusDmgType||""} onChange={function(e){setEffect("bonusDmgType",e.target.value);}}
+                      <select value={gearForm.effects.bonusDmgType||""} onChange={function(e){var v=e.target.value;setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{bonusDmgType:v})});});}}
                         style={Object.assign({},ss(brd,txt),{width:"100%",color:gearForm.effects.bonusDmgType?DMG_TYPE_COLORS[gearForm.effects.bonusDmgType]||txt:dim})}>
                         <option value="">— None —</option>
                         {DMG_TYPES.map(function(t){return <option key={t} value={t}>{t}</option>;})}
