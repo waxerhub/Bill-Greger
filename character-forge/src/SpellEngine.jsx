@@ -1090,7 +1090,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Gear (custom items) state
   var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
-  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",specialDmgMode:"bonus"}};
+  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",tiered:false,tiers:[],activeTier:0,effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",specialDmgMode:"bonus"}};
   function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
   // AI item generation
   var _gearAiPrompt=useState(""),gearAiPrompt=_gearAiPrompt[0],setGearAiPrompt=_gearAiPrompt[1];
@@ -1202,18 +1202,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var adjSlots=slots.map(function(s,i){return s+(wBonus[i]||0);});
 
   // Equipped custom gear bonuses
+  function getActiveEffects(g){
+    if(g.tiered&&g.tiers&&g.tiers.length>0){var t=g.tiers[g.activeTier||0];return(t&&t.effects)||{};}
+    return g.effects||{};
+  }
   var equipped=gearItems.filter(function(g){return g.equipped;});
-  var gearStr=equipped.reduce(function(s,g){return s+(g.effects.str||0);},0);
-  var gearDex=equipped.reduce(function(s,g){return s+(g.effects.dex||0);},0);
-  var gearCon=equipped.reduce(function(s,g){return s+(g.effects.con||0);},0);
-  var gearInt=equipped.reduce(function(s,g){return s+(g.effects.int||0);},0);
-  var gearWis=equipped.reduce(function(s,g){return s+(g.effects.wis||0);},0);
-  var gearCha=equipped.reduce(function(s,g){return s+(g.effects.cha||0);},0);
-  var gearAC=equipped.reduce(function(s,g){return s+(g.effects.ac||0);},0);
-  var gearThac0=equipped.reduce(function(s,g){return s+(g.effects.thac0||0);},0);
-  var gearDmg=equipped.reduce(function(s,g){return s+(g.effects.dmg||0);},0);
-  var gearSaves=equipped.reduce(function(s,g){return s+(g.effects.saves||0);},0);
-  var gearHP=equipped.reduce(function(s,g){return s+(g.effects.hp||0);},0);
+  var gearStr=equipped.reduce(function(s,g){return s+(getActiveEffects(g).str||0);},0);
+  var gearDex=equipped.reduce(function(s,g){return s+(getActiveEffects(g).dex||0);},0);
+  var gearCon=equipped.reduce(function(s,g){return s+(getActiveEffects(g).con||0);},0);
+  var gearInt=equipped.reduce(function(s,g){return s+(getActiveEffects(g).int||0);},0);
+  var gearWis=equipped.reduce(function(s,g){return s+(getActiveEffects(g).wis||0);},0);
+  var gearCha=equipped.reduce(function(s,g){return s+(getActiveEffects(g).cha||0);},0);
+  var gearAC=equipped.reduce(function(s,g){return s+(getActiveEffects(g).ac||0);},0);
+  var gearThac0=equipped.reduce(function(s,g){return s+(getActiveEffects(g).thac0||0);},0);
+  var gearDmg=equipped.reduce(function(s,g){return s+(getActiveEffects(g).dmg||0);},0);
+  var gearSaves=equipped.reduce(function(s,g){return s+(getActiveEffects(g).saves||0);},0);
+  var gearHP=equipped.reduce(function(s,g){return s+(getActiveEffects(g).hp||0);},0);
   // Apply gear stat bonuses on top of racial adjustments
   adjStats.Str+=gearStr; adjStats.Dex+=gearDex; adjStats.Con+=gearCon;
   adjStats.Int+=gearInt; adjStats.Wis+=gearWis; adjStats.Cha+=gearCha;
@@ -2530,6 +2534,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           }
           function deleteGear(id){setGearItems(function(prev){return prev.filter(function(g){return g.id!==id;})});}
           function toggleEquip(id){setGearItems(function(prev){return prev.map(function(g){return g.id===id?Object.assign({},g,{equipped:!g.equipped}):g;});});}
+          function setActiveTier(id,idx){setGearItems(function(prev){return prev.map(function(g){return g.id===id?Object.assign({},g,{activeTier:idx}):g;});});}
           function setEffect(key,val){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{[key]:parseInt(val)||0})});});}
 
           async function doGenerateItem(){
@@ -2849,6 +2854,17 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   placeholder="Flavor text or special powers…" rows={2}
                   style={{width:"100%",padding:"6px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"Georgia,serif",outline:"none",resize:"vertical"}} />
               </div>
+              {/* Tiered item toggle */}
+              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px",padding:"8px 12px",background:"#0a0a14",border:"1px solid #1e1e30",borderRadius:"6px"}}>
+                <input type="checkbox" id="tieredToggle" checked={!!gearForm.tiered}
+                  onChange={function(e){var on=e.target.checked;setGearForm(function(f){return Object.assign({},f,{tiered:on,tiers:on&&(!f.tiers||!f.tiers.length)?[{label:"+1",effects:Object.assign({},BLANK_GEAR.effects)}]:f.tiers});});}}
+                  style={{width:"16px",height:"16px",cursor:"pointer",accentColor:"#80a0e0"}} />
+                <label htmlFor="tieredToggle" style={{fontSize:"11px",color:"#80a0e0",fontFamily:"monospace",cursor:"pointer",userSelect:"none"}}>
+                  Tiered Item <span style={{color:dim,fontWeight:"normal"}}>(e.g. Ring of Protection — different +1/+2/+3 variants)</span>
+                </label>
+              </div>
+
+              {!gearForm.tiered&&<div>
               <Lbl dim={dim}>Stat & Combat Effects <span style={{color:"#555",fontWeight:"normal"}}>(positive = better; AC +2 lowers your AC by 2; THAC0 +2 lowers it by 2)</span></Lbl>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"6px",marginBottom:"14px"}}>
                 {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"3px"}}>
@@ -2858,54 +2874,84 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
                 </div>;})}
               </div>
-              {/* Special damage (unified bonus / breath weapon) */}
-              <Lbl dim={dim}>Special Damage <span style={{color:"#555",fontWeight:"normal"}}>(optional)</span></Lbl>
-              {(function(){
+              </div>}
+
+              {gearForm.tiered&&<div style={{marginBottom:"14px"}}>
+                <Lbl dim={dim}>Tiers <span style={{color:"#555",fontWeight:"normal"}}>(each tier is a selectable variant with its own bonuses)</span></Lbl>
+                <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"8px"}}>
+                  {(gearForm.tiers||[]).map(function(tier,ti){
+                    function setTierEffect(k,val){setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){return i===ti?Object.assign({},t,{effects:Object.assign({},t.effects,{[k]:parseInt(val)||0})}):t;});return Object.assign({},f,{tiers:newTiers});});}
+                    return <div key={ti} style={{background:"#0a0a14",border:"1px solid #2a2a4a",borderRadius:"6px",padding:"10px 12px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+                        <label style={{fontSize:"10px",color:dim,fontFamily:"monospace",flexShrink:0}}>Label:</label>
+                        <input value={tier.label||""} onChange={function(e){var v=e.target.value;setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){return i===ti?Object.assign({},t,{label:v}):t;});return Object.assign({},f,{tiers:newTiers});});}}
+                          placeholder="+1, +2 5' radius…"
+                          style={Object.assign({},is(brd,txt),{flex:1,padding:"3px 7px",fontSize:"11px"})} />
+                        <button onClick={function(){setGearForm(function(f){return Object.assign({},f,{tiers:f.tiers.filter(function(_,i){return i!==ti;})});});}}
+                          style={{padding:"2px 8px",background:"transparent",color:"#e08080",border:"1px solid #4a2020",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:"4px"}}>
+                        {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"2px"}}>
+                          <label style={{fontSize:"9px",color:EFFECT_COLORS[k],fontFamily:"monospace"}}>{EFFECT_LABELS[k]}</label>
+                          <input type="number" value={tier.effects[k]||""}
+                            onChange={function(e){setTierEffect(k,e.target.value);}}
+                            style={{padding:"3px 4px",background:"#060610",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
+                        </div>;})}
+                      </div>
+                    </div>;
+                  })}
+                </div>
+                <button onClick={function(){setGearForm(function(f){return Object.assign({},f,{tiers:(f.tiers||[]).concat([{label:"",effects:Object.assign({},BLANK_GEAR.effects)}])});});}}
+                  style={{padding:"5px 14px",background:"transparent",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>+ Add Tier</button>
+              </div>}
+              {/* Special damage (unified bonus / breath weapon) — non-tiered only */}
+              {!gearForm.tiered&&(function(){
                 var mode=gearForm.effects.specialDmgMode||"bonus";
                 var isBreath=mode==="breath";
                 var bg=isBreath?"#100a0a":"#0a0a14";
                 var bd=isBreath?"#2e1a10":"#1e1e30";
                 var previewColor=gearForm.effects.bonusDmgType?(DMG_TYPE_COLORS[gearForm.effects.bonusDmgType]||g):g;
-                return <div style={{marginBottom:"14px",border:"1px solid "+bd,borderRadius:"6px",overflow:"hidden"}}>
-                  {/* Mode toggle */}
-                  <div style={{display:"flex",borderBottom:"1px solid "+bd}}>
-                    {[["bonus","+ Bonus Damage","Adds to weapon/attack damage rolls"],["breath","Breath Weapon","Standalone attack (e.g. Talisman of the Chimera)"]].map(function(m){
-                      var active=mode===m[0];
-                      return <button key={m[0]} title={m[2]} onClick={function(){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{specialDmgMode:m[0]})});});}}
-                        style={{flex:1,padding:"6px 10px",background:active?(isBreath?"#1e0a0a":"#0a0a1e"):"transparent",color:active?(isBreath?"#e08040":"#80a0e0"):dim,border:"none",borderRight:m[0]==="bonus"?"1px solid "+bd:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"10px",fontWeight:active?"bold":"normal"}}>
-                        {m[1]}
-                      </button>;
-                    })}
-                  </div>
-                  {/* Inputs */}
-                  <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap",padding:"10px 12px",background:bg}}>
-                    <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
-                      <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Dice</label>
-                      <input type="number" min={0} max={30} value={gearForm.effects.bonusDmgDice||""}
-                        onChange={function(e){setEffect("bonusDmgDice",Math.max(0,parseInt(e.target.value)||0));}}
-                        style={{width:"60px",padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center"}} />
+                return <div style={{marginBottom:"14px"}}>
+                  <Lbl dim={dim}>Special Damage <span style={{color:"#555",fontWeight:"normal"}}>(optional)</span></Lbl>
+                  <div style={{border:"1px solid "+bd,borderRadius:"6px",overflow:"hidden"}}>
+                    <div style={{display:"flex",borderBottom:"1px solid "+bd}}>
+                      {[["bonus","+ Bonus Damage","Adds to weapon/attack damage rolls"],["breath","Breath Weapon","Standalone attack (e.g. Talisman of the Chimera)"]].map(function(m){
+                        var active=mode===m[0];
+                        return <button key={m[0]} title={m[2]} onClick={function(){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{specialDmgMode:m[0]})});});}}
+                          style={{flex:1,padding:"6px 10px",background:active?(isBreath?"#1e0a0a":"#0a0a1e"):"transparent",color:active?(isBreath?"#e08040":"#80a0e0"):dim,border:"none",borderRight:m[0]==="bonus"?"1px solid "+bd:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"10px",fontWeight:active?"bold":"normal"}}>
+                          {m[1]}
+                        </button>;
+                      })}
                     </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
-                      <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Die</label>
-                      <select value={gearForm.effects.bonusDmgDie||(isBreath?8:6)} onChange={function(e){setEffect("bonusDmgDie",parseInt(e.target.value));}}
-                        style={Object.assign({},ss(brd,txt),{width:"70px"})}>
-                        {DIE_SIZES.map(function(d){return <option key={d} value={d}>d{d}</option>;})}
-                      </select>
+                    <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap",padding:"10px 12px",background:bg}}>
+                      <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                        <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Dice</label>
+                        <input type="number" min={0} max={30} value={gearForm.effects.bonusDmgDice||""}
+                          onChange={function(e){setEffect("bonusDmgDice",Math.max(0,parseInt(e.target.value)||0));}}
+                          style={{width:"60px",padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center"}} />
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                        <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Die</label>
+                        <select value={gearForm.effects.bonusDmgDie||(isBreath?8:6)} onChange={function(e){setEffect("bonusDmgDie",parseInt(e.target.value));}}
+                          style={Object.assign({},ss(brd,txt),{width:"70px"})}>
+                          {DIE_SIZES.map(function(d){return <option key={d} value={d}>d{d}</option>;})}
+                        </select>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:"3px",flex:1,minWidth:"140px"}}>
+                        <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Damage Type</label>
+                        <select value={gearForm.effects.bonusDmgType||""} onChange={function(e){var v=e.target.value;setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{bonusDmgType:v})});});}}
+                          style={Object.assign({},ss(brd,txt),{width:"100%",color:gearForm.effects.bonusDmgType?DMG_TYPE_COLORS[gearForm.effects.bonusDmgType]||txt:dim})}>
+                          <option value="">— None —</option>
+                          {DMG_TYPES.map(function(t){return <option key={t} value={t}>{t}</option>;})}
+                        </select>
+                      </div>
+                      {gearForm.effects.bonusDmgDice>0&&gearForm.effects.bonusDmgType&&
+                        <div style={{fontSize:"12px",fontFamily:"monospace",color:previewColor,alignSelf:"flex-end",paddingBottom:"4px"}}>
+                          {isBreath?"":"+"}
+                          {gearForm.effects.bonusDmgDice}d{gearForm.effects.bonusDmgDie||6} {gearForm.effects.bonusDmgType}
+                          {isBreath&&" (breath)"}
+                        </div>}
                     </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:"3px",flex:1,minWidth:"140px"}}>
-                      <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Damage Type</label>
-                      <select value={gearForm.effects.bonusDmgType||""} onChange={function(e){var v=e.target.value;setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{bonusDmgType:v})});});}}
-                        style={Object.assign({},ss(brd,txt),{width:"100%",color:gearForm.effects.bonusDmgType?DMG_TYPE_COLORS[gearForm.effects.bonusDmgType]||txt:dim})}>
-                        <option value="">— None —</option>
-                        {DMG_TYPES.map(function(t){return <option key={t} value={t}>{t}</option>;})}
-                      </select>
-                    </div>
-                    {gearForm.effects.bonusDmgDice>0&&gearForm.effects.bonusDmgType&&
-                      <div style={{fontSize:"12px",fontFamily:"monospace",color:previewColor,alignSelf:"flex-end",paddingBottom:"4px"}}>
-                        {isBreath?"":"+"}
-                        {gearForm.effects.bonusDmgDice}d{gearForm.effects.bonusDmgDie||6} {gearForm.effects.bonusDmgType}
-                        {isBreath&&" (breath)"}
-                      </div>}
                   </div>
                 </div>;
               })()}
@@ -2930,7 +2976,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               style={{width:"100%",boxSizing:"border-box",padding:"6px 10px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"10px"}}/>}
             <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
               {gearItems.filter(function(it){return !gearSearch.trim()||(it.name||"").toLowerCase().includes(gearSearch.toLowerCase())||(it.desc||"").toLowerCase().includes(gearSearch.toLowerCase());}).map(function(it){
-                var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];}).map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
+                var ae=getActiveEffects(it);
+                var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return ae[k];}).map(function(k){var v=ae[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
                 var sdl=specialDmgLabel(it);if(sdl)bonusParts.push(<span key="sdmg" style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[sdl.dmgType]||(sdl.isBreath?"#e08040":"#e0c080"),background:sdl.isBreath?"#100a0a":"#0a0a12",border:"1px solid "+(sdl.isBreath?"#2e1a10":"#2a1a0a"),borderRadius:"3px",padding:"1px 5px"}}>{sdl.isBreath?"Breath: ":"+"}{sdl.text}</span>);
                 return <div key={it.id} style={{background:surf,border:"1px solid "+(it.equipped?"#2a4a2a":brd),borderRadius:"6px",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
                   <div style={{flex:1,minWidth:0}}>
@@ -2939,6 +2986,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                       <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{it.type}</span>
                       {it.equipped&&<span style={{fontSize:"9px",color:"#7db87d",fontFamily:"monospace"}}>✓ equipped</span>}
                     </div>
+                    {it.tiered&&it.tiers&&it.tiers.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"3px",marginTop:"5px",alignItems:"center"}}>
+                      <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",marginRight:"2px"}}>Tier:</span>
+                      {it.tiers.map(function(tier,ti){var active=(it.activeTier||0)===ti;return <button key={ti} onClick={function(){setActiveTier(it.id,ti);}}
+                        style={{padding:"2px 7px",background:active?"#1a2a3a":"transparent",color:active?"#80c0e0":dim,border:"1px solid "+(active?"#2a4a6a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px",fontWeight:active?"bold":"normal"}}>{tier.label||("T"+(ti+1))}</button>;})}
+                    </div>}
                     {bonusParts.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"5px"}}>{bonusParts}</div>}
                     {it.source&&<div style={{fontSize:"9px",color:"#607060",fontFamily:"monospace",marginTop:"3px"}}>Source: {it.source}</div>}
                     {it.desc&&<div style={{fontSize:"11px",color:dim,marginTop:"4px",fontStyle:"italic"}}>{it.desc}</div>}
