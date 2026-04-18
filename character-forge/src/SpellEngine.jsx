@@ -1090,7 +1090,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Gear (custom items) state
   var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
-  var BLANK_GEAR={id:null,name:"",type:"Ring",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:""}};
+  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:""}};
   function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
   // AI item generation
   var _gearAiPrompt=useState(""),gearAiPrompt=_gearAiPrompt[0],setGearAiPrompt=_gearAiPrompt[1];
@@ -2812,6 +2812,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 </div>
               </div>
               <div style={{marginBottom:"10px"}}>
+                <Lbl dim={dim}>Source Book</Lbl>
+                <input value={gearForm.source||""} onChange={function(e){setGearForm(function(f){return Object.assign({},f,{source:e.target.value});});}}
+                  placeholder="e.g. Tome of Magic p.42, DMG, UA"
+                  style={Object.assign({},is(brd,txt),{width:"100%"})} />
+              </div>
+              <div style={{marginBottom:"10px"}}>
                 <Lbl dim={dim}>Description / Notes</Lbl>
                 <textarea value={gearForm.desc} onChange={function(e){setGearForm(function(f){return Object.assign({},f,{desc:e.target.value});});}}
                   placeholder="Flavor text or special powers…" rows={2}
@@ -2886,6 +2892,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                       {it.equipped&&<span style={{fontSize:"9px",color:"#7db87d",fontFamily:"monospace"}}>✓ equipped</span>}
                     </div>
                     {bonusParts.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"4px",marginTop:"5px"}}>{bonusParts}</div>}
+                    {it.source&&<div style={{fontSize:"9px",color:"#607060",fontFamily:"monospace",marginTop:"3px"}}>Source: {it.source}</div>}
                     {it.desc&&<div style={{fontSize:"11px",color:dim,marginTop:"4px",fontStyle:"italic"}}>{it.desc}</div>}
                   </div>
                   <div style={{display:"flex",gap:"4px",flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
