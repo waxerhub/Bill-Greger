@@ -2799,7 +2799,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               <div style={{fontSize:"10px",color:"#7db87d",fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>EQUIPPED BONUSES (applied to sheet)</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
                 {Object.keys(EFFECT_LABELS).map(function(k){
-                  var total=equippedGear.reduce(function(s,g){return s+(g.effects[k]||0);},0);
+                  var total=equippedGear.reduce(function(s,g){return s+(getActiveEffects(g)[k]||0);},0);
                   if(!total)return null;
                   return <span key={k} style={{fontSize:"11px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 8px"}}>{EFFECT_LABELS[k]}: {total>0?"+":""}{total}</span>;
                 })}
