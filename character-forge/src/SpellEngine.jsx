@@ -2727,7 +2727,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     </div>}
                     {!gearLibLoading&&gearLibItems.map(function(it){
                       var bonuses=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];});
-                      var libBdl=bonusDmgLabel(it);
+                      var libSdl=specialDmgLabel(it);
                       return <div key={it.id} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"10px 12px",marginBottom:"6px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}}>
@@ -2735,9 +2735,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                             <span style={{fontSize:"9px",color:dim,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{it.type}</span>
                             <span style={{fontSize:"9px",color:it.role==="dm"?"#e0c080":"#80c0e0",fontFamily:"monospace"}}>{it.role==="dm"?"DM":"Player"}</span>
                           </div>
-                          {(bonuses.length>0||libBdl)&&<div style={{display:"flex",flexWrap:"wrap",gap:"3px",marginTop:"4px"}}>
+                          {(bonuses.length>0||libSdl)&&<div style={{display:"flex",flexWrap:"wrap",gap:"3px",marginTop:"4px"}}>
                             {bonuses.map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;})}
-                            {libBdl&&<span style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[it.effects.bonusDmgType]||"#e0c080",background:"#0a0a12",border:"1px solid #2a1a0a",borderRadius:"3px",padding:"1px 5px"}}>+{libBdl}</span>}
+                            {libSdl&&<span style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[libSdl.dmgType]||(libSdl.isBreath?"#e08040":"#e0c080"),background:libSdl.isBreath?"#100a0a":"#0a0a12",border:"1px solid "+(libSdl.isBreath?"#2e1a10":"#2a1a0a"),borderRadius:"3px",padding:"1px 5px"}}>{libSdl.isBreath?"Breath: ":"+"}{libSdl.text}</span>}
                           </div>}
                           {it.description&&<div style={{fontSize:"10px",color:dim,marginTop:"3px",fontStyle:"italic"}}>{it.description.slice(0,100)}{it.description.length>100?"…":""}</div>}
                         </div>
@@ -2775,7 +2775,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   if(!total)return null;
                   return <span key={k} style={{fontSize:"11px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 8px"}}>{EFFECT_LABELS[k]}: {total>0?"+":""}{total}</span>;
                 })}
-                {equippedGear.map(function(g){var lbl=bonusDmgLabel(g);return lbl?<span key={g.id} style={{fontSize:"11px",fontFamily:"monospace",color:DMG_TYPE_COLORS[g.effects.bonusDmgType]||"#e0c080",background:"#0a0a12",border:"1px solid #2a1a0a",borderRadius:"3px",padding:"2px 8px"}}>+{lbl}</span>:null;})}
+                {equippedGear.map(function(g){var sdl=specialDmgLabel(g);return sdl?<span key={g.id} style={{fontSize:"11px",fontFamily:"monospace",color:DMG_TYPE_COLORS[sdl.dmgType]||(sdl.isBreath?"#e08040":"#e0c080"),background:sdl.isBreath?"#100a0a":"#0a0a12",border:"1px solid "+(sdl.isBreath?"#2e1a10":"#2a1a0a"),borderRadius:"3px",padding:"2px 8px"}}>{sdl.isBreath?"Breath: ":"+"}{sdl.text}</span>:null;})}
               </div>
             </div>}
 
