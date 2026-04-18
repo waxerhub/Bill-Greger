@@ -1090,7 +1090,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Gear (custom items) state
   var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
-  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",tiered:false,tiers:[],activeTier:0,effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,savesTypes:[],hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",specialDmgMode:"bonus"}};
+  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",tiered:false,tiers:[],activeTier:0,effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,acMode:"bonus",thac0:0,dmg:0,saves:0,savesTypes:[],hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",specialDmgMode:"bonus"}};
   function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
   // AI item generation
   var _gearAiPrompt=useState(""),gearAiPrompt=_gearAiPrompt[0],setGearAiPrompt=_gearAiPrompt[1];
@@ -1213,7 +1213,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var gearInt=equipped.reduce(function(s,g){return s+(getActiveEffects(g).int||0);},0);
   var gearWis=equipped.reduce(function(s,g){return s+(getActiveEffects(g).wis||0);},0);
   var gearCha=equipped.reduce(function(s,g){return s+(getActiveEffects(g).cha||0);},0);
-  var gearAC=equipped.reduce(function(s,g){return s+(getActiveEffects(g).ac||0);},0);
+  var gearAC=equipped.reduce(function(s,g){var ae=getActiveEffects(g);if((ae.acMode||'bonus')==='base')return s;return s+(ae.ac||0);},0);
   var gearThac0=equipped.reduce(function(s,g){return s+(getActiveEffects(g).thac0||0);},0);
   var gearDmg=equipped.reduce(function(s,g){return s+(getActiveEffects(g).dmg||0);},0);
   var SAVE_KEYS=['Para','Rod','Pet','Breath','Spell'];
@@ -1221,6 +1221,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   equipped.forEach(function(g){var ae=getActiveEffects(g);var bonus=ae.saves||0;if(!bonus)return;var types=ae.savesTypes||[];var targets=types.length?types:SAVE_KEYS;targets.forEach(function(k){gearSavesBySave[k]+=bonus;});});
   var gearSaves=SAVE_KEYS.reduce(function(a,k){return Math.max(a,gearSavesBySave[k]);},0);
   var gearHP=equipped.reduce(function(s,g){return s+(getActiveEffects(g).hp||0);},0);
+  var gearBaseAC=null;equipped.forEach(function(g){var ae=getActiveEffects(g);if((ae.acMode||'bonus')==='base'&&ae.ac>0){if(gearBaseAC===null||ae.ac<gearBaseAC)gearBaseAC=ae.ac;}});
   // Apply gear stat bonuses on top of racial adjustments
   adjStats.Str+=gearStr; adjStats.Dex+=gearDex; adjStats.Con+=gearCon;
   adjStats.Int+=gearInt; adjStats.Wis+=gearWis; adjStats.Cha+=gearCha;
@@ -1257,7 +1258,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
   var effStrB=effStrPct>0?strExBonus(effStrPct):strBonus(effStr);
   // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
-  var effAC=ac-buffAC-gearAC;
+  var effAC=(gearBaseAC!==null?gearBaseAC:10)+dexAC(adjStats.Dex)-buffAC-gearAC;
   var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-(gearSavesBySave[k]||0)-buffSave;});
@@ -2047,7 +2048,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {tab==="combat"&&<div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px",marginBottom:"20px"}}>
             <SB label="THAC0" value={effThac0} color="#e0c080" sub={"Hit: "+(effStrB.hit>=0?"+":"")+effStrB.hit+(gearThac0?" Gear:"+(gearThac0>0?"+":"")+gearThac0:"")} />
-            <SB label="AC" value={effAC} color="#80a0e0" sub={"Dex: "+dexAC(adjStats.Dex)+(gearAC?" Gear:"+(gearAC>0?"+":"")+gearAC:"")} />
+            <SB label="AC" value={effAC} color="#80a0e0" sub={(gearBaseAC!==null?"Armor: "+gearBaseAC+" ":"")+"Dex: "+dexAC(adjStats.Dex)+(gearAC?" Gear:"+(gearAC>0?"+":"")+gearAC:"")} />
             <SB label="HP" value={effHP} color="#e08080" sub={"d"+classData.hd+(gearHP?" +"+gearHP+" gear":"")} />
             <SB label="DMG ADJ" value={(effStrB.dmg+gearDmg>=0?"+":"")+(effStrB.dmg+gearDmg)} color="#e0a080" sub={effStrPct>0?"18/"+(effStrPct===100?"00":String(effStrPct).padStart(2,"0")):exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0")):"Str "+effStr} />
           </div>
@@ -2517,7 +2518,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>}
 
             {itemsSub==="custom"&&(function(){
-          var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor/Shield","Wand/Staff/Rod","Magic Talisman","Misc"];
+          var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor","Armor/Shield","Wand/Staff/Rod","Magic Talisman","Misc"];
           var EFFECT_LABELS={str:"STR",dex:"DEX",con:"CON",int:"INT",wis:"WIS",cha:"CHA",ac:"AC bonus",thac0:"THAC0 bonus",dmg:"Damage bonus",saves:"Saves bonus",hp:"HP bonus"};
           var EFFECT_COLORS={str:"#e08080",dex:"#80e0a0",con:"#e0a060",int:"#80c0e0",wis:"#c080e0",cha:"#e0c080",ac:"#80a0e0",thac0:"#e0c080",dmg:"#e09060",saves:"#a0e0a0",hp:"#e08080"};
           var DMG_TYPES=["Fire","Cold","Electricity","Acid","Poison","Radiant","Necrotic","Sonic","Force","Psychic","Holy","Unholy","Magic","Piercing","Slashing","Bludgeoning"];
@@ -2820,6 +2821,13 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               <div style={{fontSize:"10px",color:"#7db87d",fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>EQUIPPED BONUSES (applied to sheet)</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
                 {Object.keys(EFFECT_LABELS).map(function(k){
+                  if(k==='ac'){
+                    var bonusAC=equippedGear.reduce(function(s,g){var ae=getActiveEffects(g);return(ae.acMode||'bonus')==='base'?s:s+(ae.ac||0);},0);
+                    var baseItems=equippedGear.filter(function(g){var ae=getActiveEffects(g);return(ae.acMode||'bonus')==='base'&&ae.ac>0;});
+                    var bestBase=baseItems.length?Math.min.apply(null,baseItems.map(function(g){return getActiveEffects(g).ac;})):null;
+                    if(!bonusAC&&bestBase===null)return null;
+                    return <span key={k} style={{fontSize:"11px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 8px"}}>{bestBase!==null?"Base AC: "+bestBase:null}{bestBase!==null&&bonusAC?" · ":null}{bonusAC?"AC bonus: +"+bonusAC:null}</span>;
+                  }
                   var total=equippedGear.reduce(function(s,g){return s+(getActiveEffects(g)[k]||0);},0);
                   if(!total)return null;
                   return <span key={k} style={{fontSize:"11px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 8px"}}>{EFFECT_LABELS[k]}: {total>0?"+":""}{total}</span>;
@@ -2895,6 +2903,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
                 </div>;})}
               </div>
+              {!!gearForm.effects.ac&&<div style={{marginBottom:"10px",padding:"8px 12px",background:"#0a0a10",border:"1px solid #1e1e30",borderRadius:"6px"}}>
+                <div style={{fontSize:"10px",color:"#80a0e0",fontFamily:"monospace",marginBottom:"6px"}}>AC Mode: <span style={{color:dim,fontWeight:"normal"}}>how this item's AC value applies</span></div>
+                <div style={{display:"flex",gap:"4px",flexWrap:"wrap"}}>
+                  {[["bonus","+ Bonus (Ring, Cloak, etc.)"],["base","Sets Base AC (Armor, Bracers of Defense)"]].map(function(m){var on=(gearForm.effects.acMode||"bonus")===m[0];return <button key={m[0]} onClick={function(){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{acMode:m[0]})});});}} style={{padding:"3px 10px",background:on?"#1a1a3a":"transparent",color:on?"#80a0e0":dim,border:"1px solid "+(on?"#3a3a6a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>{m[1]}</button>;})}
+                </div>
+              </div>}
               {!!gearForm.effects.saves&&(function(){
                 var SLABELS={Para:"Para/Poison",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:"Spell"};
                 var types=gearForm.effects.savesTypes||[];
@@ -2939,6 +2953,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                         <div style={{display:"flex",flexWrap:"wrap",gap:"3px"}}>
                           {['Para','Rod','Pet','Breath','Spell'].map(function(k){var on=tierSaveTypes.includes(k);return <button key={k} onClick={function(){toggleTierSaveType(k);}} style={{padding:"2px 6px",background:on?"#1a3a1a":"transparent",color:on?"#7db87d":dim,border:"1px solid "+(on?"#3a6a3a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>{SLABELS[k]}</button>;})}
                           {tierSaveTypes.length>0&&<button onClick={function(){setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){return i===ti?Object.assign({},t,{effects:Object.assign({},t.effects,{savesTypes:[]})}):t;});return Object.assign({},f,{tiers:newTiers});});}} style={{padding:"2px 6px",background:"transparent",color:"#a06060",border:"1px solid #4a2020",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear → All</button>}
+                        </div>
+                      </div>}
+                      {!!tier.effects.ac&&<div style={{marginTop:"6px",padding:"6px 8px",background:"#06060e",border:"1px solid #1a1a2a",borderRadius:"4px"}}>
+                        <div style={{fontSize:"9px",color:"#80a0e0",fontFamily:"monospace",marginBottom:"4px"}}>AC Mode:</div>
+                        <div style={{display:"flex",gap:"3px",flexWrap:"wrap"}}>
+                          {[["bonus","+ Bonus"],["base","Sets Base AC"]].map(function(m){var on=(tier.effects.acMode||"bonus")===m[0];return <button key={m[0]} onClick={function(){setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){return i===ti?Object.assign({},t,{effects:Object.assign({},t.effects,{acMode:m[0]})}):t;});return Object.assign({},f,{tiers:newTiers});});}} style={{padding:"2px 7px",background:on?"#1a1a3a":"transparent",color:on?"#80a0e0":dim,border:"1px solid "+(on?"#3a3a6a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>{m[1]}</button>;})}
                         </div>
                       </div>}
                     </div>;
@@ -3020,7 +3040,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
               {gearItems.filter(function(it){return !gearSearch.trim()||(it.name||"").toLowerCase().includes(gearSearch.toLowerCase())||(it.desc||"").toLowerCase().includes(gearSearch.toLowerCase());}).map(function(it){
                 var ae=getActiveEffects(it);
-                var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return ae[k];}).map(function(k){var v=ae[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
+                var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return ae[k];}).map(function(k){var v=ae[k];var isBase=k==='ac'&&(ae.acMode||'bonus')==='base';var lbl=isBase?'Base AC':EFFECT_LABELS[k];var sign=isBase?'':(v>0?'+':'');return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{lbl}: {sign}{v}</span>;});
                 var sdl=specialDmgLabel(it);if(sdl)bonusParts.push(<span key="sdmg" style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[sdl.dmgType]||(sdl.isBreath?"#e08040":"#e0c080"),background:sdl.isBreath?"#100a0a":"#0a0a12",border:"1px solid "+(sdl.isBreath?"#2e1a10":"#2a1a0a"),borderRadius:"3px",padding:"1px 5px"}}>{sdl.isBreath?"Breath: ":"+"}{sdl.text}</span>);
                 return <div key={it.id} style={{background:surf,border:"1px solid "+(it.equipped?"#2a4a2a":brd),borderRadius:"6px",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
                   <div style={{flex:1,minWidth:0}}>
