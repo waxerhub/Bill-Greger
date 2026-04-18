@@ -1090,7 +1090,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Gear (custom items) state
   var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
-  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",tiered:false,tiers:[],activeTier:0,effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",specialDmgMode:"bonus"}};
+  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",tiered:false,tiers:[],activeTier:0,effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,savesTypes:[],hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",specialDmgMode:"bonus"}};
   function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
   // AI item generation
   var _gearAiPrompt=useState(""),gearAiPrompt=_gearAiPrompt[0],setGearAiPrompt=_gearAiPrompt[1];
@@ -1216,7 +1216,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var gearAC=equipped.reduce(function(s,g){return s+(getActiveEffects(g).ac||0);},0);
   var gearThac0=equipped.reduce(function(s,g){return s+(getActiveEffects(g).thac0||0);},0);
   var gearDmg=equipped.reduce(function(s,g){return s+(getActiveEffects(g).dmg||0);},0);
-  var gearSaves=equipped.reduce(function(s,g){return s+(getActiveEffects(g).saves||0);},0);
+  var SAVE_KEYS=['Para','Rod','Pet','Breath','Spell'];
+  var gearSavesBySave={Para:0,Rod:0,Pet:0,Breath:0,Spell:0};
+  equipped.forEach(function(g){var ae=getActiveEffects(g);var bonus=ae.saves||0;if(!bonus)return;var types=ae.savesTypes||[];var targets=types.length?types:SAVE_KEYS;targets.forEach(function(k){gearSavesBySave[k]+=bonus;});});
+  var gearSaves=SAVE_KEYS.reduce(function(a,k){return Math.max(a,gearSavesBySave[k]);},0);
   var gearHP=equipped.reduce(function(s,g){return s+(getActiveEffects(g).hp||0);},0);
   // Apply gear stat bonuses on top of racial adjustments
   adjStats.Str+=gearStr; adjStats.Dex+=gearDex; adjStats.Con+=gearCon;
@@ -1257,7 +1260,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var effAC=ac-buffAC-gearAC;
   var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
   var effSaves={};
-  Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-gearSaves-buffSave;});
+  Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-(gearSavesBySave[k]||0)-buffSave;});
   var effHP=hp+gearHP;
 
   // Active abilities/limits based on class group
@@ -2884,7 +2887,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
               {!gearForm.tiered&&<div>
               <Lbl dim={dim}>Stat & Combat Effects <span style={{color:"#555",fontWeight:"normal"}}>(positive = better; AC +2 lowers your AC by 2; THAC0 +2 lowers it by 2)</span></Lbl>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"6px",marginBottom:"14px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:"6px",marginBottom:"10px"}}>
                 {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"3px"}}>
                   <label style={{fontSize:"10px",color:EFFECT_COLORS[k],fontFamily:"monospace"}}>{EFFECT_LABELS[k]}</label>
                   <input type="number" value={gearForm.effects[k]||""}
@@ -2892,6 +2895,18 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
                 </div>;})}
               </div>
+              {!!gearForm.effects.saves&&(function(){
+                var SLABELS={Para:"Para/Poison",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:"Spell"};
+                var types=gearForm.effects.savesTypes||[];
+                function toggleType(k){setGearForm(function(f){var cur=f.effects.savesTypes||[];var next=cur.includes(k)?cur.filter(function(x){return x!==k;}):[...cur,k];return Object.assign({},f,{effects:Object.assign({},f.effects,{savesTypes:next})});});}
+                return <div style={{marginBottom:"14px",padding:"8px 12px",background:"#0a0a10",border:"1px solid #1e2e1e",borderRadius:"6px"}}>
+                  <div style={{fontSize:"10px",color:"#a0c0a0",fontFamily:"monospace",marginBottom:"6px"}}>Saves bonus applies to: <span style={{color:dim}}>{types.length===0?"All saving throws":types.map(function(k){return SLABELS[k];}).join(", ")}</span></div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
+                    {['Para','Rod','Pet','Breath','Spell'].map(function(k){var on=types.includes(k);return <button key={k} onClick={function(){toggleType(k);}} style={{padding:"3px 9px",background:on?"#1a3a1a":"transparent",color:on?"#7db87d":dim,border:"1px solid "+(on?"#3a6a3a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>{SLABELS[k]}</button>;})}
+                    {types.length>0&&<button onClick={function(){setGearForm(function(f){return Object.assign({},f,{effects:Object.assign({},f.effects,{savesTypes:[]})});});}} style={{padding:"3px 9px",background:"transparent",color:"#a06060",border:"1px solid #4a2020",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Clear → All</button>}
+                  </div>
+                </div>;
+              })()}
               </div>}
 
               {gearForm.tiered&&<div style={{marginBottom:"14px"}}>
@@ -2899,6 +2914,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"8px"}}>
                   {(gearForm.tiers||[]).map(function(tier,ti){
                     function setTierEffect(k,val){setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){return i===ti?Object.assign({},t,{effects:Object.assign({},t.effects,{[k]:parseInt(val)||0})}):t;});return Object.assign({},f,{tiers:newTiers});});}
+                    function toggleTierSaveType(k){setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){if(i!==ti)return t;var cur=t.effects.savesTypes||[];var next=cur.includes(k)?cur.filter(function(x){return x!==k;}):[...cur,k];return Object.assign({},t,{effects:Object.assign({},t.effects,{savesTypes:next})});});return Object.assign({},f,{tiers:newTiers});});}
+                    var SLABELS={Para:"Para/Poison",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:"Spell"};
+                    var tierSaveTypes=tier.effects.savesTypes||[];
                     return <div key={ti} style={{background:"#0a0a14",border:"1px solid #2a2a4a",borderRadius:"6px",padding:"10px 12px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
                         <label style={{fontSize:"10px",color:dim,fontFamily:"monospace",flexShrink:0}}>Label:</label>
@@ -2908,7 +2926,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                         <button onClick={function(){setGearForm(function(f){return Object.assign({},f,{tiers:f.tiers.filter(function(_,i){return i!==ti;})});});}}
                           style={{padding:"2px 8px",background:"transparent",color:"#e08080",border:"1px solid #4a2020",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
                       </div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:"4px"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:"4px",marginBottom:"6px"}}>
                         {Object.keys(EFFECT_LABELS).map(function(k){return <div key={k} style={{display:"flex",flexDirection:"column",gap:"2px"}}>
                           <label style={{fontSize:"9px",color:EFFECT_COLORS[k],fontFamily:"monospace"}}>{EFFECT_LABELS[k]}</label>
                           <input type="number" value={tier.effects[k]||""}
@@ -2916,6 +2934,13 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                             style={{padding:"3px 4px",background:"#060610",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",textAlign:"center",width:"100%"}} />
                         </div>;})}
                       </div>
+                      {!!tier.effects.saves&&<div style={{padding:"6px 8px",background:"#06060e",border:"1px solid #1a2a1a",borderRadius:"4px"}}>
+                        <div style={{fontSize:"9px",color:"#a0c0a0",fontFamily:"monospace",marginBottom:"4px"}}>Saves applies to: <span style={{color:dim}}>{tierSaveTypes.length===0?"All":tierSaveTypes.map(function(k){return SLABELS[k];}).join(", ")}</span></div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"3px"}}>
+                          {['Para','Rod','Pet','Breath','Spell'].map(function(k){var on=tierSaveTypes.includes(k);return <button key={k} onClick={function(){toggleTierSaveType(k);}} style={{padding:"2px 6px",background:on?"#1a3a1a":"transparent",color:on?"#7db87d":dim,border:"1px solid "+(on?"#3a6a3a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>{SLABELS[k]}</button>;})}
+                          {tierSaveTypes.length>0&&<button onClick={function(){setGearForm(function(f){var newTiers=f.tiers.map(function(t,i){return i===ti?Object.assign({},t,{effects:Object.assign({},t.effects,{savesTypes:[]})}):t;});return Object.assign({},f,{tiers:newTiers});});}} style={{padding:"2px 6px",background:"transparent",color:"#a06060",border:"1px solid #4a2020",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear → All</button>}
+                        </div>
+                      </div>}
                     </div>;
                   })}
                 </div>
