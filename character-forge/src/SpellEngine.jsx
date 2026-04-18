@@ -2453,10 +2453,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 var isOpen=expandedItem===it.name;
                 var usableBadge=(it.usableBy&&it.usableBy.indexOf("All")<0)?it.usableBy.join(", "):null;
                 var catColor={"Potion/Oil":"#7db87d","Ring":"#c9a84c","Rod/Staff/Wand":"#80a0e0","Book":"#e0c080","Jewelry":"#e080c0","Wearable":"#80c0e0","Container":"#a0e0a0","Powder/Candle":"#e0a080","Household/Tool":"#a0a0e0","Weird":"#c080e0"}[it.category]||dim;
+                var catToType={"Ring":"Ring","Jewelry":"Amulet/Necklace","Rod/Staff/Wand":"Wand/Staff/Rod","Wearable":"Cloak/Robe"};
+                var alreadyAdded=gearItems.some(function(g){return g.name===it.name;});
                 return <div key={it.name} style={{background:surf,border:"1px solid "+(isOpen?"#2a2a4a":brd),borderRadius:"6px",overflow:"hidden"}}>
-                  <div onClick={function(){setExpandedItem(isOpen?null:it.name);}}
-                    style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 12px",cursor:"pointer",userSelect:"none"}}>
-                    <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 12px",userSelect:"none"}}>
+                    <div onClick={function(){setExpandedItem(isOpen?null:it.name);}} style={{flex:1,minWidth:0,cursor:"pointer"}}>
                       <span style={{fontSize:"13px",color:it.cursed?"#e08080":txt,fontWeight:"bold"}}>{it.name}</span>
                       {it.cursed&&<span style={{fontSize:"9px",color:"#e06060",fontFamily:"monospace",marginLeft:"6px",background:"#2a0a0a",border:"1px solid #4a2020",borderRadius:"3px",padding:"1px 4px"}}>CURSED</span>}
                     </div>
@@ -2464,7 +2465,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                       <span style={{fontSize:"9px",color:catColor,fontFamily:"monospace",background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"2px 6px"}}>{it.category}</span>
                       {usableBadge&&<span style={{fontSize:"9px",color:"#c9a84c",fontFamily:"monospace",background:"#0a0a12",border:"1px solid #2a2010",borderRadius:"3px",padding:"2px 6px"}}>{usableBadge}</span>}
                       {it.xpValue>0&&<span style={{fontSize:"9px",color:"#888",fontFamily:"monospace"}}>{it.xpValue.toLocaleString()} XP</span>}
-                      <span style={{color:isOpen?g:dim,fontSize:"12px",marginLeft:"4px"}}>{isOpen?"▼":"▶"}</span>
+                      <button onClick={function(e){e.stopPropagation();
+                        if(alreadyAdded){setItemsSub("custom");return;}
+                        var newItem=Object.assign({},BLANK_GEAR,{id:Date.now()+"_"+Math.random().toString(36).slice(2),name:it.name,type:catToType[it.category]||"Misc",desc:it.description||"",effects:Object.assign({},BLANK_GEAR.effects),equipped:true});
+                        setGearItems(function(prev){return prev.concat([newItem]);});
+                        setItemsSub("custom");
+                      }} style={{padding:"3px 8px",background:alreadyAdded?"#1a2a1a":"#1a1a28",color:alreadyAdded?"#7db87d":"#80a0e0",border:"1px solid "+(alreadyAdded?"#3a5a3a":"#2a2a5a"),borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px",flexShrink:0}}>
+                        {alreadyAdded?"In Gear":"+ Equip"}
+                      </button>
+                      <span onClick={function(){setExpandedItem(isOpen?null:it.name);}} style={{color:isOpen?g:dim,fontSize:"12px",marginLeft:"4px",cursor:"pointer"}}>{isOpen?"▼":"▶"}</span>
                     </div>
                   </div>
                   {isOpen&&<div style={{padding:"8px 14px 12px 14px",borderTop:"1px solid "+brd,fontSize:"12px",color:"#b8b4a8",lineHeight:"1.7",fontStyle:"italic"}}>
@@ -2476,7 +2485,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>}
 
             {itemsSub==="custom"&&(function(){
-          var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor/Shield","Wand/Staff/Rod","Misc"];
+          var GEAR_TYPES=["Ring","Amulet/Necklace","Bracers/Gloves","Helm/Hat","Cloak/Robe","Belt","Boots","Weapon","Armor/Shield","Wand/Staff/Rod","Magic Talisman","Misc"];
           var EFFECT_LABELS={str:"STR",dex:"DEX",con:"CON",int:"INT",wis:"WIS",cha:"CHA",ac:"AC bonus",thac0:"THAC0 bonus",dmg:"Damage bonus",saves:"Saves bonus",hp:"HP bonus"};
           var EFFECT_COLORS={str:"#e08080",dex:"#80e0a0",con:"#e0a060",int:"#80c0e0",wis:"#c080e0",cha:"#e0c080",ac:"#80a0e0",thac0:"#e0c080",dmg:"#e09060",saves:"#a0e0a0",hp:"#e08080"};
           var DMG_TYPES=["Fire","Cold","Electricity","Acid","Poison","Radiant","Necrotic","Sonic","Force","Psychic","Holy","Unholy","Magic","Piercing","Slashing","Bludgeoning"];
