@@ -2275,6 +2275,28 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             <div style={{color:"#7db87d",fontWeight:"bold",marginBottom:"6px",letterSpacing:"1px",fontSize:"11px"}}>** ACTIVE SPELL EFFECTS **</div>
             {activeCasts.filter(function(m){return BUFF_SPELLS[m["Spell Name"]];}).map(function(m,i){var sp=BUFF_SPELLS[m["Spell Name"]];return <div key={i} style={{color:"#9cc89c",fontSize:"10px",marginBottom:"4px",lineHeight:"1.4"}}><span style={{color:"#c9e8c9",fontWeight:"bold"}}>L{m.Level} {m["Spell Name"]}</span>: {sp.desc}</div>;})}
           </div>}
+          {(function(){
+            var DMG_TYPE_COLORS_S={Fire:"#e06030",Cold:"#80d0f0",Electricity:"#f0e040",Acid:"#80d040",Poison:"#90d060",Radiant:"#f0e0a0",Necrotic:"#a060d0",Sonic:"#80c0e0",Force:"#a080e0",Psychic:"#e080e0",Holy:"#f0f0a0",Unholy:"#806090",Magic:"#c090e0",Piercing:"#c0c0c0",Slashing:"#d0a0a0",Bludgeoning:"#c0a080"};
+            var itemAbilities=equipped.map(function(g){
+              var e=g.effects||{};
+              var breath=null;
+              if(e.bonusDmgDice&&e.bonusDmgType&&e.specialDmgMode==="breath")
+                breath={text:e.bonusDmgDice+"d"+e.bonusDmgDie+" "+e.bonusDmgType,dmgType:e.bonusDmgType};
+              else if(e.breathDice&&e.breathType)
+                breath={text:e.breathDice+"d"+e.breathDie+" "+e.breathType,dmgType:e.breathType};
+              return breath?{name:g.name,breath:breath}:null;
+            }).filter(Boolean);
+            if(!itemAbilities.length)return null;
+            return <div style={{background:"#100a00",border:"1px solid #3a2a10",borderRadius:"4px",padding:"10px",marginBottom:"12px"}}>
+              <div style={{color:"#e0a040",fontWeight:"bold",marginBottom:"6px",letterSpacing:"1px",fontSize:"11px"}}>** ITEM ABILITIES **</div>
+              {itemAbilities.map(function(ab,i){
+                var c=DMG_TYPE_COLORS_S[ab.breath.dmgType]||"#e08040";
+                return <div key={i} style={{color:"#c8a870",fontSize:"10px",marginBottom:"4px",lineHeight:"1.4"}}>
+                  <span style={{color:"#f0d090",fontWeight:"bold"}}>{ab.name}</span>: Breath Weapon — <span style={{color:c,fontWeight:"bold"}}>{ab.breath.text}</span>
+                </div>;
+              })}
+            </div>;
+          })()}
           <div style={{marginBottom:"12px"}}>
             <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>ABILITY SCORES</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:"4px",textAlign:"center"}}>
