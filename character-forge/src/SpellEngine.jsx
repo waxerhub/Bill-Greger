@@ -1090,7 +1090,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Gear (custom items) state
   var _gearItems=useState([]),gearItems=_gearItems[0],setGearItems=_gearItems[1];
   var _gearForm=useState(null),gearForm=_gearForm[0],setGearForm=_gearForm[1];
-  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:""}};
+  var BLANK_GEAR={id:null,name:"",type:"Ring",source:"",desc:"",effects:{str:0,dex:0,con:0,int:0,wis:0,cha:0,ac:0,thac0:0,dmg:0,saves:0,hp:0,bonusDmgDice:0,bonusDmgDie:6,bonusDmgType:"",breathDice:0,breathDie:8,breathType:""}};
   function newGearForm(){setGearForm(Object.assign({},BLANK_GEAR,{effects:Object.assign({},BLANK_GEAR.effects)}));}
   // AI item generation
   var _gearAiPrompt=useState(""),gearAiPrompt=_gearAiPrompt[0],setGearAiPrompt=_gearAiPrompt[1];
@@ -2496,6 +2496,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             if(!e.bonusDmgDice||!e.bonusDmgType)return null;
             return e.bonusDmgDice+"d"+e.bonusDmgDie+" "+e.bonusDmgType;
           }
+          function breathLabel(it){
+            var e=it.effects||{};
+            if(!e.breathDice||!e.breathType)return null;
+            return e.breathDice+"d"+e.breathDie+" "+e.breathType;
+          }
 
           function saveGear(form){
             var item=Object.assign({},form,{id:form.id||Date.now()+"_"+Math.random().toString(36).slice(2),equipped:form.equipped||false});
@@ -2861,6 +2866,35 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     +{gearForm.effects.bonusDmgDice}d{gearForm.effects.bonusDmgDie} {gearForm.effects.bonusDmgType}
                   </div>}
               </div>
+              {/* Breath weapon */}
+              <Lbl dim={dim}>Breath Weapon <span style={{color:"#555",fontWeight:"normal"}}>(optional — e.g. 3d8 Fire from Talisman of the Chimera)</span></Lbl>
+              <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap",marginBottom:"14px",padding:"10px 12px",background:"#100a0a",border:"1px solid #2e1a10",borderRadius:"6px"}}>
+                <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                  <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Dice</label>
+                  <input type="number" min={0} max={30} value={gearForm.effects.breathDice||0}
+                    onChange={function(e){setEffect("breathDice",Math.max(0,parseInt(e.target.value)||0));}}
+                    style={{width:"60px",padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"13px",fontFamily:"monospace",outline:"none",textAlign:"center"}} />
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                  <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Die</label>
+                  <select value={gearForm.effects.breathDie||8} onChange={function(e){setEffect("breathDie",parseInt(e.target.value));}}
+                    style={Object.assign({},ss(brd,txt),{width:"70px"})}>
+                    {DIE_SIZES.map(function(d){return <option key={d} value={d}>d{d}</option>;})}
+                  </select>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:"3px",flex:1,minWidth:"140px"}}>
+                  <label style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Damage Type</label>
+                  <select value={gearForm.effects.breathType||""} onChange={function(e){setEffect("breathType",e.target.value);}}
+                    style={Object.assign({},ss(brd,txt),{width:"100%",color:gearForm.effects.breathType?DMG_TYPE_COLORS[gearForm.effects.breathType]||txt:dim})}>
+                    <option value="">— None —</option>
+                    {DMG_TYPES.map(function(t){return <option key={t} value={t}>{t}</option>;})}
+                  </select>
+                </div>
+                {gearForm.effects.breathDice>0&&gearForm.effects.breathType&&
+                  <div style={{fontSize:"12px",fontFamily:"monospace",color:DMG_TYPE_COLORS[gearForm.effects.breathType]||"#e08040",alignSelf:"flex-end",paddingBottom:"4px"}}>
+                    {gearForm.effects.breathDice}d{gearForm.effects.breathDie} {gearForm.effects.breathType}
+                  </div>}
+              </div>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
                 <button onClick={function(){saveGear(gearForm);}} disabled={!gearForm.name.trim()}
                   style={{padding:"7px 20px",background:gearForm.name.trim()?"#1e2a1e":"#111",color:gearForm.name.trim()?"#7db87d":dim,border:"1px solid "+(gearForm.name.trim()?"#3a5a3a":brd),borderRadius:"4px",cursor:gearForm.name.trim()?"pointer":"not-allowed",fontFamily:"monospace",fontSize:"11px"}}>Save Item</button>
@@ -2884,6 +2918,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               {gearItems.filter(function(it){return !gearSearch.trim()||(it.name||"").toLowerCase().includes(gearSearch.toLowerCase())||(it.desc||"").toLowerCase().includes(gearSearch.toLowerCase());}).map(function(it){
                 var bonusParts=Object.keys(EFFECT_LABELS).filter(function(k){return it.effects&&it.effects[k];}).map(function(k){var v=it.effects[k];return <span key={k} style={{fontSize:"9px",fontFamily:"monospace",color:EFFECT_COLORS[k],background:"#0a0a12",border:"1px solid #1a1a2a",borderRadius:"3px",padding:"1px 5px"}}>{EFFECT_LABELS[k]}: {v>0?"+":""}{v}</span>;});
                 var bdl=bonusDmgLabel(it);if(bdl)bonusParts.push(<span key="bdmg" style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[it.effects.bonusDmgType]||"#e0c080",background:"#0a0a12",border:"1px solid #2a1a0a",borderRadius:"3px",padding:"1px 5px"}}>+{bdl}</span>);
+                var brl=breathLabel(it);if(brl)bonusParts.push(<span key="breath" style={{fontSize:"9px",fontFamily:"monospace",color:DMG_TYPE_COLORS[it.effects.breathType]||"#e08040",background:"#100a0a",border:"1px solid #2e1a10",borderRadius:"3px",padding:"1px 5px"}}>Breath: {brl}</span>);
                 return <div key={it.id} style={{background:surf,border:"1px solid "+(it.equipped?"#2a4a2a":brd),borderRadius:"6px",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
