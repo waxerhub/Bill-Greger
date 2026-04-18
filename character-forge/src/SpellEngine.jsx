@@ -2503,6 +2503,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           function saveGear(form){
             var item=Object.assign({},form,{id:form.id||Date.now()+"_"+Math.random().toString(36).slice(2),equipped:form.equipped||false});
             setGearItems(function(prev){var idx=prev.findIndex(function(g){return g.id===item.id;});return idx>=0?prev.map(function(g,i){return i===idx?item:g;}):prev.concat([item]);});
+            if(supabase)saveToLibrary(item,"player");
             setGearForm(null);setGearAiPrompt("");setGearAiError("");
           }
           function deleteGear(id){setGearItems(function(prev){return prev.filter(function(g){return g.id!==id;})});}
@@ -2927,16 +2928,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     </button>
                     <button onClick={function(){setGearForm(Object.assign({},it,{effects:Object.assign({},it.effects)}));}}
                       style={{padding:"4px 8px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Edit</button>
-                    {supabase&&<div style={{position:"relative",display:"inline-block"}}>
-                      <button onClick={function(e){e.currentTarget.nextSibling.style.display=e.currentTarget.nextSibling.style.display==="block"?"none":"block";}}
-                        style={{padding:"4px 8px",background:"#1a1a28",color:"#80a0e0",border:"1px solid #2a2a5a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>☁</button>
-                      <div style={{display:"none",position:"absolute",right:0,top:"calc(100% + 4px)",background:"#12111a",border:"1px solid "+brd,borderRadius:"4px",zIndex:100,minWidth:"140px",boxShadow:"0 4px 12px rgba(0,0,0,0.5)"}}>
-                        <button onClick={function(e){saveToLibrary(it,"player");e.currentTarget.closest("[style*='position:absolute']").style.display="none";}}
-                          style={{display:"block",width:"100%",padding:"8px 12px",background:"transparent",color:"#80c0e0",border:"none",borderBottom:"1px solid "+brd,cursor:"pointer",fontFamily:"monospace",fontSize:"10px",textAlign:"left"}}>Save to Player Library</button>
-                        <button onClick={function(e){saveToLibrary(it,"dm");e.currentTarget.closest("[style*='position:absolute']").style.display="none";}}
-                          style={{display:"block",width:"100%",padding:"8px 12px",background:"transparent",color:"#e0c080",border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"10px",textAlign:"left"}}>Save to DM Library</button>
-                      </div>
-                    </div>}
+                    {supabase&&<button onClick={function(){saveToLibrary(it,"dm");}}
+                      title="Save to DM Library"
+                      style={{padding:"4px 8px",background:"#1a1510",color:"#e0c080",border:"1px solid #3a3010",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>☁ DM</button>}
                     <button onClick={function(){deleteGear(it.id);}}
                       style={{padding:"4px 8px",background:"transparent",color:"#a06060",border:"1px solid #4a2a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>✕</button>
                   </div>
