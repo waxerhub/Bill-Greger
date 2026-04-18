@@ -153,11 +153,19 @@ export async function listMyCharacters() {
 
 export async function saveGearToLibrary(item, role) {
   if (!supabase) throw new Error('Supabase not configured');
+  const effects = Object.assign({}, item.effects || {});
+  // Preserve tiered item data inside effects JSONB
+  if (item.tiered) {
+    effects._tiered = true;
+    effects._tiers = item.tiers || [];
+    effects._activeTier = item.activeTier || 0;
+  }
   const row = {
     name: item.name || 'Unnamed',
     type: item.type || 'Misc',
     description: item.desc || item.description || '',
-    effects: item.effects || {},
+    source: item.source || '',
+    effects,
     role: role || 'player',
   };
   const { data, error } = await supabase

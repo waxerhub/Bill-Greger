@@ -2642,12 +2642,20 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             }catch(e){setGearLibStatus("Error: "+e.message);}
           }
           function importFromLibrary(libItem){
+            var rawEff=libItem.effects||{};
+            var isTiered=!!(rawEff._tiered);
+            var cleanEff=Object.assign({},BLANK_GEAR.effects,rawEff);
+            delete cleanEff._tiered;delete cleanEff._tiers;delete cleanEff._activeTier;
             var gear=Object.assign({},BLANK_GEAR,{
               id:Date.now()+"_"+Math.random().toString(36).slice(2),
               name:libItem.name,
               type:libItem.type||"Misc",
+              source:libItem.source||"",
               desc:libItem.description||"",
-              effects:Object.assign({},BLANK_GEAR.effects,libItem.effects||{}),
+              tiered:isTiered,
+              tiers:isTiered?(rawEff._tiers||[]):[],
+              activeTier:rawEff._activeTier||0,
+              effects:cleanEff,
               equipped:false,
             });
             setGearItems(function(prev){return prev.concat([gear]);});
