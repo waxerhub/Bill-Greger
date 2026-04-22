@@ -1202,6 +1202,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _cpSchools=useState([]),cpSchools=_cpSchools[0],setCpSchools=_cpSchools[1];
   var _cpAbil=useState([]),cpAbil=_cpAbil[0],setCpAbil=_cpAbil[1];
   var _cpLim=useState([]),cpLim=_cpLim[0],setCpLim=_cpLim[1];
+  // Active CP sub-tab ('priest'|'monk'|'wizard'|null=auto)
+  var _cpSubTab=useState(null),cpSubTab=_cpSubTab[0],setCpSubTab=_cpSubTab[1];
   // Spell-like granted powers: [{id, spell, level, spellType, freq}]
   var _cpSpellPowers=useState([]),cpSpellPowers=_cpSpellPowers[0],setCpSpellPowers=_cpSpellPowers[1];
   // Form state for adding a new granted power (not persisted)
@@ -1395,7 +1397,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   function changeClass(newCls) {
     setCls(newCls);
     var cd=CLASSES[newCls]||{};
-    setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);
+    setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);setCpSubTab(null);
     if(cd.group==="Priest")setCpBudget(120);
     else if(cd.group==="Wizard")setCpBudget(40);
     else setCpBudget(0);
@@ -2302,140 +2304,219 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         </div>}
 
         {/* ═══ CP TAB ═══ */}
-        {tab==="CP"&&<div>
-          {/* Budget */}
-          <div style={{background:surf,border:"1px solid "+brd,borderRadius:"8px",padding:"14px",marginBottom:"12px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
-              <div><span style={{fontSize:"13px",color:g,fontWeight:"bold",fontVariant:"small-caps"}}>CP Budget</span><span style={{fontSize:"10px",color:dim,fontFamily:"monospace",marginLeft:"8px"}}>{isPriest?"Priest (120 base)":isWizard?"Wizard (40 base)":"N/A"}</span></div>
-              <input type="number" value={cpBudget} onChange={function(e){setCpBudget(Math.max(0,parseInt(e.target.value)||0));}} style={{width:"60px",textAlign:"center",padding:"4px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:g,fontSize:"16px",fontWeight:"bold",fontFamily:"monospace",outline:"none"}} />
-            </div>
-            <div style={{display:"flex",gap:"20px",marginTop:"8px",fontSize:"12px",fontFamily:"monospace"}}>
-              <span style={{color:"#e08060"}}>Spent: {cpSpent}</span>
-              <span style={{color:"#60a060"}}>Refund: {cpRefund}</span>
-              <span style={{color:cpRemaining<0?"#e06060":cpRemaining===0?"#60e060":"#80c0e0",fontWeight:"bold"}}>Remaining: {cpRemaining}</span>
-            </div>
-            <div style={{marginTop:"6px",height:"6px",background:"#0a0a12",borderRadius:"3px",overflow:"hidden"}}>
-              <div style={{height:"100%",width:Math.min(100,Math.max(0,((cpSpent-cpRefund)/Math.max(1,cpBudget))*100))+"%",background:cpRemaining<0?"#e06060":"#60a060",borderRadius:"3px"}} />
-            </div>
-          </div>
-
-          {/* Presets (priest only) */}
-          {isPriest&&<div style={{marginBottom:"12px",display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
-            <span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>PRESETS:</span>
-            {Object.keys(PRIEST_PRESETS).map(function(n){return <button key={n} onClick={function(){loadPreset(n);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace",background:"#1a1a28",color:g,border:"1px solid "+brd}}>{n} ({PRIEST_PRESETS[n].cost})</button>;})}
-            <button onClick={function(){setCpMajor([]);setCpMinor([]);setCpAbil([]);setCpLim([]);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace",background:"#2a1a1a",color:"#e08080",border:"1px solid #4a2a2a"}}>CLEAR</button>
-          </div>}
-
-          {/* Wizard schools or Priest spheres */}
-          {isWizard&&<div style={{marginBottom:"12px"}}>
-            <Lbl dim={dim}>SCHOOLS OF MAGIC <span style={{color:g}}>(5 CP each, Universal is free)</span></Lbl>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"6px"}}>
-              {WIZARD_SCHOOLS.map(function(sch){var on=cpSchools.indexOf(sch)>=0;
-                return <label key={sch} style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 10px",cursor:"pointer",fontSize:"12px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?g:dim}}>
-                  <input type="checkbox" checked={on} onChange={function(){toggle(cpSchools,setCpSchools,sch);}} style={{accentColor:g}} />
-                  <span style={{flex:1}}>{sch}</span><span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>5 CP</span>
-                </label>;
-              })}
-            </div>
-            <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>{cpSchools.length} schools = {cpSchools.length*5} CP (+ Universal free)</div>
-          </div>}
-
-          {isPriest&&<div style={{marginBottom:"12px"}}>
-            <Lbl dim={dim}>SPHERES OF ACCESS <span style={{color:g}}>(Table 6)</span></Lbl>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"4px"}}>
-              {SPHERE_NAMES.map(function(sp){var c=SPHERE_COSTS[sp];var isMaj=cpMajor.indexOf(sp)>=0;var isMin=cpMinor.indexOf(sp)>=0;
-                return <div key={sp} style={{display:"flex",alignItems:"center",gap:"4px",padding:"3px 8px",background:isMaj?"#1a2a18":isMin?"#18202a":surf,border:"1px solid "+(isMaj?"#3a5a3a":isMin?"#2a3a5a":brd),borderRadius:"4px",fontSize:"11px"}}>
-                  <span style={{flex:1,color:isMaj?g:isMin?"#80c0e0":dim}}>{sp}</span>
-                  <button onClick={function(){if(isMaj){setCpMajor(cpMajor.filter(function(x){return x!==sp;}));}else{setCpMinor(cpMinor.filter(function(x){return x!==sp;}));setCpMajor(cpMajor.concat([sp]));}}} style={{padding:"1px 5px",fontSize:"9px",fontFamily:"monospace",borderRadius:"3px",cursor:"pointer",background:isMaj?"#2a4a2a":"#1a1a28",color:isMaj?"#7a7":dim,border:"1px solid "+(isMaj?"#4a6a4a":brd)}}>M{c.M}</button>
-                  <button onClick={function(){if(isMin){setCpMinor(cpMinor.filter(function(x){return x!==sp;}));}else{setCpMajor(cpMajor.filter(function(x){return x!==sp;}));setCpMinor(cpMinor.concat([sp]));}}} style={{padding:"1px 5px",fontSize:"9px",fontFamily:"monospace",borderRadius:"3px",cursor:"pointer",background:isMin?"#1a2a4a":"#1a1a28",color:isMin?"#80c0e0":dim,border:"1px solid "+(isMin?"#2a4a6a":brd)}}>m{c.m}</button>
-                  {(isMaj||isMin)&&<button onClick={function(){setCpMajor(cpMajor.filter(function(x){return x!==sp;}));setCpMinor(cpMinor.filter(function(x){return x!==sp;}));}} style={{padding:"1px 3px",fontSize:"9px",color:"#a66",background:"transparent",border:"none",cursor:"pointer"}}>✕</button>}
-                </div>;
-              })}
-            </div>
-          </div>}
-
-          {/* Spell-like Granted Powers (priest only) */}
-          {isPriest&&<div style={{marginBottom:"12px"}}>
-            <Lbl dim={dim}>SPELL-LIKE GRANTED POWERS <span style={{color:g,fontWeight:"normal"}}>(max {maxGrantedPowers} at level {level})</span></Lbl>
-            {/* Existing powers list */}
-            {cpSpellPowers.length>0&&<div style={{marginBottom:"8px",display:"flex",flexDirection:"column",gap:"4px"}}>
-              {cpSpellPowers.map(function(pw){
-                var cost=spellPowerCost(pw.level,pw.spellType,pw.freq);
-                var freqLabel=pw.freq==='week'?'1/week':pw.freq==='continuous'?'continuous':pw.freq+'/day';
-                return <div key={pw.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"5px 10px",background:"#12182a",border:"1px solid #2a3a5a",borderRadius:"4px",fontSize:"11px"}}>
-                  <span style={{flex:1,color:txt}}>{pw.spell}</span>
-                  <span style={{color:dim,fontFamily:"monospace"}}>L{pw.level} {pw.spellType}</span>
-                  <span style={{color:"#80c0e0",fontFamily:"monospace"}}>{freqLabel}</span>
-                  <span style={{color:"#e08060",fontFamily:"monospace",minWidth:"40px",textAlign:"right"}}>{cost} CP</span>
-                  <button onClick={function(){setCpSpellPowers(cpSpellPowers.filter(function(x){return x.id!==pw.id;}));}} style={{background:"transparent",border:"none",color:"#a66",cursor:"pointer",padding:"0 4px",fontSize:"13px"}}>✕</button>
-                </div>;
-              })}
-              {cpSpellPowers.length>maxGrantedPowers&&<div style={{fontSize:"10px",color:"#e06060",fontFamily:"monospace"}}>⚠ Exceeds limit: {cpSpellPowers.length}/{maxGrantedPowers} powers allowed at level {level}</div>}
+        {tab==="CP"&&(function(){
+          // Derive active sub-tab: explicit selection or auto from class
+          var activeSub=cpSubTab||(isPriest?'priest':isWizard?'wizard':'priest');
+          var SUB_TABS=[
+            {id:'priest',label:'Priest',classMatch:isPriest,classNames:'Cleric / Druid'},
+            {id:'monk',  label:'Monk',  classMatch:false,    classNames:'Monk'},
+            {id:'wizard',label:'Wizard',classMatch:isWizard, classNames:'Mage / Illusionist'},
+          ];
+          // Per-sub-tab abilities/limits for display (browsing any tab is allowed)
+          var subAbil=activeSub==='wizard'?WIZARD_ABILITIES:PRIEST_ABILITIES;
+          var subLim=activeSub==='wizard'?WIZARD_LIMITS:PRIEST_LIMITS;
+          // Only editable when viewing your own class's tab
+          var subEditable=(activeSub==='priest'&&isPriest)||(activeSub==='wizard'&&isWizard);
+          return <div>
+            {/* Budget bar — always shows this character's actual CP */}
+            {(isPriest||isWizard)&&<div style={{background:surf,border:"1px solid "+brd,borderRadius:"8px",padding:"14px",marginBottom:"12px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
+                <div><span style={{fontSize:"13px",color:g,fontWeight:"bold",fontVariant:"small-caps"}}>CP Budget</span><span style={{fontSize:"10px",color:dim,fontFamily:"monospace",marginLeft:"8px"}}>{isPriest?"Priest (120 base)":"Wizard (40 base)"}</span></div>
+                <input type="number" value={cpBudget} onChange={function(e){setCpBudget(Math.max(0,parseInt(e.target.value)||0));}} style={{width:"60px",textAlign:"center",padding:"4px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:g,fontSize:"16px",fontWeight:"bold",fontFamily:"monospace",outline:"none"}} />
+              </div>
+              <div style={{display:"flex",gap:"20px",marginTop:"8px",fontSize:"12px",fontFamily:"monospace"}}>
+                <span style={{color:"#e08060"}}>Spent: {cpSpent}</span>
+                <span style={{color:"#60a060"}}>Refund: {cpRefund}</span>
+                <span style={{color:cpRemaining<0?"#e06060":cpRemaining===0?"#60e060":"#80c0e0",fontWeight:"bold"}}>Remaining: {cpRemaining}</span>
+              </div>
+              <div style={{marginTop:"6px",height:"6px",background:"#0a0a12",borderRadius:"3px",overflow:"hidden"}}>
+                <div style={{height:"100%",width:Math.min(100,Math.max(0,((cpSpent-cpRefund)/Math.max(1,cpBudget))*100))+"%",background:cpRemaining<0?"#e06060":"#60a060",borderRadius:"3px"}} />
+              </div>
             </div>}
-            {/* Add power form */}
-            {(function(){
-              var previewCost=spellPowerCost(cpPwLevel,cpPwType,cpPwFreq);
-              var atLimit=cpSpellPowers.length>=maxGrantedPowers;
-              var FREQ_OPTS=[['week','1/week (+0)'],['1','1/day (+5)'],['2','2/day (+6)'],['3','3/day (+7)'],['continuous','Continuous (+10)']];
-              return <div style={{display:"flex",flexWrap:"wrap",gap:"6px",alignItems:"center",padding:"8px",background:surf,border:"1px solid "+brd,borderRadius:"4px"}}>
-                <input value={cpPwSpell} onChange={function(e){setCpPwSpell(e.target.value);}} placeholder="Spell name" style={{flex:1,minWidth:"140px",padding:"4px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px",outline:"none"}} />
-                <select value={cpPwLevel} onChange={function(e){setCpPwLevel(parseInt(e.target.value));}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
-                  {[1,2,3,4,5].map(function(l){return <option key={l} value={l}>L{l}</option>;})}
-                </select>
-                <select value={cpPwType} onChange={function(e){setCpPwType(e.target.value);}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
-                  <option value="priest">Priest (+{cpPwLevel} CP)</option>
-                  <option value="wizard">Wizard (+{cpPwLevel*2} CP)</option>
-                </select>
-                <select value={cpPwFreq} onChange={function(e){setCpPwFreq(e.target.value);}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
-                  {FREQ_OPTS.map(function(o){return <option key={o[0]} value={o[0]}>{o[1]}</option>;})}
-                </select>
-                <span style={{fontFamily:"monospace",fontSize:"12px",color:"#e08060",minWidth:"46px",textAlign:"right"}}>= {previewCost} CP</span>
-                <button disabled={!cpPwSpell.trim()||atLimit} onClick={function(){
-                  if(!cpPwSpell.trim())return;
-                  setCpSpellPowers(cpSpellPowers.concat([{id:Date.now()+"_"+Math.random().toString(36).slice(2),spell:cpPwSpell.trim(),level:cpPwLevel,spellType:cpPwType,freq:cpPwFreq}]));
-                  setCpPwSpell("");setCpPwLevel(1);setCpPwType("priest");setCpPwFreq("week");
-                }} style={{padding:"4px 12px",borderRadius:"4px",cursor:(!cpPwSpell.trim()||atLimit)?"not-allowed":"pointer",background:(!cpPwSpell.trim()||atLimit)?"#1a1a28":"#1a2a4a",color:(!cpPwSpell.trim()||atLimit)?dim:"#80c0e0",border:"1px solid "+((!cpPwSpell.trim()||atLimit)?brd:"#2a4a6a"),fontSize:"11px"}}>+ Add</button>
-              </div>;
-            })()}
-            <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>
-              Base 10 CP · +1/level priest spell, +2/level wizard spell · +5 for 1/day, +1 per extra daily use · +10 continuous
-            </div>
-          </div>}
 
-          {/* Abilities */}
-          {(isPriest||isWizard)&&<div style={{marginBottom:"12px"}}>
-            <Lbl dim={dim}>ABILITIES</Lbl>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
-              {Object.keys(activeAbilities).map(function(a){var d=activeAbilities[a];var on=cpAbil.indexOf(a)>=0;
-                return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:"pointer",fontSize:"11px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim}}>
-                  <input type="checkbox" checked={on} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:g}} />
-                  <span style={{flex:1}}>{a}</span>
-                  <span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>{d.c}</span>
-                </label>;
+            {/* Sub-tab navigation */}
+            <div style={{display:"flex",gap:"4px",marginBottom:"14px",borderBottom:"1px solid "+brd,paddingBottom:"10px"}}>
+              {SUB_TABS.map(function(st){
+                var isActive=activeSub===st.id;
+                var hasData=st.id==='priest'?(cpMajor.length+cpMinor.length+cpAbil.filter(function(a){return PRIEST_ABILITIES[a];}).length):st.id==='wizard'?cpSchools.length+cpAbil.filter(function(a){return WIZARD_ABILITIES[a];}).length:0;
+                return <button key={st.id} onClick={function(){setCpSubTab(st.id);}} style={{
+                  padding:"7px 18px",borderRadius:"6px 6px 0 0",cursor:"pointer",fontSize:"12px",fontFamily:"monospace",fontWeight:isActive?"bold":"normal",
+                  background:isActive?(st.classMatch?"#1a2a18":st.id==='monk'?"#1a1a2a":"#2a1a2a"):surf,
+                  color:isActive?(st.classMatch?g:st.id==='monk'?"#80a0e0":"#c060a0"):dim,
+                  border:"1px solid "+(isActive?(st.classMatch?"#3a5a3a":st.id==='monk'?"#2a3a5a":"#5a2a5a"):brd),
+                  borderBottom:isActive?"1px solid "+(st.classMatch?"#1a2a18":st.id==='monk'?"#1a1a2a":"#2a1a2a"):"1px solid "+brd,
+                  position:"relative",marginBottom:isActive?"-1px":"0",
+                }}>
+                  {st.label}
+                  {st.classMatch&&<span style={{marginLeft:"5px",fontSize:"9px",color:"#60e060"}}>●</span>}
+                  {hasData>0&&!st.classMatch&&<span style={{marginLeft:"5px",fontSize:"9px",color:"#e08060"}}>●</span>}
+                </button>;
               })}
             </div>
-          </div>}
 
-          {/* Limitations */}
-          {(isPriest||isWizard)&&<div style={{marginBottom:"12px"}}>
-            <Lbl dim={dim}>LIMITATIONS <span style={{color:"#60a060"}}>(refund CP)</span></Lbl>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
-              {Object.keys(activeLimits).map(function(l){var d=activeLimits[l];var on=cpLim.indexOf(l)>=0;
-                return <label key={l} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:"pointer",fontSize:"11px",background:on?"#1a2818":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim}}>
-                  <input type="checkbox" checked={on} onChange={function(){toggle(cpLim,setCpLim,l);}} style={{accentColor:"#60a060"}} />
-                  <span style={{flex:1}}>{l}</span>
-                  <span style={{fontFamily:"monospace",fontSize:"10px",color:"#60a060"}}>-{d.r}</span>
-                </label>;
-              })}
-            </div>
-          </div>}
+            {/* ── PRIEST SUB-TAB ── */}
+            {activeSub==='priest'&&<div>
+              {!isPriest&&<div style={{padding:"10px 14px",marginBottom:"12px",background:"#1a1010",border:"1px solid #4a2a2a",borderRadius:"6px",fontSize:"11px",color:"#c08080"}}>
+                ⚠ Viewing only — select Cleric or Druid on the Stats tab to make this section editable.
+              </div>}
+              {/* Presets */}
+              <div style={{marginBottom:"12px",display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
+                <span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>PRESETS:</span>
+                {Object.keys(PRIEST_PRESETS).map(function(n){return <button key={n} disabled={!isPriest} onClick={function(){loadPreset(n);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:isPriest?"pointer":"not-allowed",fontSize:"10px",fontFamily:"monospace",background:"#1a1a28",color:isPriest?g:dim,border:"1px solid "+brd,opacity:isPriest?1:0.5}}>{n} ({PRIEST_PRESETS[n].cost})</button>;})}
+                <button disabled={!isPriest} onClick={function(){setCpMajor([]);setCpMinor([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:isPriest?"pointer":"not-allowed",fontSize:"10px",fontFamily:"monospace",background:"#2a1a1a",color:isPriest?"#e08080":dim,border:"1px solid #4a2a2a",opacity:isPriest?1:0.5}}>CLEAR</button>
+              </div>
+              {/* Spheres */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>SPHERES OF ACCESS <span style={{color:g}}>(Table 6)</span></Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"4px"}}>
+                  {SPHERE_NAMES.map(function(sp){var c=SPHERE_COSTS[sp];var isMaj=cpMajor.indexOf(sp)>=0;var isMin=cpMinor.indexOf(sp)>=0;
+                    return <div key={sp} style={{display:"flex",alignItems:"center",gap:"4px",padding:"3px 8px",background:isMaj?"#1a2a18":isMin?"#18202a":surf,border:"1px solid "+(isMaj?"#3a5a3a":isMin?"#2a3a5a":brd),borderRadius:"4px",fontSize:"11px",opacity:isPriest?1:0.5}}>
+                      <span style={{flex:1,color:isMaj?g:isMin?"#80c0e0":dim}}>{sp}</span>
+                      <button disabled={!isPriest} onClick={function(){if(isMaj){setCpMajor(cpMajor.filter(function(x){return x!==sp;}));}else{setCpMinor(cpMinor.filter(function(x){return x!==sp;}));setCpMajor(cpMajor.concat([sp]));}}} style={{padding:"1px 5px",fontSize:"9px",fontFamily:"monospace",borderRadius:"3px",cursor:isPriest?"pointer":"not-allowed",background:isMaj?"#2a4a2a":"#1a1a28",color:isMaj?"#7a7":dim,border:"1px solid "+(isMaj?"#4a6a4a":brd)}}>M{c.M}</button>
+                      <button disabled={!isPriest} onClick={function(){if(isMin){setCpMinor(cpMinor.filter(function(x){return x!==sp;}));}else{setCpMajor(cpMajor.filter(function(x){return x!==sp;}));setCpMinor(cpMinor.concat([sp]));}}} style={{padding:"1px 5px",fontSize:"9px",fontFamily:"monospace",borderRadius:"3px",cursor:isPriest?"pointer":"not-allowed",background:isMin?"#1a2a4a":"#1a1a28",color:isMin?"#80c0e0":dim,border:"1px solid "+(isMin?"#2a4a6a":brd)}}>m{c.m}</button>
+                      {(isMaj||isMin)&&isPriest&&<button onClick={function(){setCpMajor(cpMajor.filter(function(x){return x!==sp;}));setCpMinor(cpMinor.filter(function(x){return x!==sp;}));}} style={{padding:"1px 3px",fontSize:"9px",color:"#a66",background:"transparent",border:"none",cursor:"pointer"}}>✕</button>}
+                    </div>;
+                  })}
+                </div>
+              </div>
+              {/* Spell-like Granted Powers */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>SPELL-LIKE GRANTED POWERS <span style={{color:g,fontWeight:"normal"}}>(max {maxGrantedPowers} at level {level})</span></Lbl>
+                {cpSpellPowers.length>0&&<div style={{marginBottom:"8px",display:"flex",flexDirection:"column",gap:"4px"}}>
+                  {cpSpellPowers.map(function(pw){
+                    var cost=spellPowerCost(pw.level,pw.spellType,pw.freq);
+                    var freqLabel=pw.freq==='week'?'1/week':pw.freq==='continuous'?'continuous':pw.freq+'/day';
+                    return <div key={pw.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"5px 10px",background:"#12182a",border:"1px solid #2a3a5a",borderRadius:"4px",fontSize:"11px",opacity:isPriest?1:0.5}}>
+                      <span style={{flex:1,color:txt}}>{pw.spell}</span>
+                      <span style={{color:dim,fontFamily:"monospace"}}>L{pw.level} {pw.spellType}</span>
+                      <span style={{color:"#80c0e0",fontFamily:"monospace"}}>{freqLabel}</span>
+                      <span style={{color:"#e08060",fontFamily:"monospace",minWidth:"40px",textAlign:"right"}}>{cost} CP</span>
+                      {isPriest&&<button onClick={function(){setCpSpellPowers(cpSpellPowers.filter(function(x){return x.id!==pw.id;}));}} style={{background:"transparent",border:"none",color:"#a66",cursor:"pointer",padding:"0 4px",fontSize:"13px"}}>✕</button>}
+                    </div>;
+                  })}
+                  {cpSpellPowers.length>maxGrantedPowers&&<div style={{fontSize:"10px",color:"#e06060",fontFamily:"monospace"}}>⚠ Exceeds limit: {cpSpellPowers.length}/{maxGrantedPowers} at level {level}</div>}
+                </div>}
+                {isPriest&&(function(){
+                  var previewCost=spellPowerCost(cpPwLevel,cpPwType,cpPwFreq);
+                  var atLimit=cpSpellPowers.length>=maxGrantedPowers;
+                  var FREQ_OPTS=[['week','1/week (+0)'],['1','1/day (+5)'],['2','2/day (+6)'],['3','3/day (+7)'],['continuous','Continuous (+10)']];
+                  return <div style={{display:"flex",flexWrap:"wrap",gap:"6px",alignItems:"center",padding:"8px",background:surf,border:"1px solid "+brd,borderRadius:"4px"}}>
+                    <input value={cpPwSpell} onChange={function(e){setCpPwSpell(e.target.value);}} placeholder="Spell name" style={{flex:1,minWidth:"140px",padding:"4px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px",outline:"none"}} />
+                    <select value={cpPwLevel} onChange={function(e){setCpPwLevel(parseInt(e.target.value));}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                      {[1,2,3,4,5].map(function(l){return <option key={l} value={l}>L{l}</option>;})}
+                    </select>
+                    <select value={cpPwType} onChange={function(e){setCpPwType(e.target.value);}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                      <option value="priest">Priest (+{cpPwLevel} CP)</option>
+                      <option value="wizard">Wizard (+{cpPwLevel*2} CP)</option>
+                    </select>
+                    <select value={cpPwFreq} onChange={function(e){setCpPwFreq(e.target.value);}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                      {FREQ_OPTS.map(function(o){return <option key={o[0]} value={o[0]}>{o[1]}</option>;})}
+                    </select>
+                    <span style={{fontFamily:"monospace",fontSize:"12px",color:"#e08060",minWidth:"46px",textAlign:"right"}}>= {previewCost} CP</span>
+                    <button disabled={!cpPwSpell.trim()||atLimit} onClick={function(){
+                      if(!cpPwSpell.trim())return;
+                      setCpSpellPowers(cpSpellPowers.concat([{id:Date.now()+"_"+Math.random().toString(36).slice(2),spell:cpPwSpell.trim(),level:cpPwLevel,spellType:cpPwType,freq:cpPwFreq}]));
+                      setCpPwSpell("");setCpPwLevel(1);setCpPwType("priest");setCpPwFreq("week");
+                    }} style={{padding:"4px 12px",borderRadius:"4px",cursor:(!cpPwSpell.trim()||atLimit)?"not-allowed":"pointer",background:(!cpPwSpell.trim()||atLimit)?"#1a1a28":"#1a2a4a",color:(!cpPwSpell.trim()||atLimit)?dim:"#80c0e0",border:"1px solid "+((!cpPwSpell.trim()||atLimit)?brd:"#2a4a6a"),fontSize:"11px"}}>+ Add</button>
+                  </div>;
+                })()}
+                <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>
+                  Base 10 CP · +1/level priest, +2/level wizard · +5 for 1/day, +1 per extra use · +10 continuous
+                </div>
+              </div>
+              {/* Priest Abilities */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>ABILITIES</Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                  {Object.keys(PRIEST_ABILITIES).map(function(a){var d=PRIEST_ABILITIES[a];var on=cpAbil.indexOf(a)>=0;
+                    return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isPriest?"pointer":"default",fontSize:"11px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isPriest?1:0.5}}>
+                      <input type="checkbox" checked={on} disabled={!isPriest} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:g}} />
+                      <span style={{flex:1}}>{a}</span>
+                      <span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>{d.c}</span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+              {/* Priest Limitations */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>LIMITATIONS <span style={{color:"#60a060"}}>(refund CP)</span></Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                  {Object.keys(PRIEST_LIMITS).map(function(l){var d=PRIEST_LIMITS[l];var on=cpLim.indexOf(l)>=0;
+                    return <label key={l} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isPriest?"pointer":"default",fontSize:"11px",background:on?"#1a2818":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isPriest?1:0.5}}>
+                      <input type="checkbox" checked={on} disabled={!isPriest} onChange={function(){toggle(cpLim,setCpLim,l);}} style={{accentColor:"#60a060"}} />
+                      <span style={{flex:1}}>{l}</span>
+                      <span style={{fontFamily:"monospace",fontSize:"10px",color:"#60a060"}}>-{d.r}</span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+            </div>}
 
-          {!(isPriest||isWizard)&&<div style={{padding:"40px",textAlign:"center",color:dim}}>
-            <div style={{fontSize:"36px",opacity:0.3,marginBottom:"12px"}}>⚔️</div>
-            <div>CP character creation is available for Priest and Wizard classes.</div>
-            <div style={{fontSize:"11px",marginTop:"8px"}}>Select Cleric, Druid, Mage, or Illusionist on the Stats tab to enable.</div>
-          </div>}
-        </div>}
+            {/* ── MONK SUB-TAB ── */}
+            {activeSub==='monk'&&<div style={{padding:"30px 20px",textAlign:"center"}}>
+              <div style={{fontSize:"32px",marginBottom:"16px",opacity:0.4}}>☯</div>
+              <div style={{fontSize:"15px",color:"#80a0e0",fontWeight:"bold",marginBottom:"10px",fontVariant:"small-caps",letterSpacing:"2px"}}>Monk CP System</div>
+              <div style={{fontSize:"12px",color:dim,maxWidth:"480px",margin:"0 auto",lineHeight:"1.7",marginBottom:"20px"}}>
+                The Monk character creation system from <em style={{color:txt}}>Player's Option: Spells & Magic</em> will be added here.
+                Monk CP options cover disciplines such as mental fortitude, martial arts progressions, ki powers, and ascetic limitations.
+              </div>
+              <div style={{display:"inline-block",padding:"8px 20px",background:"#1a1a2a",border:"1px solid #2a3a5a",borderRadius:"6px",fontSize:"11px",color:"#6080a0",fontFamily:"monospace"}}>
+                Coming soon — upload the Monk CP data to enable this section
+              </div>
+            </div>}
+
+            {/* ── WIZARD SUB-TAB ── */}
+            {activeSub==='wizard'&&<div>
+              {!isWizard&&<div style={{padding:"10px 14px",marginBottom:"12px",background:"#1a1010",border:"1px solid #4a2a2a",borderRadius:"6px",fontSize:"11px",color:"#c08080"}}>
+                ⚠ Viewing only — select Mage or Illusionist on the Stats tab to make this section editable.
+              </div>}
+              {/* Schools */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>SCHOOLS OF MAGIC <span style={{color:g}}>(5 CP each, Universal is free)</span></Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"6px"}}>
+                  {WIZARD_SCHOOLS.map(function(sch){var on=cpSchools.indexOf(sch)>=0;
+                    return <label key={sch} style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 10px",cursor:isWizard?"pointer":"default",fontSize:"12px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?g:dim,opacity:isWizard?1:0.5}}>
+                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpSchools,setCpSchools,sch);}} style={{accentColor:g}} />
+                      <span style={{flex:1}}>{sch}</span><span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>5 CP</span>
+                    </label>;
+                  })}
+                </div>
+                <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>{cpSchools.length} schools = {cpSchools.length*5} CP (+ Universal free)</div>
+              </div>
+              {/* Wizard Abilities */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>ABILITIES</Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                  {Object.keys(WIZARD_ABILITIES).map(function(a){var d=WIZARD_ABILITIES[a];var on=cpAbil.indexOf(a)>=0;
+                    return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
+                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:g}} />
+                      <span style={{flex:1}}>{a}</span>
+                      <span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>{d.c}</span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+              {/* Wizard Limitations */}
+              <div style={{marginBottom:"12px"}}>
+                <Lbl dim={dim}>LIMITATIONS <span style={{color:"#60a060"}}>(refund CP)</span></Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                  {Object.keys(WIZARD_LIMITS).map(function(l){var d=WIZARD_LIMITS[l];var on=cpLim.indexOf(l)>=0;
+                    return <label key={l} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?"#1a2818":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
+                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpLim,setCpLim,l);}} style={{accentColor:"#60a060"}} />
+                      <span style={{flex:1}}>{l}</span>
+                      <span style={{fontFamily:"monospace",fontSize:"10px",color:"#60a060"}}>-{d.r}</span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+            </div>}
+
+            {/* No CP class */}
+            {!(isPriest||isWizard)&&activeSub!=='monk'&&<div style={{padding:"30px",textAlign:"center",color:dim,fontSize:"12px",marginTop:"8px"}}>
+              Select Cleric, Druid, Mage, or Illusionist to enable CP editing for this character.
+            </div>}
+          </div>;
+        })()}
 
         {/* ═══ SHEET TAB ═══ */}
         {tab==="sheet"&&<div style={{fontFamily:"'Courier New',monospace",fontSize:"11px",lineHeight:"1.5",color:"#ddd",background:"#0c0c14",border:"1px solid "+brd,borderRadius:"8px",padding:"20px",maxWidth:"700px",margin:"0 auto"}}>
