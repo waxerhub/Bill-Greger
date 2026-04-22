@@ -18,6 +18,13 @@ export function exportCharacterSheet(ch) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const W = 612, H = 792, M = 36, CW = W - 2 * M;
 
+  // Effective stats (gear/buff-adjusted) — declared early to avoid TDZ in minified builds
+  const effStrB = ch.effStrB ?? ch.strB;
+  const effThac0 = ch.effThac0 ?? ch.thac0;
+  const effAC = ch.effAC ?? ch.ac;
+  const effHP = ch.effHP ?? ch.hp;
+  const effSaves = ch.effSaves ?? ch.saves;
+
   function dt(str, x, y, opts = {}) {
     doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
     doc.setFontSize(opts.size || 9);
@@ -137,12 +144,6 @@ export function exportCharacterSheet(ch) {
   // ---- COMBAT ----
   dt('COMBAT', W / 2, y + 10, { size: 11, bold: true, align: 'center' });
   y += 18;
-
-  const effStrB = ch.effStrB ?? ch.strB;
-  const effThac0 = ch.effThac0 ?? ch.thac0;
-  const effAC = ch.effAC ?? ch.ac;
-  const effHP = ch.effHP ?? ch.hp;
-  const effSaves = ch.effSaves ?? ch.saves;
 
   const acSub = ch.gearBaseAC != null
     ? `Armor:${ch.gearBaseAC} Dex:${dexBonus(ch.adjStats.Dex)}${ch.gearAC ? ` Ring:+${ch.gearAC}` : ''}`
