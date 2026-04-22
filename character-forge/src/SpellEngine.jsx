@@ -200,6 +200,78 @@ var PRIEST_LIMITS={"Armor: Chain or lighter":{r:5},"Armor: Studded leather":{r:1
 // Wizard Abilities
 var WIZARD_ABILITIES={"Armor: Padded":{c:5},"Armor: Leather/studded":{c:10},"Armor: Any":{c:15},"Auto spell acquisition (one school)":{c:2},"Auto spell acquisition (any school)":{c:5},"Bonus spells (one school)":{c:10},"Bonus spells (any school)":{c:15},"Casting time reduction (one school)":{c:2},"Casting time reduction (all)":{c:5},"Combat bonus (rogue THAC0)":{c:8},"Combat bonus (priest THAC0)":{c:10},"Constitution adjustment (warrior)":{c:5},"Detect magic":{c:10},"Dispel (1/day)":{c:10},"Dispel (3/day)":{c:15},"Enhanced casting level":{c:10},"Extended duration (one school)":{c:10},"Extended duration (all)":{c:15},"Followers":{c:10},"Improved Hit Die (d6)":{c:10},"Improved Hit Die (d8)":{c:20},"Learning bonus +15% (one school)":{c:5},"Learning bonus +25% (one school)":{c:7},"No components (one school)":{c:5},"No components (any school)":{c:8},"Priestly wizard (minor sphere)":{c:10},"Priestly wizard (major sphere)":{c:15},"Range increase +25% (one school)":{c:5},"Range increase +50% (one school)":{c:7},"Read magic":{c:5},"Research bonus (one school)":{c:5},"Research bonus (all)":{c:10},"School knowledge +1/-1 saves":{c:5},"School knowledge +2/-2 saves":{c:8},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Weapon: Cleric/thief list":{c:10},"Weapon: Any":{c:15},"Weapon specialization":{c:15}};
 
+// CP ability descriptive text for Sheet tab display
+var CP_ABILITY_DESC={
+  // Priest abilities
+  "Animal empathy":"Animal Empathy — speak with animals at will; +2 reaction from animals",
+  "Casting time reduction":"Casting Time Reduction — all spells cast 1 segment faster",
+  "Cold resistance":"Cold Resistance — +2 to saves vs. cold; take half damage from cold",
+  "Communication":"Communication — speak/understand any natural creature (animals, plants, etc.)",
+  "Detect evil":"Detect Evil — 1/day, as spell (60 ft range, 1 round/level duration)",
+  "Detect undead":"Detect Undead — 1/day, 60 ft range, concentration",
+  "Expert healer":"Expert Healer — healing spells restore +1 HP/die; natural recovery accelerated",
+  "Extended duration (one sphere)":"Extended Duration (one sphere) — spells in chosen sphere last 50% longer",
+  "Extended duration (all)":"Extended Duration (all spheres) — all spells last 50% longer",
+  "Fire/electrical resistance":"Fire/Electrical Resistance — +2 saves vs. fire & electricity; half damage",
+  "Followers (8th level)":"Followers — attract 2d10 × 10 followers at 8th level",
+  "Followers (any level)":"Followers — attract followers at any level (as 8th-level ability)",
+  "Identify plants/animals":"Identify Plants/Animals — at will, as per spell ability",
+  "Identify plants/animals (1st)":"Identify Plants/Animals (1st) — 1/day at 1st level; at will at higher levels",
+  "Immunity to charm":"Immunity to Charm — immune to all charm/enchantment spells",
+  "Immunity to disease":"Immunity to Disease — immune to all natural and magical diseases",
+  "Immunity to magic":"Immunity to Magic — +4 to saves vs. magic; immune to cantrips",
+  "Inspire allies":"Inspire Allies — allies within 30 ft gain +1 to morale and attack rolls",
+  "Enrage allies":"Enrage Allies — allies berserk: +1 hit/damage, -1 AC, ignore morale",
+  "Know alignment":"Know Alignment — 1/day per level; detect alignment at touch",
+  "Lay on hands":"Lay on Hands — heal HP/day equal to level × 2 (granted-power version)",
+  "Pass without trace":"Pass without Trace — at will, as per druid spell",
+  "Pass without trace (1st)":"Pass without Trace (1st) — 1/day at 1st level; at will later",
+  "Shapechange":"Shapechange — as Druid shapeshifting ability",
+  "Turn undead":"Turn Undead — turn/command undead as a cleric of same level",
+  "Unarmed combat":"Unarmed Combat — use warrior unarmed combat rules; 1d3+STR dmg",
+  "Weapon: one edged":"Weapon: One Edged — may use any one type of edged weapon",
+  "Weapon: any":"Weapon: Any — may use any weapon",
+  "Weapon specialization":"Weapon Specialization — may specialize in a weapon (+1 hit, +2 dmg, extra attack)",
+  "Wizardly priest":"Wizardly Priest — access to 1–3 wizard schools (select in CP tab)",
+  "Thief ability (1)":"Thief Ability (1) — one thief skill at level/2 proficiency",
+  "Thief ability (2)":"Thief Ability (2) — two thief skills at level/2 proficiency",
+  "Spirit powers (one)":"Spirit Powers (one) — commune with one spirit type; minor spirit abilities",
+  "Spirit powers (all)":"Spirit Powers (all) — full shaman spirit powers (all types)",
+  // Wizard abilities
+  "Armor: Padded":"Armor: Padded — can wear padded armor while casting spells",
+  "Armor: Leather/studded":"Armor: Leather/Studded — can wear leather or studded leather while casting",
+  "Armor: Any":"Armor: Any — can wear any armor while casting spells",
+  "Auto spell acquisition (one school)":"Auto Spell Acquisition (one school) — automatically learn spells of chosen school on level-up",
+  "Auto spell acquisition (any school)":"Auto Spell Acquisition (any school) — automatically learn spells of any school on level-up",
+  "Bonus spells (one school)":"Bonus Spells (one school) — +1 spell slot per spell level in chosen school",
+  "Bonus spells (any school)":"Bonus Spells (any school) — +1 spell slot per spell level in any school",
+  "Casting time reduction (one school)":"Casting Time Reduction (one school) — chosen school spells cast 1 segment faster",
+  "Casting time reduction (all)":"Casting Time Reduction (all schools) — all spells cast 1 segment faster",
+  "Detect magic":"Detect Magic — at will, as per spell (concentration, 1 round)",
+  "Dispel (1/day)":"Dispel Magic — 1/day as an innate ability",
+  "Dispel (3/day)":"Dispel Magic — 3/day as an innate ability",
+  "Enhanced casting level":"Enhanced Casting Level — +2 caster levels for determining spell effects and range",
+  "Extended duration (one school)":"Extended Duration (one school) — spells of chosen school last 50% longer",
+  "Followers":"Followers — attract apprentices and followers at high level",
+  "Learning bonus +15% (one school)":"Learning Bonus +15% (one school) — +15% to spell learning rolls in chosen school",
+  "Learning bonus +25% (one school)":"Learning Bonus +25% (one school) — +25% to spell learning rolls in chosen school",
+  "No components (one school)":"No Components (one school) — chosen school spells need no material/somatic components",
+  "No components (any school)":"No Components (any school) — all spells need no material/somatic components",
+  "Priestly wizard (minor sphere)":"Priestly Wizard (minor sphere) — access to one minor priest sphere",
+  "Priestly wizard (major sphere)":"Priestly Wizard (major sphere) — access to one major priest sphere",
+  "Range increase +25% (one school)":"Range Increase +25% (one school) — range of chosen school spells increased by 25%",
+  "Range increase +50% (one school)":"Range Increase +50% (one school) — range of chosen school spells increased by 50%",
+  "Read magic":"Read Magic — at will, without spell; can read any magical script",
+  "Research bonus (one school)":"Research Bonus (one school) — 25% less time and cost for spell research in chosen school",
+  "Research bonus (all)":"Research Bonus (all schools) — 50% less time and cost for all spell research",
+  "School knowledge +1/-1 saves":"School Knowledge +1/−1 Saves — +1 to saves vs. chosen school; enemy saves −1 vs. your chosen-school spells",
+  "School knowledge +2/-2 saves":"School Knowledge +2/−2 Saves — +2 to saves vs. chosen school; enemy saves −2 vs. your chosen-school spells",
+  "Thief ability (1)":"Thief Ability (1) — one thief skill at level/2 proficiency",
+  "Thief ability (2)":"Thief Ability (2) — two thief skills at level/2 proficiency",
+  "Weapon: Cleric/thief list":"Weapon: Cleric/Thief List — may use weapons from cleric and thief weapon lists",
+  "Weapon: Any":"Weapon: Any — may use any weapon",
+};
+
 // Wizard Limitations
 var WIZARD_LIMITS={"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Difficult memorization":{r:5},"Hazardous spells":{r:10},"Learning penalty -15%":{r:5},"Learning penalty -25%":{r:8},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc/weapons/armor":{r:5},"Reduced HP (d3)":{r:10},"Reduced spell knowledge":{r:7},"Reduced spell progression":{r:15},"Slower casting time +3":{r:2},"Slower casting time (next unit)":{r:5},"Supernatural constraint":{r:5},"Talisman required":{r:8},"Weapons: None allowed":{r:5},"Weapons: Cannot wield":{r:5}};
 
@@ -1179,9 +1251,16 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var classData=CLASSES[cls]||CLASSES.Druid;
   var isPriest=classData.group==="Priest";
   var isWizard=classData.group==="Wizard";
+  // CP ability mechanical effects (computed before base stat derivation)
+  var cpThac0Type=classData.thac0;
+  if(cpAbil.indexOf('Combat bonus (warrior THAC0)')>=0) cpThac0Type='war';
+  else if(cpAbil.indexOf('Combat bonus (rogue THAC0)')>=0&&cpThac0Type==='wiz') cpThac0Type='rog';
+  else if(cpAbil.indexOf('Combat bonus (priest THAC0)')>=0&&cpThac0Type==='wiz') cpThac0Type='pri';
+  var cpWarriorCon=cpAbil.indexOf('Warrior Con bonus')>=0||cpAbil.indexOf('Warrior Con + Str')>=0||cpAbil.indexOf('Constitution adjustment (warrior)')>=0;
+  var cpWarriorStr=cpAbil.indexOf('Warrior Con + Str')>=0;
   var adjStats={};
   ["Str","Dex","Con","Int","Wis","Cha"].forEach(function(a){adjStats[a]=stats[a]+(raceData.adj[a]||0);});
-  var thac0=getThac0(classData.thac0,level);
+  var thac0=getThac0(cpThac0Type,level);
   var isDruid=cls==="Druid";
   var kitData=isDruid?(DRUID_KITS[kit]||DRUID_KITS["None"]):null;
   var maxShapeUses=isDruid?(Math.floor(level/3)+1):0;
@@ -1192,7 +1271,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var saves=(SAVES[classData.saves]||SAVES.pri)(level);
   var ac=10+dexAC(adjStats.Dex);
   var isWarrior=classData.group==="Warrior";
-  var conB=conHP(adjStats.Con,classData.group);
+  var conB=conHP(adjStats.Con,cpWarriorCon?'Warrior':classData.group);
   var wisAdj=wisDefense(adjStats.Wis);
   var wisImm=wisImmunity(adjStats.Wis);
   var wisSpellFail=wisFailure(adjStats.Wis);
@@ -1200,6 +1279,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var slots=classData.spells==="priest"?(PRIEST_SLOTS[Math.min(level,14)]||[]):classData.spells==="wizard"?(WIZARD_SLOTS[Math.min(level,14)]||[]):[];
   var wBonus=classData.spells==="priest"?wisBonus(adjStats.Wis):[];
   var adjSlots=slots.map(function(s,i){return s+(wBonus[i]||0);});
+  // CP-derived effective hit die (upgrades and limitations)
+  var effectiveHD=classData.hd;
+  if(cpAbil.indexOf('Hit point bonus (d10)')>=0) effectiveHD=10;
+  if(cpAbil.indexOf('Improved Hit Die (d8)')>=0&&effectiveHD<8) effectiveHD=8;
+  if(cpAbil.indexOf('Improved Hit Die (d6)')>=0&&effectiveHD<6) effectiveHD=6;
+  if(cpLim.indexOf('Reduced HP (d6)')>=0) effectiveHD=Math.min(effectiveHD,6);
+  if(cpLim.indexOf('Reduced HP (d4)')>=0) effectiveHD=Math.min(effectiveHD,4);
+  // AC improvement: +1 per 4 levels
+  var cpAcBonus=cpAbil.indexOf('AC improvement')>=0?Math.floor(level/4):0;
 
   // Equipped custom gear bonuses
   function getActiveEffects(g){
@@ -1226,7 +1314,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   adjStats.Str+=gearStr; adjStats.Dex+=gearDex; adjStats.Con+=gearCon;
   adjStats.Int+=gearInt; adjStats.Wis+=gearWis; adjStats.Cha+=gearCha;
   // exStr and strB computed after gear so gear STR bonuses are included
-  var exStr=isWarrior&&adjStats.Str===18&&strPct>0;
+  var exStr=(isWarrior||cpWarriorStr)&&adjStats.Str===18&&strPct>0;
   var strB=exStr?strExBonus(strPct):strBonus(adjStats.Str);
 
   // Active spell buffs
@@ -1258,7 +1346,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
   var effStrB=effStrPct>0?strExBonus(effStrPct):strBonus(effStr);
   // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
-  var effAC=(gearBaseAC!==null?gearBaseAC:10)+dexAC(adjStats.Dex)-buffAC-gearAC;
+  var effAC=(gearBaseAC!==null?gearBaseAC:10)+dexAC(adjStats.Dex)-buffAC-gearAC-cpAcBonus;
   var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-(gearSavesBySave[k]||0)-buffSave;});
@@ -1883,7 +1971,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>CLASS</Lbl>
               <select value={cls} onChange={function(e){changeClass(e.target.value);}} style={ss(brd,txt)}>{Object.keys(CLASSES).map(function(c){return <option key={c}>{c}</option>;})}</select>
-              <div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>HD: d{classData.hd} | {classData.group} | CP: {isPriest?120:isWizard?40:0}</div>
+              <div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>HD: d{effectiveHD}{effectiveHD!==classData.hd&&<span style={{color:"#80c0e0"}}> (base d{classData.hd})</span>} | {classData.group} | CP: {isPriest?120:isWizard?40:0}</div>
             </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>KIT</Lbl>
               {isDruid
@@ -2002,16 +2090,16 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     <button onClick={function(){setHP(function(p){return p+1;});}} title="+1"
       style={{background:"#1a1a28",color:dim,border:"1px solid "+brd,borderRadius:"4px",width:"22px",height:"22px",cursor:"pointer",fontSize:"14px",lineHeight:"1",padding:"0"}}>+</button>
     <button onClick={function(){
-      var hd=classData.hd||6;
+      var hd=effectiveHD||6;
       var total=0;
       for(var i=0;i<level;i++){total+=Math.floor(Math.random()*hd)+1+conB;}
       setHP(Math.max(level,total));
-    }} title={"Roll "+level+"d"+classData.hd+(conB!==0?"+"+(conB*level):"")}
+    }} title={"Roll "+level+"d"+effectiveHD+(conB!==0?"+"+(conB*level):"")}
       style={{background:"#1a2a1a",color:"#7a7",border:"1px solid #3a5a3a",borderRadius:"4px",padding:"2px 6px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace",whiteSpace:"nowrap"}}>
-      ROLL {level}d{classData.hd}{conB!==0&&(conB>0?"+":"")+conB+"/die"}
+      ROLL {level}d{effectiveHD}{conB!==0&&(conB>0?"+":"")+conB+"/die"}
     </button>
   </div>
-  <div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>Con: {conB>=0?"+":""}{conB}/die | d{classData.hd} HD</div>
+  <div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>Con: {conB>=0?"+":""}{conB}/die | d{effectiveHD} HD{effectiveHD!==classData.hd&&<span style={{color:"#80c0e0"}}> (CP: d{classData.hd}→d{effectiveHD})</span>}</div>
 </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>ALIGNMENT</Lbl>
               <select value={align} onChange={function(e){setAlign(e.target.value);}} style={ss(brd,txt)}>{["Lawful Good","Lawful Neutral","Lawful Evil","Neutral Good","True Neutral","Neutral Evil","Chaotic Good","Chaotic Neutral","Chaotic Evil"].map(function(a){return <option key={a}>{a}</option>;})}</select>
@@ -2058,9 +2146,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {/* ═══ COMBAT TAB ═══ */}
         {tab==="combat"&&<div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px",marginBottom:"20px"}}>
-            <SB label="THAC0" value={effThac0} color="#e0c080" sub={"Hit: "+(effStrB.hit>=0?"+":"")+effStrB.hit+(gearThac0?" Gear:"+(gearThac0>0?"+":"")+gearThac0:"")} />
-            <SB label="AC" value={effAC} color="#80a0e0" sub={(gearBaseAC!==null?"Armor: "+gearBaseAC+" ":"")+"Dex: "+dexAC(adjStats.Dex)+(gearAC?" Gear:"+(gearAC>0?"+":"")+gearAC:"")} />
-            <SB label="HP" value={effHP} color="#e08080" sub={"d"+classData.hd+(gearHP?" +"+gearHP+" gear":"")} />
+            <SB label={cpThac0Type!==classData.thac0?"THAC0*":"THAC0"} value={effThac0} color="#e0c080" sub={"Hit: "+(effStrB.hit>=0?"+":"")+effStrB.hit+(gearThac0?" Gear:"+(gearThac0>0?"+":"")+gearThac0:"")+(cpThac0Type!==classData.thac0?" CP:"+cpThac0Type:"")} />
+            <SB label={(buffAC>0||cpAcBonus>0)?"AC*":"AC"} value={effAC} color="#80a0e0" sub={(gearBaseAC!==null?"Armor: "+gearBaseAC+" ":"")+"Dex: "+dexAC(adjStats.Dex)+(gearAC?" Gear:"+(gearAC>0?"+":"")+gearAC:"")+(cpAcBonus?" CP:+"+cpAcBonus:"")} />
+            <SB label="HP" value={effHP} color="#e08080" sub={"d"+effectiveHD+(effectiveHD!==classData.hd?" (CP)":"")+(gearHP?" +"+gearHP+" gear":"")} />
             <SB label="DMG ADJ" value={(effStrB.dmg+gearDmg>=0?"+":"")+(effStrB.dmg+gearDmg)} color="#e0a080" sub={effStrPct>0?"18/"+(effStrPct===100?"00":String(effStrPct).padStart(2,"0")):exStr?"18/"+(strPct===100?"00":String(strPct).padStart(2,"0")):"Str "+effStr} />
           </div>
           <Lbl dim={dim}>SAVING THROWS</Lbl>
@@ -2343,10 +2431,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"12px"}}>
             <div>
               <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>COMBAT</div>
-              <Row l="THAC0" v={thac0} l2={(buffStr>0||buffStrLvl>0)?("Str Hit*"+(effStrPct>0?" (ex)":"")):"Str Hit"} v2={(effStrB.hit>=0?"+":"")+effStrB.hit} />
-              <Row l={buffAC>0?"AC*":"AC"} v={effAC} l2="Dex Def" v2={(dexAC(adjStats.Dex)>=0?"+":"")+dexAC(adjStats.Dex)} />
+              <Row l={cpThac0Type!==classData.thac0?"THAC0*":"THAC0"} v={thac0} l2={(buffStr>0||buffStrLvl>0)?("Str Hit*"+(effStrPct>0?" (ex)":"")):"Str Hit"} v2={(effStrB.hit>=0?"+":"")+effStrB.hit} />
+              <Row l={(buffAC>0||cpAcBonus>0)?"AC*":"AC"} v={effAC} l2="Dex Def" v2={(dexAC(adjStats.Dex)>=0?"+":"")+dexAC(adjStats.Dex)} />
               <Row l="HP" v={hp} l2={(buffStr>0||buffStrLvl>0)?("Dmg Adj*"+(effStrPct>0?" (ex)":"")):"Dmg Adj"} v2={(effStrB.dmg>=0?"+":"")+effStrB.dmg} />
-              <Row l="Hit Dice" v={"d"+classData.hd} l2="Con Adj" v2={(conB>=0?"+":"")+conB+"/die"} />
+              <Row l="Hit Dice" v={"d"+effectiveHD} l2="Con Adj" v2={(conB>=0?"+":"")+conB+"/die"} />
               <Row l="Movement" v={12} l2="Dex Missile" v2={(dexMis>=0?"+":"")+dexMis} />
             </div>
             <div>
@@ -2430,11 +2518,32 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           </div>}
           {cpAbil.length>0&&<div style={{marginBottom:"12px"}}>
             <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SPECIAL ABILITIES</div>
-            {cpAbil.map(function(a,i){return <div key={i} style={{color:"#bbb"}}>• {a}</div>;})}
+            {cpAbil.map(function(a,i){
+              var desc=CP_ABILITY_DESC[a]||a;
+              // Override with computed values for mechanical abilities
+              if(a==='AC improvement') desc='AC Improvement: +'+(cpAcBonus||0)+' AC (level '+level+'; +1 per 4 levels)';
+              if(a==='Lay on hands') desc='Lay on Hands: heal '+(level*2)+' HP/day ('+level+' × 2)';
+              if(a==='Hit point bonus (d10)') desc='Hit Point Bonus: d10 HD (base d'+classData.hd+') — re-roll HP to apply';
+              if(a==='Improved Hit Die (d6)') desc='Improved Hit Die: d6 (base d'+classData.hd+') — re-roll HP to apply';
+              if(a==='Improved Hit Die (d8)') desc='Improved Hit Die: d8 (base d'+classData.hd+') — re-roll HP to apply';
+              if(a==='Combat bonus (warrior THAC0)') desc='Combat Bonus: THAC0 as Warrior — currently '+thac0+' at level '+level;
+              if(a==='Combat bonus (rogue THAC0)') desc='Combat Bonus: THAC0 as Rogue — currently '+thac0+' at level '+level;
+              if(a==='Combat bonus (priest THAC0)') desc='Combat Bonus: THAC0 as Priest — currently '+thac0+' at level '+level;
+              if(a==='Warrior Con bonus') desc='Warrior Con Bonus: CON adj '+(conB>=0?'+':'')+conB+'/die (warrior table, CON '+adjStats.Con+')';
+              if(a==='Warrior Con + Str') desc='Warrior CON + STR: CON adj '+(conB>=0?'+':'')+conB+'/die; exceptional STR access unlocked';
+              if(a==='Constitution adjustment (warrior)') desc='Constitution Adjustment (warrior): CON adj '+(conB>=0?'+':'')+conB+'/die (CON '+adjStats.Con+')';
+              if(a==='Weapon specialization') desc='Weapon Specialization: choose one weapon, gain +1 to hit, +2 damage, extra attack/round';
+              return <div key={i} style={{fontSize:"11px",color:"#bbb",marginBottom:"3px",lineHeight:"1.5"}}>• {desc}</div>;
+            })}
           </div>}
           {cpLim.length>0&&<div style={{marginBottom:"12px"}}>
-            <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>LIMITATIONS</div>
-            {cpLim.map(function(l,i){return <div key={i} style={{color:"#a88"}}>• {l}</div>;})}
+            <div style={{color:"#e08080",fontWeight:"bold",marginBottom:"4px"}}>LIMITATIONS</div>
+            {cpLim.map(function(l,i){
+              var mechNote='';
+              if(l==='Reduced HP (d6)') mechNote=' — HD reduced to d6 (was d'+classData.hd+'), re-roll HP';
+              if(l==='Reduced HP (d4)') mechNote=' — HD reduced to d4 (was d'+classData.hd+'), re-roll HP';
+              return <div key={i} style={{fontSize:"11px",color:"#c08080",marginBottom:"3px",lineHeight:"1.5"}}>• {l}{mechNote&&<span style={{color:"#e08060"}}>{mechNote}</span>}</div>;
+            })}
           </div>}
           <div style={{borderTop:"1px solid #333",paddingTop:"8px",marginTop:"8px",color:dim,fontSize:"10px"}}>
             CP Budget: {cpBudget} | Spent: {cpSpent} | Refund: {cpRefund} | Net: {cpSpent-cpRefund}/{cpBudget}
