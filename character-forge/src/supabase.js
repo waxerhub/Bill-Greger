@@ -87,6 +87,20 @@ export async function signOut() {
   if (error) throw new Error(error.message);
 }
 
+export async function resetPasswordForEmail(email) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function updatePassword(newPassword) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
+}
+
 // Subscribe to auth state changes. Returns an unsubscribe function.
 export function onAuthStateChange(callback) {
   if (!supabase) return () => {};

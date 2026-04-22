@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { exportCharacterSheet } from "./exportPDF.js";
 import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter, generateMagicItem } from "./claudeAI.js";
-import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, signIn, signUp, signOut, onAuthStateChange, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash } from "./supabase.js";
+import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, signIn, signUp, signOut, onAuthStateChange, resetPasswordForEmail, updatePassword, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash } from "./supabase.js";
 
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
@@ -1222,9 +1222,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _authUser=useState(null),authUser=_authUser[0],setAuthUser=_authUser[1];
   var _authEmail=useState(""),authEmail=_authEmail[0],setAuthEmail=_authEmail[1];
   var _authPassword=useState(""),authPassword=_authPassword[0],setAuthPassword=_authPassword[1];
+  var _authConfirmPw=useState(""),authConfirmPw=_authConfirmPw[0],setAuthConfirmPw=_authConfirmPw[1];
   var _authMode=useState("signin"),authMode=_authMode[0],setAuthMode=_authMode[1];
   var _authError=useState(""),authError=_authError[0],setAuthError=_authError[1];
   var _authLoading=useState(false),authLoading=_authLoading[0],setAuthLoading=_authLoading[1];
+  var _authIsRecovery=useState(false),authIsRecovery=_authIsRecovery[0],setAuthIsRecovery=_authIsRecovery[1];
   // Account modal (character list)
   var _acctOpen=useState(false),acctOpen=_acctOpen[0],setAcctOpen=_acctOpen[1];
   var _acctChars=useState([]),acctChars=_acctChars[0],setAcctChars=_acctChars[1];
@@ -1255,14 +1257,23 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   useEffect(function(){
     if(!supabase)return;
     supabase.auth.getUser().then(function(r){setAuthUser(r.data.user||null);});
-    var unsub=onAuthStateChange(function(user){
-      setAuthUser(user||null);
+    var {data:{subscription}}=supabase.auth.onAuthStateChange(function(event,session){
+      var user=session?session.user:null;
+      if(event==="PASSWORD_RECOVERY"){
+        // Supabase fired a password-reset link click — open the set-new-password form
+        setAuthIsRecovery(true);
+        setAuthPassword("");setAuthConfirmPw("");setAuthError("");
+        setAuthMode("newpassword");
+        setAcctOpen(true);
+      }else{
+        setAuthUser(user||null);
+      }
       // Always revoke DM access when the signed-in user changes or signs out
       setDmPwVerified(false);setDmChangePw(false);
       setDmPwInput("");setDmPwConfirm("");setDmPwCurrent("");setDmPwError("");
       setDmPwHashExists(null);setGearLibItems([]);
     });
-    return unsub;
+    return function(){subscription.unsubscribe();};
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -1807,6 +1818,29 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }catch(e){setAuthError(e.message);}
     setAuthLoading(false);
   }
+  async function doSendReset(){
+    if(!authEmail.trim())return;
+    setAuthLoading(true);setAuthError("");
+    try{
+      await resetPasswordForEmail(authEmail.trim());
+      setAuthError("Reset email sent — check your inbox.");
+    }catch(e){setAuthError(e.message);}
+    setAuthLoading(false);
+  }
+  async function doSetNewPassword(){
+    if(!authPassword.trim())return;
+    if(authPassword!==authConfirmPw){setAuthError("Passwords do not match.");return;}
+    setAuthLoading(true);setAuthError("");
+    try{
+      await updatePassword(authPassword);
+      setAuthIsRecovery(false);
+      setAuthPassword("");setAuthConfirmPw("");
+      setAuthMode("signin");
+      setAuthError("Password updated — you are now signed in.");
+      supabase.auth.getUser().then(function(r){setAuthUser(r.data.user||null);refreshAcctChars();});
+    }catch(e){setAuthError(e.message);}
+    setAuthLoading(false);
+  }
   async function doSignOut(){
     try{await signOut();}catch(_){}
     setAuthUser(null);setCloudId(null);setAcctChars([]);setAcctStatus("");
@@ -1911,30 +1945,75 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             <div style={{color:g,fontWeight:"bold",fontVariant:"small-caps",letterSpacing:"1px"}}>My Account</div>
             <button onClick={function(){setAcctOpen(false);}} style={{background:"transparent",border:"none",color:dim,cursor:"pointer",fontSize:"18px",padding:"0 4px"}}>×</button>
           </div>
-          {!authUser?(
-            /* ── Sign in / sign up form ── */
+          {!authUser||authIsRecovery?(
+            /* ── Sign in / sign up / reset / new-password forms ── */
             <div>
-              <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
-                {["signin","signup"].map(function(m){
-                  return <button key={m} onClick={function(){setAuthMode(m);setAuthError("");}}
-                    style={{flex:1,padding:"6px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:authMode===m?"#1a1a30":"transparent",color:authMode===m?g:dim,border:authMode===m?"1px solid #2a2a4a":"1px solid #1a1a2a"}}>
-                    {m==="signin"?"Sign In":"Create Account"}
-                  </button>;
-                })}
-              </div>
-              <input type="email" value={authEmail} onChange={function(e){setAuthEmail(e.target.value);setAuthError("");}}
-                onKeyDown={function(e){if(e.key==="Enter")doAuthSubmit();}}
-                placeholder="Email" autoComplete="username"
-                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
-              <input type="password" value={authPassword} onChange={function(e){setAuthPassword(e.target.value);setAuthError("");}}
-                onKeyDown={function(e){if(e.key==="Enter")doAuthSubmit();}}
-                placeholder="Password" autoComplete={authMode==="signup"?"new-password":"current-password"}
-                style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
-              {authError&&<div style={{fontSize:"11px",color:authError.startsWith("Check")?"#7db87d":"#e08080",fontFamily:"monospace",marginBottom:"8px"}}>{authError}</div>}
-              <button onClick={doAuthSubmit} disabled={authLoading||!authEmail.trim()||!authPassword.trim()}
-                style={{width:"100%",padding:"9px",background:authLoading?"#1a1a28":"#1e1a2e",color:authLoading?dim:g,border:"1px solid "+(authLoading?brd:"#3a2a5a"),borderRadius:"4px",cursor:authLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"12px"}}>
-                {authLoading?"Working…":authMode==="signin"?"Sign In":"Create Account"}
-              </button>
+              {authMode==="newpassword"?(
+                /* Set new password after clicking reset link */
+                <div>
+                  <div style={{fontSize:"12px",color:dim,fontFamily:"monospace",marginBottom:"14px"}}>Enter your new password below.</div>
+                  <input type="password" value={authPassword} onChange={function(e){setAuthPassword(e.target.value);setAuthError("");}}
+                    onKeyDown={function(e){if(e.key==="Enter")doSetNewPassword();}}
+                    placeholder="New password" autoComplete="new-password"
+                    style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError&&!authError.includes("updated")?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+                  <input type="password" value={authConfirmPw} onChange={function(e){setAuthConfirmPw(e.target.value);setAuthError("");}}
+                    onKeyDown={function(e){if(e.key==="Enter")doSetNewPassword();}}
+                    placeholder="Confirm new password" autoComplete="new-password"
+                    style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError&&authError.includes("match")?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+                  {authError&&<div style={{fontSize:"11px",color:authError.includes("updated")?"#7db87d":"#e08080",fontFamily:"monospace",marginBottom:"8px"}}>{authError}</div>}
+                  <button onClick={doSetNewPassword} disabled={authLoading||!authPassword.trim()||!authConfirmPw.trim()}
+                    style={{width:"100%",padding:"9px",background:authLoading?"#1a1a28":"#1e1a2e",color:authLoading?dim:g,border:"1px solid "+(authLoading?brd:"#3a2a5a"),borderRadius:"4px",cursor:authLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"12px"}}>
+                    {authLoading?"Updating…":"Set New Password"}
+                  </button>
+                </div>
+              ):authMode==="reset"?(
+                /* Request password reset email */
+                <div>
+                  <div style={{fontSize:"12px",color:dim,fontFamily:"monospace",marginBottom:"14px"}}>Enter your email and we'll send you a reset link.</div>
+                  <input type="email" value={authEmail} onChange={function(e){setAuthEmail(e.target.value);setAuthError("");}}
+                    onKeyDown={function(e){if(e.key==="Enter")doSendReset();}}
+                    placeholder="Email" autoComplete="username"
+                    style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError&&!authError.includes("sent")?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+                  {authError&&<div style={{fontSize:"11px",color:authError.includes("sent")?"#7db87d":"#e08080",fontFamily:"monospace",marginBottom:"8px"}}>{authError}</div>}
+                  <button onClick={doSendReset} disabled={authLoading||!authEmail.trim()}
+                    style={{width:"100%",padding:"9px",background:authLoading?"#1a1a28":"#1e1a2e",color:authLoading?dim:g,border:"1px solid "+(authLoading?brd:"#3a2a5a"),borderRadius:"4px",cursor:authLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"12px",marginBottom:"10px"}}>
+                    {authLoading?"Sending…":"Send Reset Email"}
+                  </button>
+                  <button onClick={function(){setAuthMode("signin");setAuthError("");}}
+                    style={{width:"100%",padding:"6px",background:"transparent",color:dim,border:"1px solid #1a1a2a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"11px"}}>
+                    Back to Sign In
+                  </button>
+                </div>
+              ):(
+                /* Sign in / Sign up */
+                <div>
+                  <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
+                    {["signin","signup"].map(function(m){
+                      return <button key={m} onClick={function(){setAuthMode(m);setAuthError("");}}
+                        style={{flex:1,padding:"6px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:authMode===m?"#1a1a30":"transparent",color:authMode===m?g:dim,border:authMode===m?"1px solid #2a2a4a":"1px solid #1a1a2a"}}>
+                        {m==="signin"?"Sign In":"Create Account"}
+                      </button>;
+                    })}
+                  </div>
+                  <input type="email" value={authEmail} onChange={function(e){setAuthEmail(e.target.value);setAuthError("");}}
+                    onKeyDown={function(e){if(e.key==="Enter")doAuthSubmit();}}
+                    placeholder="Email" autoComplete="username"
+                    style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+                  <input type="password" value={authPassword} onChange={function(e){setAuthPassword(e.target.value);setAuthError("");}}
+                    onKeyDown={function(e){if(e.key==="Enter")doAuthSubmit();}}
+                    placeholder="Password" autoComplete={authMode==="signup"?"new-password":"current-password"}
+                    style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",background:"#0a0a12",border:"1px solid "+(authError?"#e08080":brd),borderRadius:"4px",color:txt,fontSize:"12px",fontFamily:"monospace",outline:"none",marginBottom:"8px"}}/>
+                  {authError&&<div style={{fontSize:"11px",color:authError.startsWith("Check")?"#7db87d":"#e08080",fontFamily:"monospace",marginBottom:"8px"}}>{authError}</div>}
+                  <button onClick={doAuthSubmit} disabled={authLoading||!authEmail.trim()||!authPassword.trim()}
+                    style={{width:"100%",padding:"9px",background:authLoading?"#1a1a28":"#1e1a2e",color:authLoading?dim:g,border:"1px solid "+(authLoading?brd:"#3a2a5a"),borderRadius:"4px",cursor:authLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"12px",marginBottom:authMode==="signin"?"8px":"0"}}>
+                    {authLoading?"Working…":authMode==="signin"?"Sign In":"Create Account"}
+                  </button>
+                  {authMode==="signin"&&<button onClick={function(){setAuthMode("reset");setAuthError("");}}
+                    style={{width:"100%",padding:"5px",background:"transparent",color:dim,border:"none",cursor:"pointer",fontFamily:"monospace",fontSize:"10px",textAlign:"right"}}>
+                    Forgot password?
+                  </button>}
+                </div>
+              )}
             </div>
           ):(
             /* ── Signed-in: character list ── */
