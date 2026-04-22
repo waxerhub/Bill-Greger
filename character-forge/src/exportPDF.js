@@ -54,8 +54,9 @@ export function exportCharacterSheet(ch) {
   field('Level', ch.level, M + 220, y, 40);
   field('Alignment', ch.align, M + 275, y, 145);
   y += 20;
-  field('Class/Kit', `${ch.cls}${ch.kit ? ` (${ch.kit})` : ''}`, M, y, 220);
-  field('Race', ch.race, M + 240, y, 100);
+  field('Class/Kit', `${ch.cls}${ch.kit ? ` (${ch.kit})` : ''}`, M, y, 200);
+  field('Race', ch.race, M + 215, y, 90);
+  field('XP', ch.xp != null ? Number(ch.xp).toLocaleString() : '', M + 315, y, 100);
   y += 20;
   field('Patron Deity/Religion', '', M, y, 200);
   field('Place of Origin', '', M + 220, y, 200);
@@ -79,7 +80,7 @@ export function exportCharacterSheet(ch) {
   };
 
   const stX = M + 308;
-  const saveKeys = Object.keys(ch.saves);
+  const saveKeys = Object.keys(effSaves);
 
   // Saves header
   dl(stX, y, W - M, y, 0.5);
@@ -91,7 +92,7 @@ export function exportCharacterSheet(ch) {
     const sy = y + 14 + i * RH;
     dt(saveNames[s] || s, stX + 2, sy + 12, { size: 8 });
     dr(stX + 170, sy, 30, RH - 2);
-    dt(String(ch.saves[s]), stX + 185, sy + 14, { size: 12, bold: true, align: 'center' });
+    dt(String(effSaves[s]), stX + 185, sy + 14, { size: 12, bold: true, align: 'center' });
   });
 
   // Ability scores
@@ -137,11 +138,22 @@ export function exportCharacterSheet(ch) {
   dt('COMBAT', W / 2, y + 10, { size: 11, bold: true, align: 'center' });
   y += 18;
 
+  const effStrB = ch.effStrB ?? ch.strB;
+  const effThac0 = ch.effThac0 ?? ch.thac0;
+  const effAC = ch.effAC ?? ch.ac;
+  const effHP = ch.effHP ?? ch.hp;
+  const effSaves = ch.effSaves ?? ch.saves;
+
+  const acSub = ch.gearBaseAC != null
+    ? `Armor:${ch.gearBaseAC} Dex:${dexBonus(ch.adjStats.Dex)}${ch.gearAC ? ` Ring:+${ch.gearAC}` : ''}`
+    : `Dex Adj: ${dexBonus(ch.adjStats.Dex)}${ch.gearAC ? ` Gear:+${ch.gearAC}` : ''}`;
+  const thac0Sub = `Str:${effStrB.hit >= 0 ? '+' : ''}${effStrB.hit}${ch.gearThac0 ? ` Gear:-${ch.gearThac0}` : ''}`;
+
   const statBoxes = [
-    { l: 'THAC0', v: ch.thac0, s: `Str Adj: ${ch.strB.hit >= 0 ? '+' : ''}${ch.strB.hit}` },
-    { l: 'AC', v: ch.ac, s: `Dex Adj: ${dexBonus(ch.adjStats.Dex)}` },
-    { l: 'HIT POINTS', v: ch.hp, s: `d${ch.classData?.hd ?? '?'}` },
-    { l: 'DMG ADJ', v: ch.strB.dmg >= 0 ? `+${ch.strB.dmg}` : String(ch.strB.dmg), s: `Str ${ch.adjStats.Str}` },
+    { l: 'THAC0', v: effThac0, s: thac0Sub },
+    { l: 'AC', v: effAC, s: acSub },
+    { l: 'HIT POINTS', v: effHP, s: `d${ch.classData?.hd ?? '?'}${ch.gearHP ? ` +${ch.gearHP}` : ''}` },
+    { l: 'DMG ADJ', v: effStrB.dmg >= 0 ? `+${effStrB.dmg}` : String(effStrB.dmg), s: `Str ${ch.adjStats.Str}` },
   ];
   const bW = (CW - 15) / 4;
   statBoxes.forEach((b, i) => {
@@ -165,7 +177,7 @@ export function exportCharacterSheet(ch) {
     const tx = tStartX + i * tW;
     dl(tx, y, tx, y + 28, 0.3);
     dt(String(tgt), tx + tW / 2, y + 11, { size: 7, align: 'center' });
-    const roll = Math.max(1, Math.min(20, ch.thac0 - tgt));
+    const roll = Math.max(1, Math.min(20, effThac0 - tgt));
     dt(String(roll), tx + tW / 2, y + 25, { size: 8, bold: true, align: 'center' });
   });
   dl(M, y, M, y + 28, 0.5);
@@ -358,6 +370,129 @@ export function exportCharacterSheet(ch) {
   // Page 2 footer
   lbl(`${ch.charName || 'Unnamed'} — ${ch.race} ${ch.cls} Lv${ch.level}`, M, H - 18);
   lbl('AD&D 2nd Edition', W - M, H - 18);
+
+  // ======= PAGE 3: MAGIC ITEMS & INVENTORY =======
+  const gear = ch.equippedGear || [];
+  const inv  = ch.inventory || [];
+  if (gear.length > 0 || inv.length > 0) {
+    doc.addPage();
+    y = M;
+    dt('Advanced Dungeons & Dragons — 2nd Edition', W / 2, y + 14, { size: 14, bold: true, align: 'center' });
+    dt(`${ch.charName || 'Unnamed'}  |  ${ch.race} ${ch.cls}  |  Level ${ch.level}`, W / 2, y + 28, { size: 9, align: 'center' });
+    dl(M, y + 34, W - M, y + 34, 1);
+    y += 50;
+
+    // Helper: format an effects object into a compact string
+    function fxStr(e) {
+      if (!e) return '';
+      const parts = [];
+      if (e.acMode === 'base' && e.ac) parts.push(`Base AC: ${e.ac}`);
+      else if (e.ac) parts.push(`AC: +${e.ac}`);
+      if (e.thac0) parts.push(`THAC0: +${e.thac0}`);
+      if (e.dmg)   parts.push(`Dmg: +${e.dmg}`);
+      if (e.saves) {
+        const sl = e.savesTypes && e.savesTypes.length ? e.savesTypes.join('/') : 'All saves';
+        parts.push(`Saves +${e.saves} (${sl})`);
+      }
+      if (e.str)   parts.push(`STR: +${e.str}`);
+      if (e.dex)   parts.push(`DEX: +${e.dex}`);
+      if (e.con)   parts.push(`CON: +${e.con}`);
+      if (e.int)   parts.push(`INT: +${e.int}`);
+      if (e.wis)   parts.push(`WIS: +${e.wis}`);
+      if (e.cha)   parts.push(`CHA: +${e.cha}`);
+      if (e.hp)    parts.push(`HP: +${e.hp}`);
+      if (e.bonusDmgDice && e.bonusDmgType) {
+        const mode = e.specialDmgMode === 'breath' ? 'Breath' : 'Bonus Dmg';
+        parts.push(`${mode}: ${e.bonusDmgDice}d${e.bonusDmgDie || 6} ${e.bonusDmgType}`);
+      }
+      return parts.join('  ·  ');
+    }
+
+    if (gear.length > 0) {
+      dt('EQUIPPED MAGIC ITEMS', W / 2, y, { size: 11, bold: true, align: 'center' });
+      y += 14;
+
+      // Column widths
+      const colW = [CW * 0.30, CW * 0.15, CW * 0.40, CW * 0.15];
+      const colX = [M, M + colW[0], M + colW[0] + colW[1], M + colW[0] + colW[1] + colW[2]];
+      const hdrs = ['Item Name', 'Type', 'Bonuses', 'Source'];
+      const RH2 = 14;
+
+      // Header row
+      dl(M, y, W - M, y, 0.5);
+      hdrs.forEach((h, i) => lbl(h, colX[i] + 2, y + 9));
+      dl(M, y + 11, W - M, y + 11, 0.5);
+      y += 13;
+
+      gear.forEach(item => {
+        if (y > H - 50) { doc.addPage(); y = M + 20; }
+        const label = item.tierLabel ? `${item.name} (${item.tierLabel})` : item.name;
+        const bonuses = fxStr(item.effects);
+
+        // Name (bold)
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0);
+        const nameLines = doc.splitTextToSize(label, colW[0] - 4);
+        nameLines.forEach((l, j) => doc.text(l, colX[0] + 2, y + 9 + j * 10));
+
+        // Type
+        dt(item.type || '', colX[1] + 2, y + 9, { size: 7 });
+
+        // Bonuses (may wrap)
+        const bLines = doc.splitTextToSize(bonuses || '—', colW[2] - 4);
+        bLines.forEach((l, j) => dt(l, colX[2] + 2, y + 9 + j * 10, { size: 7 }));
+
+        // Source
+        const srcLines = doc.splitTextToSize(item.source || '', colW[3] - 4);
+        srcLines.forEach((l, j) => lbl(l, colX[3] + 2, y + 9 + j * 10));
+
+        const rowH = Math.max(nameLines.length, bLines.length, srcLines.length) * 10 + 4;
+        dl(M, y + rowH, W - M, y + rowH, 0.2);
+        y += rowH;
+      });
+
+      // Active spell buffs
+      if (ch.activeBuffs && ch.activeBuffs.length > 0) {
+        y += 6;
+        dt('Active Spell Effects: ', M, y, { size: 8, bold: true });
+        dt(ch.activeBuffs.join(', '), M + 110, y, { size: 8 });
+        y += 14;
+      }
+
+      y += 10;
+    }
+
+    if (inv.length > 0) {
+      if (y > H - 80) { doc.addPage(); y = M + 20; }
+      dt('INVENTORY', W / 2, y, { size: 11, bold: true, align: 'center' });
+      y += 14;
+
+      const iCols = [CW * 0.40, CW * 0.08, CW * 0.10, CW * 0.10, CW * 0.32];
+      const iX = [M, M+iCols[0], M+iCols[0]+iCols[1], M+iCols[0]+iCols[1]+iCols[2], M+iCols[0]+iCols[1]+iCols[2]+iCols[3]];
+      const iHdrs = ['Item', 'Qty', 'Weight', 'Cost', 'Notes'];
+      dl(M, y, W - M, y, 0.5);
+      iHdrs.forEach((h, i) => lbl(h, iX[i] + 2, y + 9));
+      dl(M, y + 11, W - M, y + 11, 0.5);
+      y += 13;
+
+      inv.forEach(item => {
+        if (y > H - 30) { doc.addPage(); y = M + 20; }
+        const nLines = doc.splitTextToSize(item.name || '', iCols[0] - 4);
+        const ntLines = doc.splitTextToSize(item.notes || '', iCols[4] - 4);
+        nLines.forEach((l, j) => dt(l, iX[0] + 2, y + 9 + j * 10, { size: 8, bold: true }));
+        dt(String(item.qty ?? ''), iX[1] + 2, y + 9, { size: 8 });
+        dt(item.weight ? String(item.weight) : '', iX[2] + 2, y + 9, { size: 8 });
+        dt(item.cost ? String(item.cost) : '', iX[3] + 2, y + 9, { size: 8 });
+        ntLines.forEach((l, j) => lbl(l, iX[4] + 2, y + 9 + j * 10));
+        const rh = Math.max(nLines.length, ntLines.length) * 10 + 4;
+        dl(M, y + rh, W - M, y + rh, 0.2);
+        y += rh;
+      });
+    }
+
+    // Page 3 footer
+    lbl(`${ch.charName || 'Unnamed'} — ${ch.race} ${ch.cls} Lv${ch.level}`, M, H - 18);
+    lbl('AD&D 2nd Edition — Magic Items & Inventory', W - M, H - 18);
+  }
 
   // Save file
   const filename = `${(ch.charName || 'character').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || 'character'}_2e_sheet.pdf`;

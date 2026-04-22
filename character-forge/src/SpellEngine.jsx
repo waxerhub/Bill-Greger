@@ -1465,13 +1465,24 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
 
   function exportPDF() {
+    var equippedForPDF=equipped.map(function(g){
+      var ae=getActiveEffects(g);
+      return {name:g.name,type:g.type,source:g.source||'',desc:g.desc||'',
+        tierLabel:g.tiered&&g.tiers&&g.tiers.length?(g.tiers[g.activeTier||0]||{}).label||'':'',
+        effects:ae};
+    });
     exportCharacterSheet({
-      charName, race, cls, kit, level, hp, align,
-      stats, adjStats, thac0, saves, ac, strB, conB, strPct, exStr, effStrB, effStrPct,
+      charName, race, cls, kit, level, xp, hp, align,
+      stats, adjStats, thac0, saves,
+      effAC, effThac0, effSaves, effHP, effStrB, effStrPct,
+      gearBaseAC, gearAC, gearThac0, gearHP,
+      strB, conB, strPct, exStr,
       adjSlots, memorized, notes,
       cpBudget, cpSpent, cpRefund,
       cpMajor, cpMinor, cpSchools, cpAbil, cpLim,
       isPriest, isWizard, classData, raceData,
+      equippedGear: equippedForPDF,
+      inventory, activeBuffs,
     });
   }
 
