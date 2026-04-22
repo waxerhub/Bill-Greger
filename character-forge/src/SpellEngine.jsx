@@ -272,6 +272,17 @@ var CP_ABILITY_DESC={
   "Weapon: Any":"Weapon: Any — may use any weapon",
 };
 
+// Spell-like granted power cost formula (Player's Option: Spells & Magic)
+// Base: 10 CP + level modifier + frequency modifier
+// Level: +1 CP/level (priest spell) or +2 CP/level (wizard spell)
+// Frequency: 'week'=+0, '1/day'=+5, '2/day'=+6, '3/day'=+7, 'continuous'=+10
+function spellPowerCost(spellLevel,spellType,freq){
+  var base=10;
+  var lvlCost=(spellType==='wizard'?2:1)*spellLevel;
+  var freqCost=freq==='week'?0:freq==='continuous'?10:(5+(parseInt(freq)||1)-1);
+  return base+lvlCost+freqCost;
+}
+
 // Wizard Limitations
 var WIZARD_LIMITS={"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Difficult memorization":{r:5},"Hazardous spells":{r:10},"Learning penalty -15%":{r:5},"Learning penalty -25%":{r:8},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc/weapons/armor":{r:5},"Reduced HP (d3)":{r:10},"Reduced spell knowledge":{r:7},"Reduced spell progression":{r:15},"Slower casting time +3":{r:2},"Slower casting time (next unit)":{r:5},"Supernatural constraint":{r:5},"Talisman required":{r:8},"Weapons: None allowed":{r:5},"Weapons: Cannot wield":{r:5}};
 
@@ -1191,6 +1202,13 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _cpSchools=useState([]),cpSchools=_cpSchools[0],setCpSchools=_cpSchools[1];
   var _cpAbil=useState([]),cpAbil=_cpAbil[0],setCpAbil=_cpAbil[1];
   var _cpLim=useState([]),cpLim=_cpLim[0],setCpLim=_cpLim[1];
+  // Spell-like granted powers: [{id, spell, level, spellType, freq}]
+  var _cpSpellPowers=useState([]),cpSpellPowers=_cpSpellPowers[0],setCpSpellPowers=_cpSpellPowers[1];
+  // Form state for adding a new granted power (not persisted)
+  var _cpPwSpell=useState(""),cpPwSpell=_cpPwSpell[0],setCpPwSpell=_cpPwSpell[1];
+  var _cpPwLevel=useState(1),cpPwLevel=_cpPwLevel[0],setCpPwLevel=_cpPwLevel[1];
+  var _cpPwType=useState("priest"),cpPwType=_cpPwType[0],setCpPwType=_cpPwType[1];
+  var _cpPwFreq=useState("week"),cpPwFreq=_cpPwFreq[0],setCpPwFreq=_cpPwFreq[1];
   var fr=useRef(null);
   var loadFileRef=useRef(null);
 
@@ -1216,11 +1234,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   useEffect(function(){
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems};
+        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems]);
+     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems]);
 
   // Restore autosave on first load
   useEffect(function(){
@@ -1366,15 +1384,18 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     cpSpent+=cpSchools.length*5;
   }
   cpAbil.forEach(function(a){cpSpent+=(activeAbilities[a]||{c:0}).c;});
+  cpSpellPowers.forEach(function(p){cpSpent+=spellPowerCost(p.level,p.spellType,p.freq);});
   var cpRefund=0;
   cpLim.forEach(function(l){cpRefund+=(activeLimits[l]||{r:0}).r;});
   var cpRemaining=cpBudget-cpSpent+cpRefund;
+  // Max granted powers allowed: 1 per 2 levels (1 at 1st, 1 at 3rd, 1 at 5th, ...)
+  var maxGrantedPowers=Math.ceil(level/2);
 
   // Class change handler - reset CP and set appropriate budget
   function changeClass(newCls) {
     setCls(newCls);
     var cd=CLASSES[newCls]||{};
-    setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
+    setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);
     if(cd.group==="Priest")setCpBudget(120);
     else if(cd.group==="Wizard")setCpBudget(40);
     else setCpBudget(0);
@@ -1704,7 +1725,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,inventory,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,inventory,_version:1};
   }
   function applyCharacterData(d){
     if(!d)return;
@@ -1726,6 +1747,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(d.cpSchools)setCpSchools(d.cpSchools);
     if(d.cpAbil)setCpAbil(d.cpAbil);
     if(d.cpLim)setCpLim(d.cpLim);
+    if(d.cpSpellPowers)setCpSpellPowers(d.cpSpellPowers);
     if(d.dmOverride!==undefined)setDmOverride(d.dmOverride);
     if(d.totemAnimal!==undefined)setTotemAnimal(d.totemAnimal);
     if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
@@ -2332,6 +2354,54 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>
           </div>}
 
+          {/* Spell-like Granted Powers (priest only) */}
+          {isPriest&&<div style={{marginBottom:"12px"}}>
+            <Lbl dim={dim}>SPELL-LIKE GRANTED POWERS <span style={{color:g,fontWeight:"normal"}}>(max {maxGrantedPowers} at level {level})</span></Lbl>
+            {/* Existing powers list */}
+            {cpSpellPowers.length>0&&<div style={{marginBottom:"8px",display:"flex",flexDirection:"column",gap:"4px"}}>
+              {cpSpellPowers.map(function(pw){
+                var cost=spellPowerCost(pw.level,pw.spellType,pw.freq);
+                var freqLabel=pw.freq==='week'?'1/week':pw.freq==='continuous'?'continuous':pw.freq+'/day';
+                return <div key={pw.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"5px 10px",background:"#12182a",border:"1px solid #2a3a5a",borderRadius:"4px",fontSize:"11px"}}>
+                  <span style={{flex:1,color:txt}}>{pw.spell}</span>
+                  <span style={{color:dim,fontFamily:"monospace"}}>L{pw.level} {pw.spellType}</span>
+                  <span style={{color:"#80c0e0",fontFamily:"monospace"}}>{freqLabel}</span>
+                  <span style={{color:"#e08060",fontFamily:"monospace",minWidth:"40px",textAlign:"right"}}>{cost} CP</span>
+                  <button onClick={function(){setCpSpellPowers(cpSpellPowers.filter(function(x){return x.id!==pw.id;}));}} style={{background:"transparent",border:"none",color:"#a66",cursor:"pointer",padding:"0 4px",fontSize:"13px"}}>✕</button>
+                </div>;
+              })}
+              {cpSpellPowers.length>maxGrantedPowers&&<div style={{fontSize:"10px",color:"#e06060",fontFamily:"monospace"}}>⚠ Exceeds limit: {cpSpellPowers.length}/{maxGrantedPowers} powers allowed at level {level}</div>}
+            </div>}
+            {/* Add power form */}
+            {(function(){
+              var previewCost=spellPowerCost(cpPwLevel,cpPwType,cpPwFreq);
+              var atLimit=cpSpellPowers.length>=maxGrantedPowers;
+              var FREQ_OPTS=[['week','1/week (+0)'],['1','1/day (+5)'],['2','2/day (+6)'],['3','3/day (+7)'],['continuous','Continuous (+10)']];
+              return <div style={{display:"flex",flexWrap:"wrap",gap:"6px",alignItems:"center",padding:"8px",background:surf,border:"1px solid "+brd,borderRadius:"4px"}}>
+                <input value={cpPwSpell} onChange={function(e){setCpPwSpell(e.target.value);}} placeholder="Spell name" style={{flex:1,minWidth:"140px",padding:"4px 8px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px",outline:"none"}} />
+                <select value={cpPwLevel} onChange={function(e){setCpPwLevel(parseInt(e.target.value));}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                  {[1,2,3,4,5].map(function(l){return <option key={l} value={l}>L{l}</option>;})}
+                </select>
+                <select value={cpPwType} onChange={function(e){setCpPwType(e.target.value);}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                  <option value="priest">Priest (+{cpPwLevel} CP)</option>
+                  <option value="wizard">Wizard (+{cpPwLevel*2} CP)</option>
+                </select>
+                <select value={cpPwFreq} onChange={function(e){setCpPwFreq(e.target.value);}} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                  {FREQ_OPTS.map(function(o){return <option key={o[0]} value={o[0]}>{o[1]}</option>;})}
+                </select>
+                <span style={{fontFamily:"monospace",fontSize:"12px",color:"#e08060",minWidth:"46px",textAlign:"right"}}>= {previewCost} CP</span>
+                <button disabled={!cpPwSpell.trim()||atLimit} onClick={function(){
+                  if(!cpPwSpell.trim())return;
+                  setCpSpellPowers(cpSpellPowers.concat([{id:Date.now()+"_"+Math.random().toString(36).slice(2),spell:cpPwSpell.trim(),level:cpPwLevel,spellType:cpPwType,freq:cpPwFreq}]));
+                  setCpPwSpell("");setCpPwLevel(1);setCpPwType("priest");setCpPwFreq("week");
+                }} style={{padding:"4px 12px",borderRadius:"4px",cursor:(!cpPwSpell.trim()||atLimit)?"not-allowed":"pointer",background:(!cpPwSpell.trim()||atLimit)?"#1a1a28":"#1a2a4a",color:(!cpPwSpell.trim()||atLimit)?dim:"#80c0e0",border:"1px solid "+((!cpPwSpell.trim()||atLimit)?brd:"#2a4a6a"),fontSize:"11px"}}>+ Add</button>
+              </div>;
+            })()}
+            <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>
+              Base 10 CP · +1/level priest spell, +2/level wizard spell · +5 for 1/day, +1 per extra daily use · +10 continuous
+            </div>
+          </div>}
+
           {/* Abilities */}
           {(isPriest||isWizard)&&<div style={{marginBottom:"12px"}}>
             <Lbl dim={dim}>ABILITIES</Lbl>
@@ -2481,6 +2551,21 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SPHERES OF ACCESS</div>
             {cpMajor.length>0&&<div><span style={{color:dim}}>Major: </span>{cpMajor.join(", ")}</div>}
             {cpMinor.length>0&&<div><span style={{color:dim}}>Minor: </span>{cpMinor.join(", ")}</div>}
+          </div>}
+          {isPriest&&cpSpellPowers.length>0&&<div style={{marginBottom:"12px"}}>
+            <div style={{color:"#80c0e0",fontWeight:"bold",marginBottom:"6px",fontSize:"11px",letterSpacing:"1px"}}>SPELL-LIKE GRANTED POWERS</div>
+            {cpSpellPowers.map(function(pw,i){
+              var freqLabel=pw.freq==='week'?'1/week':pw.freq==='continuous'?'continuous':pw.freq+'/day';
+              var cost=spellPowerCost(pw.level,pw.spellType,pw.freq);
+              return <div key={pw.id||i} style={{display:"flex",gap:"10px",fontSize:"11px",marginBottom:"4px",alignItems:"baseline"}}>
+                <span style={{color:"#80c0e0",fontFamily:"monospace",minWidth:"16px"}}>✦</span>
+                <span style={{color:txt,fontWeight:"bold"}}>{pw.spell}</span>
+                <span style={{color:dim,fontFamily:"monospace",fontSize:"10px"}}>L{pw.level} {pw.spellType}</span>
+                <span style={{color:"#c0d0a0",fontFamily:"monospace",fontSize:"10px"}}>{freqLabel}</span>
+                <span style={{color:"#806040",fontFamily:"monospace",fontSize:"10px",marginLeft:"auto"}}>{cost} CP</span>
+              </div>;
+            })}
+            {cpSpellPowers.length>maxGrantedPowers&&<div style={{fontSize:"10px",color:"#e06060",fontFamily:"monospace",marginTop:"4px"}}>⚠ Exceeds limit ({cpSpellPowers.length}/{maxGrantedPowers} at level {level})</div>}
           </div>}
           {isWizard&&cpSchools.length>0&&<div style={{marginBottom:"12px"}}>
             <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SCHOOLS OF MAGIC</div>
