@@ -87,7 +87,7 @@ export async function signOut() {
   if (error) throw new Error(error.message);
 }
 
-const APP_URL = 'https://character-forge.onrender.com';
+const APP_URL = 'https://bill-greger.onrender.com';
 
 export async function resetPasswordForEmail(email) {
   if (!supabase) throw new Error('Supabase not configured');
