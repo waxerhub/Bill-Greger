@@ -150,6 +150,44 @@ app.post('/api/parse-pdf', async (req, res) => {
   }
 });
 
+// ── Admin: set user password (requires service role key in env) ──────────────
+app.post('/api/admin/set-password', async (req, res) => {
+  const { email, password, adminKey } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'email and password required' });
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  if (!serviceKey || !supabaseUrl) return res.status(500).json({ error: 'Supabase admin not configured on server' });
+
+  // Simple guard: caller must supply the service role key as adminKey
+  if (adminKey !== serviceKey) return res.status(403).json({ error: 'Unauthorized' });
+
+  try {
+    // 1. Find the user by email
+    const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    const listData = await listRes.json();
+    if (!listRes.ok) return res.status(listRes.status).json({ error: listData.message || 'Failed to list users' });
+
+    const user = (listData.users || []).find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (!user) return res.status(404).json({ error: `No user found with email ${email}` });
+
+    // 2. Update their password
+    const updateRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+      method: 'PUT',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const updateData = await updateRes.json();
+    if (!updateRes.ok) return res.status(updateRes.status).json({ error: updateData.message || 'Failed to update password' });
+
+    res.json({ success: true, email: updateData.email });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
 // ── Serve built frontend in production ──────────────────────────────────────
 const distDir = join(__dirname, 'dist');
 if (existsSync(distDir)) {
