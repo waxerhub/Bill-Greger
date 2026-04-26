@@ -186,7 +186,7 @@ var SPHERE_COSTS={"All":{m:3,M:5},"Animal":{m:5,M:10},"Astral":{m:3,M:5},"Chaos"
 var SPHERE_NAMES=Object.keys(SPHERE_COSTS);
 
 // WIZARD School Costs (5 CP each)
-var WIZARD_SCHOOLS=["Abjuration","Alteration","Conjuration/Summoning","Divination","Enchantment/Charm","Illusion/Phantasm","Invocation/Evocation","Necromancy"];
+var WIZARD_SCHOOLS=["Abjuration","Alteration","Chronomancy","Conjuration/Summoning","Divination","Enchantment/Charm","Illusion/Phantasm","Invocation/Evocation","Mentalism","Necromancy"];
 
 // Priest Presets
 var PRIEST_PRESETS={"Cleric":{cost:100,major:["All","Astral","Charm","Combat","Creation","Divination","Guardian","Healing","Necromantic","Protection","Summoning"],minor:["Elemental Water","Elemental Earth"],abilities:["Turn undead"],limitations:[]},"Druid":{cost:70,major:["All","Animal","Elemental (All)","Healing","Plant","Sun","Weather"],minor:[],abilities:["Identify plants/animals","Pass without trace","Shapechange","Communication","Immunity to charm"],limitations:["Armor: Leather only","Weapons: Druid list"]},"Crusader":{cost:55,major:["All","Combat","Guardian","Healing","War","Wards"],minor:["Necromantic","Protection"],abilities:["Combat bonus (warrior THAC0)"],limitations:[]},"Monk":{cost:60,major:["All","Divination","Guardian","Numbers","Thought"],minor:["Combat","Healing","Necromantic","Time"],abilities:["AC improvement","Unarmed combat"],limitations:["Armor: None"]},"Shaman":{cost:60,major:["All","Animal","Protection","Summoning","Travelers","Wards"],minor:["Healing","Plant"],abilities:["Spirit powers (all)"],limitations:[]}};
@@ -198,7 +198,7 @@ var PRIEST_ABILITIES={"Animal empathy":{c:10},"AC improvement":{c:15},"Casting t
 var PRIEST_LIMITS={"Armor: Chain or lighter":{r:5},"Armor: Studded leather":{r:10},"Armor: None":{r:15},"Armor: Leather only":{r:8},"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Ceremony/observance":{r:5},"Difficult spell acquisition":{r:5},"Fanaticism":{r:5},"Hazardous spells":{r:10},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc magic":{r:5},"Limited items: Weapons/armor":{r:5},"Limited spell selection":{r:5},"Reduced HP (d6)":{r:10},"Reduced HP (d4)":{r:20},"Reduced spell progression":{r:15},"Slower casting times":{r:5},"Talisman required":{r:8},"Weapons: Staff/club/hammer/mace/flail":{r:5},"Weapons: None":{r:15},"Weapons: Druid list":{r:3}};
 
 // Wizard Abilities
-var WIZARD_ABILITIES={"Armor: Padded":{c:5},"Armor: Leather/studded":{c:10},"Armor: Any":{c:15},"Auto spell acquisition (one school)":{c:2},"Auto spell acquisition (any school)":{c:5},"Bonus spells (one school)":{c:10},"Bonus spells (any school)":{c:15},"Casting time reduction (one school)":{c:2},"Casting time reduction (all)":{c:5},"Combat bonus (rogue THAC0)":{c:8},"Combat bonus (priest THAC0)":{c:10},"Constitution adjustment (warrior)":{c:5},"Detect magic":{c:10},"Dispel (1/day)":{c:10},"Dispel (3/day)":{c:15},"Enhanced casting level":{c:10},"Extended duration (one school)":{c:10},"Extended duration (all)":{c:15},"Followers":{c:10},"Improved Hit Die (d6)":{c:10},"Improved Hit Die (d8)":{c:20},"Learning bonus +15% (one school)":{c:5},"Learning bonus +25% (one school)":{c:7},"No components (one school)":{c:5},"No components (any school)":{c:8},"Priestly wizard (minor sphere)":{c:10},"Priestly wizard (major sphere)":{c:15},"Range increase +25% (one school)":{c:5},"Range increase +50% (one school)":{c:7},"Read magic":{c:5},"Research bonus (one school)":{c:5},"Research bonus (all)":{c:10},"School knowledge +1/-1 saves":{c:5},"School knowledge +2/-2 saves":{c:8},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Weapon: Cleric/thief list":{c:10},"Weapon: Any":{c:15},"Weapon specialization":{c:15}};
+var WIZARD_ABILITIES={"Armor: Padded":{c:5},"Armor: Leather/studded":{c:10},"Armor: Any":{c:15},"Auto spell acquisition (one school)":{c:2},"Auto spell acquisition (any school)":{c:5},"Bonus spells (one school)":{c:10},"Bonus spells (any school)":{c:15},"Casting time reduction (one school)":{c:2},"Casting time reduction (all)":{c:5},"Combat bonus (rogue THAC0)":{c:8},"Combat bonus (priest THAC0)":{c:10},"Constitution adjustment (warrior)":{c:5},"Detect magic":{c:10},"Dispel (1/day)":{c:10},"Dispel (3/day)":{c:15},"Enhanced casting level":{c:10},"Extended duration (one school)":{c:10},"Extended duration (all)":{c:15},"Followers":{c:10},"Improved Hit Die (d6)":{c:10},"Improved Hit Die (d8)":{c:20},"Learning bonus +15% (one school)":{c:5},"Learning bonus +25% (one school)":{c:7},"No components (one school)":{c:5},"No components (any school)":{c:8},"Priestly wizard (minor sphere)":{c:10},"Priestly wizard (major sphere)":{c:15},"Range increase +25% (one school)":{c:5},"Range increase +50% (one school)":{c:7},"Read magic":{c:5},"Research bonus (one school)":{c:5},"Research bonus (all)":{c:10},"School knowledge +1/-1 saves":{c:5},"School knowledge +2/-2 saves":{c:8},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Weapon: Cleric/thief list":{c:10},"Weapon: Any":{c:15},"Weapon specialization":{c:15},"Learning bonus +15% (all schools)":{c:10},"Learning bonus +25% (all schools)":{c:14},"Range increase +25% (all schools)":{c:10},"Range increase +50% (all schools)":{c:14},"Proficiency group crossovers":{c:5},"Immunity (one spell)":{c:11}};
 
 // CP ability descriptive text for Sheet tab display
 var CP_ABILITY_DESC={
@@ -284,7 +284,7 @@ function spellPowerCost(spellLevel,spellType,freq){
 }
 
 // Wizard Limitations
-var WIZARD_LIMITS={"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Difficult memorization":{r:5},"Hazardous spells":{r:10},"Learning penalty -15%":{r:5},"Learning penalty -25%":{r:8},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc/weapons/armor":{r:5},"Reduced HP (d3)":{r:10},"Reduced spell knowledge":{r:7},"Reduced spell progression":{r:15},"Slower casting time +3":{r:2},"Slower casting time (next unit)":{r:5},"Supernatural constraint":{r:5},"Talisman required":{r:8},"Weapons: None allowed":{r:5},"Weapons: Cannot wield":{r:5}};
+var WIZARD_LIMITS={"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Difficult memorization":{r:5},"Hazardous spells":{r:10},"Learning penalty -15%":{r:5},"Learning penalty -25%":{r:8},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc/weapons/armor":{r:5},"Reduced HP (d3)":{r:10},"Reduced spell knowledge":{r:7},"Reduced spell progression":{r:15},"Slower casting time +3":{r:2},"Slower casting time (next unit)":{r:5},"Supernatural constraint":{r:5},"Talisman required":{r:8},"Weapons: No proficiency":{r:3},"Weapons: Cannot wield":{r:5},"Environmental condition (specific)":{r:5},"Environmental condition (common)":{r:15},"Environmental condition (everyday)":{r:20}};
 
 var BUFF_SPELLS={
   "Ability Alteration":{"desc":"Temporarily transfers ability points between physical abilities at 2:1 ratio; can boost STR, DEX, CON etc. at cost of another stat"},
@@ -1309,7 +1309,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var dexMis=dexMissile(adjStats.Dex);
   var slots=classData.spells==="priest"?(PRIEST_SLOTS[Math.min(level,14)]||[]):classData.spells==="wizard"?(WIZARD_SLOTS[Math.min(level,14)]||[]):[];
   var wBonus=classData.spells==="priest"?wisBonus(adjStats.Wis):[];
-  var adjSlots=slots.map(function(s,i){return s+(wBonus[i]||0);});
+  var cpBonusSpellSlot=isWizard&&(cpAbil.indexOf('Bonus spells (any school)')>=0||cpAbil.indexOf('Bonus spells (one school)')>=0)?1:0;
+  var adjSlots=slots.map(function(s,i){return s+(wBonus[i]||0)+cpBonusSpellSlot;});
   // CP-derived effective hit die (upgrades and limitations)
   var effectiveHD=classData.hd;
   if(cpAbil.indexOf('Hit point bonus (d10)')>=0) effectiveHD=10;
@@ -1317,8 +1318,16 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   if(cpAbil.indexOf('Improved Hit Die (d6)')>=0&&effectiveHD<6) effectiveHD=6;
   if(cpLim.indexOf('Reduced HP (d6)')>=0) effectiveHD=Math.min(effectiveHD,6);
   if(cpLim.indexOf('Reduced HP (d4)')>=0) effectiveHD=Math.min(effectiveHD,4);
+  if(cpLim.indexOf('Reduced HP (d3)')>=0) effectiveHD=Math.min(effectiveHD,3);
   // AC improvement: +1 per 4 levels
   var cpAcBonus=cpAbil.indexOf('AC improvement')>=0?Math.floor(level/4):0;
+  // ── Wizard CP mechanical effects ─────────────────────────────────────────
+  var cpArmorGrant=isWizard?(cpAbil.indexOf('Armor: Any')>=0?3:cpAbil.indexOf('Armor: Leather/studded')>=0?2:cpAbil.indexOf('Armor: Padded')>=0?1:0):0;
+  var cpWeaponGrant=isWizard?(cpAbil.indexOf('Weapon: Any')>=0?2:cpAbil.indexOf('Weapon: Cleric/thief list')>=0?1:0):0;
+  var cpSaveMod=isWizard?(cpAbil.indexOf('School knowledge +2/-2 saves')>=0?2:cpAbil.indexOf('School knowledge +1/-1 saves')>=0?1:0):0;
+  var cpDispelCharges=isWizard?(cpAbil.indexOf('Dispel (3/day)')>=0?3:cpAbil.indexOf('Dispel (1/day)')>=0?1:0):0;
+  var cpPriestlyWizard=isWizard?(cpAbil.indexOf('Priestly wizard (major sphere)')>=0?'major':cpAbil.indexOf('Priestly wizard (minor sphere)')>=0?'minor':''):'';
+  var cpEnhancedLevel=isWizard&&cpAbil.indexOf('Enhanced casting level')>=0;
 
   // Equipped custom gear bonuses
   function getActiveEffects(g){
@@ -1381,6 +1390,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-(gearSavesBySave[k]||0)-buffSave;});
+  if(cpSaveMod>0) effSaves=Object.assign({},effSaves,{Spell:Math.max(1,effSaves.Spell-cpSaveMod)});
   var effHP=hp+gearHP;
 
   // Active abilities/limits based on class group
@@ -2256,7 +2266,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           </div>
           <Lbl dim={dim}>SAVING THROWS</Lbl>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px",marginBottom:"20px"}}>
-            {Object.keys(effSaves).map(function(s){var n={Para:"Para/Poison",Rod:"Rod/Staff",Pet:"Petrify",Breath:"Breath",Spell:"Spell"};
+            {Object.keys(effSaves).map(function(s){var n={Para:"Para/Poison",Rod:"Rod/Staff",Pet:"Petrify",Breath:"Breath",Spell:cpSaveMod>0&&isWizard?"Spell*":"Spell"};
               return <div key={s} style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"8px",textAlign:"center"}}><div style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>{n[s]}</div><div style={{fontSize:"18px",color:g,fontWeight:"bold",marginTop:"4px"}}>{effSaves[s]}</div></div>;
             })}
           </div>
@@ -2669,7 +2679,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>
             <div>
               <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SAVING THROWS</div>
-              {Object.keys(effSaves).map(function(s){var n={Para:"Para/Poison/Death",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:"Spell"};
+              {Object.keys(effSaves).map(function(s){var n={Para:"Para/Poison/Death",Rod:"Rod/Staff/Wand",Pet:"Petrify/Poly",Breath:"Breath Weapon",Spell:cpSaveMod>0&&isWizard?"Spell*":"Spell"};
                 var wisAdj2=(s==="Spell"||s==="Rod")?wisAdj:0;
                 var sv=effSaves[s]-wisAdj2;
                 var note=wisAdj2!==0?(wisAdj2>0?"\u2665 ":"\u2666 "):"";
@@ -2765,30 +2775,102 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SPECIAL ABILITIES</div>
             {cpAbil.map(function(a,i){
               var desc=CP_ABILITY_DESC[a]||a;
-              // Override with computed values for mechanical abilities
+              // Priest computed overrides
               if(a==='AC improvement') desc='AC Improvement: +'+(cpAcBonus||0)+' AC (level '+level+'; +1 per 4 levels)';
               if(a==='Lay on hands') desc='Lay on Hands: heal '+(level*2)+' HP/day ('+level+' × 2)';
               if(a==='Hit point bonus (d10)') desc='Hit Point Bonus: d10 HD (base d'+classData.hd+') — re-roll HP to apply';
-              if(a==='Improved Hit Die (d6)') desc='Improved Hit Die: d6 (base d'+classData.hd+') — re-roll HP to apply';
-              if(a==='Improved Hit Die (d8)') desc='Improved Hit Die: d8 (base d'+classData.hd+') — re-roll HP to apply';
-              if(a==='Combat bonus (warrior THAC0)') desc='Combat Bonus: THAC0 as Warrior — currently '+thac0+' at level '+level;
-              if(a==='Combat bonus (rogue THAC0)') desc='Combat Bonus: THAC0 as Rogue — currently '+thac0+' at level '+level;
-              if(a==='Combat bonus (priest THAC0)') desc='Combat Bonus: THAC0 as Priest — currently '+thac0+' at level '+level;
               if(a==='Warrior Con bonus') desc='Warrior Con Bonus: CON adj '+(conB>=0?'+':'')+conB+'/die (warrior table, CON '+adjStats.Con+')';
               if(a==='Warrior Con + Str') desc='Warrior CON + STR: CON adj '+(conB>=0?'+':'')+conB+'/die; exceptional STR access unlocked';
-              if(a==='Constitution adjustment (warrior)') desc='Constitution Adjustment (warrior): CON adj '+(conB>=0?'+':'')+conB+'/die (CON '+adjStats.Con+')';
-              if(a==='Weapon specialization') desc='Weapon Specialization: choose one weapon, gain +1 to hit, +2 damage, extra attack/round';
+              // Shared computed overrides
+              if(a==='Combat bonus (warrior THAC0)') desc='Combat Bonus: THAC0 as Warrior — currently '+thac0+' at level '+level;
+              if(a==='Combat bonus (rogue THAC0)')  desc='Combat Bonus: THAC0 as Rogue — currently '+thac0+' at level '+level;
+              if(a==='Combat bonus (priest THAC0)') desc='Combat Bonus: THAC0 as Priest — currently '+thac0+' at level '+level;
+              if(a==='Constitution adjustment (warrior)') desc='Warrior CON Bonus: CON adj '+(conB>=0?'+':'')+conB+'/die (warrior table, CON '+adjStats.Con+')';
+              if(a==='Weapon specialization') desc='Weapon Specialization: may specialize in one weapon (+1 attack, +2 damage)';
+              // Wizard level/stat-dependent descriptions
+              if(isWizard){
+                if(a==='Improved Hit Die (d8)')      desc='Improved Hit Die: d8 HD (base d'+classData.hd+') — re-roll HP to apply';
+                if(a==='Improved Hit Die (d6)')      desc='Improved Hit Die: d6 HD (base d'+classData.hd+') — re-roll HP to apply';
+                if(a==='Enhanced casting level')     desc='Enhanced Casting Level: chosen school spells cast as if 1d4 levels higher (once/day; currently level '+level+')';
+                if(a==='Dispel (1/day)')             desc='Dispel Magic: 1×/day, range 30 yards, 50%±5%/level diff, as '+level+'th-level caster';
+                if(a==='Dispel (3/day)')             desc='Dispel Magic: 3×/day, range 30 yards, 50%±5%/level diff, as '+level+'th-level caster';
+                if(a==='Detect magic')               desc='Detect Magic: '+(Math.floor(level/2)||1)+'×/day (1 per 2 levels), as the spell';
+                if(a==='Read magic')                 desc='Read Magic: '+(Math.floor(level/2)||1)+'×/day (1 per 2 levels), as the spell';
+                if(a==='Thief ability (1)')          desc='Thief Ability: one thief skill at base % for level '+level+' (Thief Average Ability Table)';
+                if(a==='Thief ability (2)')          desc='Thief Ability: two thief skills at base % for level '+level;
+                if(a==='School knowledge +1/-1 saves') desc='School Knowledge: +1 to your saves vs chosen school; −1 to opponent saves vs your spells (Spell save now '+effSaves.Spell+')';
+                if(a==='School knowledge +2/-2 saves') desc='School Knowledge: +2 to your saves vs chosen school; −2 to opponent saves vs your spells (Spell save now '+effSaves.Spell+')';
+                if(a==='Bonus spells (one school)')  desc='Bonus Spells: +1 memorization slot per level from one school (applied to all levels)';
+                if(a==='Bonus spells (any school)')  desc='Bonus Spells: +1 memorization slot per level, any spell';
+                if(a==='Priestly wizard (minor sphere)') desc='Priestly Wizard: minor sphere access — cast as half level ('+Math.floor(level/2)+'); count against max spells/level';
+                if(a==='Priestly wizard (major sphere)') desc='Priestly Wizard: major sphere access — full casting at level '+level+'; count against max spells/level';
+                if(a==='Followers')                  desc='Followers: at 8th level, 20–200 0-level men-at-arms + 1d6 apprentice wizards (1st–3rd level)';
+                if(a==='Immunity (one spell)')       desc='Immunity: complete immunity to one spell (cost: 10 + 1 per spell level)';
+                // Wizard static descriptions
+                if(a==='Armor: Padded')              desc='Armor Access: padded armor (no shields ever)';
+                if(a==='Armor: Leather/studded')     desc='Armor Access: leather, studded leather, hide, or brigandine (no shields)';
+                if(a==='Armor: Any')                 desc='Armor Access: any armor while casting (no shields)';
+                if(a==='Weapon: Cleric/thief list')  desc='Weapon Access: cleric and thief weapon lists';
+                if(a==='Weapon: Any')                desc='Weapon Access: any weapon (non-proficiency penalties still apply)';
+                if(a==='Auto spell acquisition (one school)') desc='Auto Acquisition: add one spell/level from chosen school without learn check';
+                if(a==='Auto spell acquisition (any school)') desc='Auto Acquisition: add any one accessible spell per level without learn check';
+                if(a==='Learning bonus +15% (one school)') desc='Learning Bonus: +15% to learn spells from chosen school';
+                if(a==='Learning bonus +25% (one school)') desc='Learning Bonus: +25% to learn spells from chosen school';
+                if(a==='Learning bonus +15% (all schools)') desc='Learning Bonus: +15% to learn spells from all schools';
+                if(a==='Learning bonus +25% (all schools)') desc='Learning Bonus: +25% to learn spells from all schools';
+                if(a==='Research bonus (one school)') desc='Research Bonus: treated as 1 level lower for one school\'s spell research';
+                if(a==='Research bonus (all)')       desc='Research Bonus: treated as 1 level lower for all spell research';
+                if(a==='No components (one school)') desc='No Components: cast chosen school spells without material components';
+                if(a==='No components (any school)') desc='No Components: cast any spell without material components';
+                if(a==='Range increase +25% (one school)') desc='Range Increase: +25% to range of chosen school spells';
+                if(a==='Range increase +50% (one school)') desc='Range Increase: +50% to range of chosen school spells';
+                if(a==='Range increase +25% (all schools)') desc='Range Increase: +25% to range of all ranged spells';
+                if(a==='Range increase +50% (all schools)') desc='Range Increase: +50% to range of all ranged spells';
+                if(a==='Casting time reduction (one school)') desc='Casting Time Reduction: −1 segment for chosen school spells';
+                if(a==='Casting time reduction (all)') desc='Casting Time Reduction: −1 segment for all spells';
+                if(a==='Extended duration (one school)') desc='Extended Duration: +1 time unit per 2 levels for chosen school spells';
+                if(a==='Extended duration (all)')    desc='Extended Duration: +1 time unit per 2 levels for all spells';
+                if(a==='Proficiency group crossovers') desc='Proficiency Crossovers: may select proficiencies from any character or general group';
+                if(a==='Persistent spell effect')    desc='Persistent Spell Effect: one known spell maintained as long as concentrated (cost: 15 + 2/spell level)';
+              }
               return <div key={i} style={{fontSize:"11px",color:"#bbb",marginBottom:"3px",lineHeight:"1.5"}}>• {desc}</div>;
             })}
           </div>}
           {cpLim.length>0&&<div style={{marginBottom:"12px"}}>
             <div style={{color:"#e08080",fontWeight:"bold",marginBottom:"4px"}}>LIMITATIONS</div>
             {cpLim.map(function(l,i){
-              var mechNote='';
-              if(l==='Reduced HP (d6)') mechNote=' — HD reduced to d6 (was d'+classData.hd+'), re-roll HP';
-              if(l==='Reduced HP (d4)') mechNote=' — HD reduced to d4 (was d'+classData.hd+'), re-roll HP';
-              return <div key={i} style={{fontSize:"11px",color:"#c08080",marginBottom:"3px",lineHeight:"1.5"}}>• {l}{mechNote&&<span style={{color:"#e08060"}}>{mechNote}</span>}</div>;
+              var desc=l;
+              // Priest computed overrides
+              if(l==='Reduced HP (d6)') desc='Reduced HP: d6 Hit Die (was d'+classData.hd+') — re-roll HP to apply';
+              if(l==='Reduced HP (d4)') desc='Reduced HP: d4 Hit Die (was d'+classData.hd+') — re-roll HP to apply';
+              // Wizard limitation descriptions
+              if(isWizard){
+                if(l==='Reduced HP (d3)')            desc='Reduced HP: d3 Hit Die + max +1 CON bonus/die (currently d'+effectiveHD+')';
+                if(l==='Learning penalty -15%')      desc='Learning Penalty: −15% to learn spells of all schools except one';
+                if(l==='Learning penalty -25%')      desc='Learning Penalty: −25% to learn spells of all schools except one';
+                if(l==='Reduced spell knowledge')    desc='Reduced Spell Knowledge: max spells/level = half normal (min 10 if INT allows all)';
+                if(l==='Reduced spell progression')  desc='Reduced Spell Progression: memorize one fewer spell per level (1st-level = 0 spells!)';
+                if(l==='Slower casting time +3')     desc='Slower Casting: +3 segments to all casting times';
+                if(l==='Slower casting time (next unit)') desc='Slower Casting: all times advance to next unit (segments→round, rounds→turns, turns→hours)';
+                if(l==='Talisman required')          desc='Talisman Required: must have talisman on person to cast; rebuild takes 1d4 weeks if destroyed';
+                if(l==='Hazardous spells')           desc='Hazardous Spells: save vs. breath/spell per cast or 1 dmg/spell level; 1% cumulative insanity risk per level cast';
+                if(l==='Awkward casting')            desc='Awkward Casting: must cast obviously — can\'t cast from ambush, stealthily, or quietly';
+                if(l==='Difficult memorization')     desc='Difficult Memorization: must memorize in specific location using materials worth 250 gp/level';
+                if(l==='Behavior/taboo')             desc='Behavior/Taboo: must observe code; violation loses all memorized spells until back in compliance';
+                if(l==='Supernatural constraint')    desc='Supernatural Constraint: DM-assigned supernatural vulnerability (5–15 pts depending on impact)';
+                if(l==='Weapons: No proficiency')    desc='Weapons: may never have proficiency in any weapon';
+                if(l==='Weapons: Cannot wield')      desc='Weapons: may never attempt to wield a weapon at all — violation ends spell use for 1 month';
+                if(l==='Environmental condition (specific)') desc='Environmental Condition: can only cast in rare, specific circumstances';
+                if(l==='Environmental condition (common)')   desc='Environmental Condition: can only cast in common situations';
+                if(l==='Environmental condition (everyday)') desc='Environmental Condition: major everyday restriction on casting';
+              }
+              return <div key={i} style={{fontSize:"11px",color:"#c08080",marginBottom:"3px",lineHeight:"1.5"}}>• {desc}</div>;
             })}
+          </div>}
+          {isWizard&&cpSchools.length>0&&<div style={{fontSize:"11px",color:"#80a0c0",fontFamily:"monospace",marginBottom:"10px"}}>
+            <span style={{color:dim,letterSpacing:"1px"}}>SCHOOLS: </span>
+            {cpSchools.join(' · ')}
+            {cpPriestlyWizard&&<span style={{color:"#a0c080"}}>{' '}(+priestly {cpPriestlyWizard})</span>}
           </div>}
           <div style={{borderTop:"1px solid #333",paddingTop:"8px",marginTop:"8px",color:dim,fontSize:"10px"}}>
             CP Budget: {cpBudget} | Spent: {cpSpent} | Refund: {cpRefund} | Net: {cpSpent-cpRefund}/{cpBudget}
