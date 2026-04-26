@@ -1625,7 +1625,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
-    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setInventory([]);setCloudId(null);
+    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setGearItems([]);setInventory([]);setCloudId(null);
   }
 
   function exportPDF() {
@@ -1635,15 +1635,79 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         tierLabel:g.tiered&&g.tiers&&g.tiers.length?(g.tiers[g.activeTier||0]||{}).label||'':'',
         effects:ae};
     });
+    // Pre-compute CP ability/limitation descriptions (same logic as Sheet tab)
+    var cpAbilDescs=cpAbil.map(function(a){
+      var desc=CP_ABILITY_DESC[a]||a;
+      if(a==='AC improvement') desc='AC Improvement: +'+(cpAcBonus||0)+' AC (level '+level+'; +1/4 levels)';
+      if(a==='Lay on hands') desc='Lay on Hands: heal '+(level*2)+' HP/day';
+      if(a==='Hit point bonus (d10)') desc='Hit Point Bonus: d10 HD (base d'+classData.hd+')';
+      if(a==='Warrior Con bonus') desc='Warrior Con Bonus: CON adj '+(conB>=0?'+':'')+conB+'/die';
+      if(a==='Warrior Con + Str') desc='Warrior CON + STR: CON adj '+(conB>=0?'+':'')+conB+'/die; exceptional STR';
+      if(a==='Combat bonus (warrior THAC0)') desc='Combat Bonus: THAC0 as Warrior ('+thac0+')';
+      if(a==='Combat bonus (rogue THAC0)')  desc='Combat Bonus: THAC0 as Rogue ('+thac0+')';
+      if(a==='Combat bonus (priest THAC0)') desc='Combat Bonus: THAC0 as Priest ('+thac0+')';
+      if(a==='Constitution adjustment (warrior)') desc='Warrior CON Bonus: CON adj '+(conB>=0?'+':'')+conB+'/die';
+      if(a==='Weapon specialization') desc='Weapon Specialization: +1 attack, +2 damage in chosen weapon';
+      if(isWizard){
+        if(a==='Improved Hit Die (d8)')      desc='Improved Hit Die: d8 HD (base d'+classData.hd+')';
+        if(a==='Improved Hit Die (d6)')      desc='Improved Hit Die: d6 HD (base d'+classData.hd+')';
+        if(a==='Enhanced casting level')     desc='Enhanced Casting Level: 1d4 levels higher (once/day; level '+level+')';
+        if(a==='Dispel (1/day)')             desc='Dispel Magic: 1×/day, 30 yd range, as '+level+'th-level caster';
+        if(a==='Dispel (3/day)')             desc='Dispel Magic: 3×/day, 30 yd range, as '+level+'th-level caster';
+        if(a==='Detect magic')               desc='Detect Magic: '+(Math.floor(level/2)||1)+'×/day as the spell';
+        if(a==='Read magic')                 desc='Read Magic: '+(Math.floor(level/2)||1)+'×/day, any magical script';
+        if(a==='School knowledge +1/-1 saves') desc='School Knowledge: +1 saves vs school; −1 opp saves vs your spells (Spell: '+effSaves.Spell+')';
+        if(a==='School knowledge +2/-2 saves') desc='School Knowledge: +2 saves vs school; −2 opp saves vs your spells (Spell: '+effSaves.Spell+')';
+        if(a==='Bonus spells (one school)')  desc='Bonus Spells: +1 slot per level from one school';
+        if(a==='Bonus spells (any school)')  desc='Bonus Spells: +1 slot per level, any spell';
+        if(a==='Priestly wizard (minor sphere)') desc='Priestly Wizard: minor sphere (cast as level '+Math.floor(level/2)+')';
+        if(a==='Priestly wizard (major sphere)') desc='Priestly Wizard: major sphere (full level '+level+')';
+        if(a==='Followers') desc='Followers: 20-200 men-at-arms + 1d6 apprentices at 8th level';
+        if(a==='Armor: Padded')              desc='Armor Access: padded armor while casting (no shields)';
+        if(a==='Armor: Leather/studded')     desc='Armor Access: leather/studded leather while casting (no shields)';
+        if(a==='Armor: Any')                 desc='Armor Access: any armor while casting (no shields)';
+        if(a==='Weapon: Cleric/thief list')  desc='Weapon Access: cleric and thief weapon lists';
+        if(a==='Weapon: Any')                desc='Weapon Access: any weapon (non-prof penalties apply)';
+        if(a==='Immunity (one spell)')       desc='Immunity: complete immunity to one chosen spell';
+      }
+      return {name:a,desc:desc};
+    });
+    var cpLimDescs=cpLim.map(function(l){
+      var desc=l;
+      if(l==='Reduced HP (d6)') desc='Reduced HP: d6 Hit Die (base d'+classData.hd+')';
+      if(l==='Reduced HP (d4)') desc='Reduced HP: d4 Hit Die (base d'+classData.hd+')';
+      if(isWizard){
+        if(l==='Reduced HP (d3)')   desc='Reduced HP: d3 Hit Die (currently d'+effectiveHD+')';
+        if(l==='Learning penalty -15%') desc='Learning Penalty: −15% to learn spells (all schools except one)';
+        if(l==='Learning penalty -25%') desc='Learning Penalty: −25% to learn spells (all schools except one)';
+        if(l==='Reduced spell knowledge') desc='Reduced Spell Knowledge: max spells/level = half normal';
+        if(l==='Reduced spell progression') desc='Reduced Spell Progression: one fewer spell memorized per level';
+        if(l==='Slower casting time +3')     desc='Slower Casting: +3 segments to all casting times';
+        if(l==='Talisman required')          desc='Talisman Required: must have talisman on person to cast';
+        if(l==='Hazardous spells')           desc='Hazardous Spells: save or 1 dmg/spell level; insanity risk';
+        if(l==='Awkward casting')            desc='Awkward Casting: must cast obviously (no ambush/stealth)';
+        if(l==='Difficult memorization')     desc='Difficult Memorization: special location + 250 gp/level';
+        if(l==='Behavior/taboo')             desc='Behavior/Taboo: must observe code or lose all memorized spells';
+        if(l==='Supernatural constraint')    desc='Supernatural Constraint: DM-assigned vulnerability';
+        if(l==='Weapons: No proficiency')    desc='Weapons: may never have weapon proficiency';
+        if(l==='Weapons: Cannot wield')      desc='Weapons: may never wield — violation ends spellcasting for 1 month';
+        if(l==='Environmental condition (specific)') desc='Environmental Condition: can only cast in specific circumstances';
+        if(l==='Environmental condition (common)')   desc='Environmental Condition: can only cast in common situations';
+        if(l==='Environmental condition (everyday)') desc='Environmental Condition: major everyday casting restriction';
+      }
+      return {name:l,desc:desc};
+    });
     exportCharacterSheet({
       charName, race, cls, kit, level, xp, hp, align,
       stats, adjStats, thac0, saves,
       effAC, effThac0, effSaves, effHP, effStrB, effStrPct,
       gearBaseAC, gearAC, gearThac0, gearHP,
-      strB, conB, strPct, exStr,
+      strB, conB, strPct, exStr, effectiveHD,
+      totalWP, totalNWP, wpUsed, nwpUsed,
       adjSlots, memorized, notes,
       cpBudget, cpSpent, cpRefund,
       cpMajor, cpMinor, cpSchools, cpAbil, cpLim,
+      cpAbilDescs, cpLimDescs,
       isPriest, isWizard, classData, raceData,
       equippedGear: equippedForPDF,
       inventory, activeBuffs,
@@ -1807,8 +1871,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(d.totemAnimal!==undefined)setTotemAnimal(d.totemAnimal);
     if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
     if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
-    if(d.gearItems)setGearItems(d.gearItems);
-    if(d.cpDayUses)setCpDayUses(d.cpDayUses);
+    setGearItems(d.gearItems||[]);
+    setCpDayUses(d.cpDayUses||{});
     if(d.wpUsed!==undefined)setWpUsed(d.wpUsed);
     if(d.nwpUsed!==undefined)setNwpUsed(d.nwpUsed);
     if(d.inventory)setInventory(d.inventory);

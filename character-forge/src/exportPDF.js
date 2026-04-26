@@ -18,12 +18,14 @@ export function exportCharacterSheet(ch) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const W = 612, H = 792, M = 36, CW = W - 2 * M;
 
-  // Effective stats (gear/buff-adjusted) — declared early to avoid TDZ in minified builds
-  const effStrB = ch.effStrB ?? ch.strB;
+  // Effective stats — prefer gear/buff-adjusted values
+  const effStrB  = ch.effStrB  ?? ch.strB;
   const effThac0 = ch.effThac0 ?? ch.thac0;
-  const effAC = ch.effAC ?? ch.ac;
-  const effHP = ch.effHP ?? ch.hp;
+  const effAC    = ch.effAC    ?? ch.ac;
+  const effHP    = ch.effHP    ?? ch.hp;
   const effSaves = ch.effSaves ?? ch.saves;
+  const effStrPct = ch.effStrPct ?? ch.strPct ?? 0;
+  const hd = ch.effectiveHD ?? ch.classData?.hd ?? 6;
 
   function dt(str, x, y, opts = {}) {
     doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
@@ -42,19 +44,16 @@ export function exportCharacterSheet(ch) {
 
   // ======= PAGE 1: MAIN STATS =======
 
-  // Title
   dt('Advanced Dungeons & Dragons', W / 2, M + 16, { size: 18, bold: true, align: 'center' });
   dt('2nd Edition  —  Player Character Record', W / 2, M + 28, { size: 10, align: 'center' });
   dl(M, M + 34, W - M, M + 34, 1.5);
 
   let y = M + 50;
 
-  // Character info fields
-  // Layout per field: small grey label at top, underline 14pt below, bold value on the line
   function field(label, val, x, fy, fw) {
-    lbl(label, x, fy);                                          // small label at top of row
-    dl(x, fy + 14, x + fw, fy + 14);                          // underline 14pt below label
-    if (val) dt(String(val), x + 2, fy + 13, { size: 10, bold: true }); // value on the line
+    lbl(label, x, fy);
+    dl(x, fy + 14, x + fw, fy + 14);
+    if (val) dt(String(val), x + 2, fy + 13, { size: 10, bold: true });
   }
 
   field('Character', ch.charName, M, y, 200);
@@ -89,7 +88,6 @@ export function exportCharacterSheet(ch) {
   const stX = M + 308;
   const saveKeys = Object.keys(effSaves);
 
-  // Saves header
   dl(stX, y, W - M, y, 0.5);
   lbl('Save Type', stX + 2, y + 8);
   lbl('Score', stX + 174, y + 8);
@@ -102,7 +100,6 @@ export function exportCharacterSheet(ch) {
     dt(String(effSaves[s]), stX + 185, sy + 14, { size: 12, bold: true, align: 'center' });
   });
 
-  // Ability scores
   abilList.forEach(({ ab, key }, i) => {
     const ay = y + 2 + i * RH;
     const raw = ch.stats[key] || 10;
@@ -110,17 +107,24 @@ export function exportCharacterSheet(ch) {
     const fin = raw + adj;
 
     dt(ab, M, ay + 14, { size: 13, bold: true });
-    dr(M + 38, ay + 2, 26, RH - 4);
-    dt(String(fin), M + 51, ay + 15, { size: 12, bold: true, align: 'center' });
+    dr(M + 38, ay + 2, 30, RH - 4);
 
-    if (adj !== 0) lbl(`(${raw}${adj > 0 ? '+' : ''}${adj})`, M + 68, ay + 14);
+    // STR: show exceptional format 18/XX when applicable
+    if (ab === 'STR' && fin === 18 && effStrPct > 0) {
+      const pctStr = effStrPct === 100 ? '00' : String(effStrPct).padStart(2, '0');
+      dt(`18/${pctStr}`, M + 53, ay + 15, { size: 9, bold: true, align: 'center' });
+    } else {
+      dt(String(fin), M + 53, ay + 15, { size: 12, bold: true, align: 'center' });
+    }
+
+    if (adj !== 0) lbl(`(${raw}${adj > 0 ? '+' : ''}${adj})`, M + 72, ay + 14);
 
     const mx = M + 110;
     if (ab === 'STR') {
       lbl('Hit Adj', mx, ay + 8); dr(mx + 36, ay + 2, 22, (RH - 4) / 2 + 1);
-      dt(ch.strB.hit >= 0 ? `+${ch.strB.hit}` : String(ch.strB.hit), mx + 47, ay + 10, { size: 8, bold: true, align: 'center' });
+      dt(effStrB.hit >= 0 ? `+${effStrB.hit}` : String(effStrB.hit), mx + 47, ay + 10, { size: 8, bold: true, align: 'center' });
       lbl('Dmg Adj', mx, ay + 18); dr(mx + 36, ay + 2 + (RH - 4) / 2 + 1, 22, (RH - 4) / 2 - 1);
-      dt(ch.strB.dmg >= 0 ? `+${ch.strB.dmg}` : String(ch.strB.dmg), mx + 47, ay + 20, { size: 8, bold: true, align: 'center' });
+      dt(effStrB.dmg >= 0 ? `+${effStrB.dmg}` : String(effStrB.dmg), mx + 47, ay + 20, { size: 8, bold: true, align: 'center' });
     } else if (ab === 'DEX') {
       lbl('Def Adj', mx, ay + 14); dr(mx + 36, ay + 2, 22, RH - 4);
       dt(String(dexBonus(fin)), mx + 47, ay + 14, { size: 8, bold: true, align: 'center' });
@@ -151,10 +155,10 @@ export function exportCharacterSheet(ch) {
   const thac0Sub = `Str:${effStrB.hit >= 0 ? '+' : ''}${effStrB.hit}${ch.gearThac0 ? ` Gear:-${ch.gearThac0}` : ''}`;
 
   const statBoxes = [
-    { l: 'THAC0', v: effThac0, s: thac0Sub },
-    { l: 'AC', v: effAC, s: acSub },
-    { l: 'HIT POINTS', v: effHP, s: `d${ch.classData?.hd ?? '?'}${ch.gearHP ? ` +${ch.gearHP}` : ''}` },
-    { l: 'DMG ADJ', v: effStrB.dmg >= 0 ? `+${effStrB.dmg}` : String(effStrB.dmg), s: `Str ${ch.adjStats.Str}` },
+    { l: 'THAC0',      v: effThac0, s: thac0Sub },
+    { l: 'AC',         v: effAC,    s: acSub },
+    { l: 'HIT POINTS', v: effHP,    s: `d${hd}${hd !== (ch.classData?.hd ?? hd) ? ' (CP)' : ''}${ch.gearHP ? ` +${ch.gearHP}` : ''}` },
+    { l: 'DMG ADJ',    v: effStrB.dmg >= 0 ? `+${effStrB.dmg}` : String(effStrB.dmg), s: `Str ${ch.adjStats.Str}` },
   ];
   const bW = (CW - 15) / 4;
   statBoxes.forEach((b, i) => {
@@ -226,10 +230,17 @@ export function exportCharacterSheet(ch) {
   for (let row = 0; row < 7; row++) { y += 14; drawWeaponRow(y, false); }
   y += 22;
 
-  // Proficiencies
+  // Proficiencies — show WP/NWP totals in header
   if (y < H - 90) {
+    const totalWP  = ch.totalWP  ?? 0;
+    const totalNWP = ch.totalNWP ?? 0;
+    const wpUsed   = ch.wpUsed   ?? 0;
+    const nwpUsed  = ch.nwpUsed  ?? 0;
     dt('PROFICIENCIES', W / 2, y + 8, { size: 10, bold: true, align: 'center' });
-    y += 14;
+    if (totalWP > 0 || totalNWP > 0) {
+      lbl(`Weapon: ${wpUsed}/${totalWP} used  ·  Non-Weapon: ${nwpUsed}/${totalNWP} used`, W / 2, y + 18, { align: 'center' });
+    }
+    y += 22;
     const pcW = CW / 3;
     for (let col = 0; col < 3; col++) {
       const px = M + col * pcW;
@@ -248,7 +259,6 @@ export function exportCharacterSheet(ch) {
     }
   }
 
-  // Page 1 footer
   lbl(`${ch.charName || 'Unnamed'} — ${ch.race} ${ch.cls} Lv${ch.level}`, M, H - 18);
   lbl('AD&D 2nd Edition Character Sheet', W - M, H - 18);
 
@@ -322,28 +332,35 @@ export function exportCharacterSheet(ch) {
     y += 12;
   }
 
-  // Special Powers
-  if (ch.cpAbil.length > 0) {
+  // Special Powers — with descriptions
+  const cpAbilDescs = ch.cpAbilDescs || ch.cpAbil.map(a => ({ name: a, desc: a }));
+  if (cpAbilDescs.length > 0) {
     dt('SPECIAL POWERS/BENEFITS', M, y, { size: 10, bold: true });
     y += 14;
-    ch.cpAbil.forEach(a => {
+    cpAbilDescs.forEach(({ name, desc }) => {
       if (y > H - 40) { doc.addPage(); y = M + 20; }
-      dt(`• ${a}`, M + 10, y, { size: 9 });
-      y += 13;
+      const text = desc !== name ? desc : name;
+      const lines = doc.splitTextToSize(`• ${text}`, CW - 12);
+      lines.forEach((l, j) => dt(l, M + 10, y + j * 12, { size: 8 }));
+      y += lines.length * 12 + 2;
     });
-    y += 6;
+    y += 4;
   }
 
-  // Hindrances
-  if (ch.cpLim.length > 0) {
+  // Hindrances — with descriptions
+  const cpLimDescs = ch.cpLimDescs || ch.cpLim.map(l => ({ name: l, desc: l }));
+  if (cpLimDescs.length > 0) {
+    if (y > H - 40) { doc.addPage(); y = M + 20; }
     dt('SPECIAL HINDRANCES', M, y, { size: 10, bold: true });
     y += 14;
-    ch.cpLim.forEach(l => {
+    cpLimDescs.forEach(({ name, desc }) => {
       if (y > H - 40) { doc.addPage(); y = M + 20; }
-      dt(`• ${l}`, M + 10, y, { size: 9 });
-      y += 13;
+      const text = desc !== name ? desc : name;
+      const lines = doc.splitTextToSize(`• ${text}`, CW - 12);
+      lines.forEach((l, j) => dt(l, M + 10, y + j * 12, { size: 8 }));
+      y += lines.length * 12 + 2;
     });
-    y += 6;
+    y += 4;
   }
 
   // CP summary
@@ -356,6 +373,7 @@ export function exportCharacterSheet(ch) {
 
   // Notes
   if (ch.notes?.trim()) {
+    if (y > H - 60) { doc.addPage(); y = M + 20; }
     dl(M, y, W - M, y, 0.5);
     y += 12;
     dt('NOTES', W / 2, y, { size: 10, bold: true, align: 'center' });
@@ -368,13 +386,12 @@ export function exportCharacterSheet(ch) {
     });
   }
 
-  // Page 2 footer
   lbl(`${ch.charName || 'Unnamed'} — ${ch.race} ${ch.cls} Lv${ch.level}`, M, H - 18);
   lbl('AD&D 2nd Edition', W - M, H - 18);
 
   // ======= PAGE 3: MAGIC ITEMS & INVENTORY =======
   const gear = ch.equippedGear || [];
-  const inv  = ch.inventory || [];
+  const inv  = ch.inventory    || [];
   if (gear.length > 0 || inv.length > 0) {
     doc.addPage();
     y = M;
@@ -383,7 +400,6 @@ export function exportCharacterSheet(ch) {
     dl(M, y + 34, W - M, y + 34, 1);
     y += 50;
 
-    // Helper: format an effects object into a compact string
     function fxStr(e) {
       if (!e) return '';
       const parts = [];
@@ -413,53 +429,51 @@ export function exportCharacterSheet(ch) {
       dt('EQUIPPED MAGIC ITEMS', W / 2, y, { size: 11, bold: true, align: 'center' });
       y += 14;
 
-      // Column widths
-      const colW = [CW * 0.30, CW * 0.15, CW * 0.40, CW * 0.15];
-      const colX = [M, M + colW[0], M + colW[0] + colW[1], M + colW[0] + colW[1] + colW[2]];
-      const hdrs = ['Item Name', 'Type', 'Bonuses', 'Source'];
-      const RH2 = 14;
-
-      // Header row
-      dl(M, y, W - M, y, 0.5);
-      hdrs.forEach((h, i) => lbl(h, colX[i] + 2, y + 9));
-      dl(M, y + 11, W - M, y + 11, 0.5);
-      y += 13;
-
       gear.forEach(item => {
         if (y > H - 50) { doc.addPage(); y = M + 20; }
+
         const label = item.tierLabel ? `${item.name} (${item.tierLabel})` : item.name;
         const bonuses = fxStr(item.effects);
 
-        // Name (bold)
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0, 0, 0);
-        const nameLines = doc.splitTextToSize(label, colW[0] - 4);
-        nameLines.forEach((l, j) => doc.text(l, colX[0] + 2, y + 9 + j * 10));
+        // Item name + type header line
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0, 0, 0);
+        dt(label, M, y, { size: 9, bold: true });
+        if (item.type) lbl(`[${item.type}]${item.source ? '  ' + item.source : ''}`, M + doc.getTextWidth(label) + 6, y, { size: 7 });
+        y += 11;
 
-        // Type
-        dt(item.type || '', colX[1] + 2, y + 9, { size: 7 });
+        // Mechanical bonuses line
+        if (bonuses) {
+          dt(bonuses, M + 8, y, { size: 8, color: [60, 60, 140] });
+          y += 11;
+        }
 
-        // Bonuses (may wrap)
-        const bLines = doc.splitTextToSize(bonuses || '—', colW[2] - 4);
-        bLines.forEach((l, j) => dt(l, colX[2] + 2, y + 9 + j * 10, { size: 7 }));
+        // Description (up to 3 lines)
+        if (item.desc) {
+          const descLines = doc.splitTextToSize(item.desc, CW - 12);
+          const showLines = descLines.slice(0, 3);
+          showLines.forEach(l => {
+            if (y > H - 30) { doc.addPage(); y = M + 20; }
+            dt(l, M + 8, y, { size: 7.5, color: [60, 60, 60] });
+            y += 10;
+          });
+          if (descLines.length > 3) {
+            lbl('(description continues…)', M + 8, y);
+            y += 10;
+          }
+        }
 
-        // Source
-        const srcLines = doc.splitTextToSize(item.source || '', colW[3] - 4);
-        srcLines.forEach((l, j) => lbl(l, colX[3] + 2, y + 9 + j * 10));
-
-        const rowH = Math.max(nameLines.length, bLines.length, srcLines.length) * 10 + 4;
-        dl(M, y + rowH, W - M, y + rowH, 0.2);
-        y += rowH;
+        dl(M, y + 2, W - M, y + 2, 0.2);
+        y += 8;
       });
 
-      // Active spell buffs
       if (ch.activeBuffs && ch.activeBuffs.length > 0) {
-        y += 6;
+        y += 4;
         dt('Active Spell Effects: ', M, y, { size: 8, bold: true });
         dt(ch.activeBuffs.join(', '), M + 110, y, { size: 8 });
         y += 14;
       }
 
-      y += 10;
+      y += 6;
     }
 
     if (inv.length > 0) {
@@ -490,12 +504,10 @@ export function exportCharacterSheet(ch) {
       });
     }
 
-    // Page 3 footer
     lbl(`${ch.charName || 'Unnamed'} — ${ch.race} ${ch.cls} Lv${ch.level}`, M, H - 18);
     lbl('AD&D 2nd Edition — Magic Items & Inventory', W - M, H - 18);
   }
 
-  // Save file
   const filename = `${(ch.charName || 'character').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || 'character'}_2e_sheet.pdf`;
   doc.save(filename);
 }
