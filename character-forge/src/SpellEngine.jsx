@@ -7,6 +7,9 @@ import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyChara
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
 var CLASSES={"Fighter":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:null,group:"Warrior"},"Ranger":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"ranger",group:"Warrior"},"Paladin":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"paladin",group:"Warrior"},"Cleric":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Druid":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Mage":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Illusionist":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Thief":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:null,group:"Rogue"},"Bard":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:"bard",group:"Rogue"}};
+// Weapon & Non-Weapon Proficiency rates per class group (PHB)
+// wpInit/nwpInit: slots at level 1; wpRate/nwpRate: gain 1 slot per N levels
+var PROF_RATES={"Warrior":{wpInit:4,wpRate:3,nwpInit:3,nwpRate:3},"Priest":{wpInit:2,wpRate:4,nwpInit:4,nwpRate:3},"Wizard":{wpInit:1,wpRate:6,nwpInit:4,nwpRate:3},"Rogue":{wpInit:2,wpRate:4,nwpInit:3,nwpRate:4}};
 // PHB XP tables — index 0 = XP needed to reach level 1 (always 0), index 19 = level 20
 var XP_TABLE={
   Fighter:    [0,2000,4000,8000,16000,32000,64000,125000,250000,500000,750000,1000000,1250000,1500000,1750000,2000000,2250000,2500000,2750000,3000000],
@@ -1208,6 +1211,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _cpSpellPowers=useState([]),cpSpellPowers=_cpSpellPowers[0],setCpSpellPowers=_cpSpellPowers[1];
   // Per-day ability uses: {[key]: usesUsedToday}
   var _cpDayUses=useState({}),cpDayUses=_cpDayUses[0],setCpDayUses=_cpDayUses[1];
+  // Proficiency slot tracking
+  var _wpUsed=useState(0),wpUsed=_wpUsed[0],setWpUsed=_wpUsed[1];
+  var _nwpUsed=useState(0),nwpUsed=_nwpUsed[0],setNwpUsed=_nwpUsed[1];
   // Form state for adding a new granted power (not persisted)
   var _cpPwSpell=useState(""),cpPwSpell=_cpPwSpell[0],setCpPwSpell=_cpPwSpell[1];
   var _cpPwLevel=useState(1),cpPwLevel=_cpPwLevel[0],setCpPwLevel=_cpPwLevel[1];
@@ -1240,11 +1246,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   useEffect(function(){
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses};
+        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses]);
+     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed]);
 
   // Restore autosave on first load
   useEffect(function(){
@@ -1343,6 +1349,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(cpAbil.indexOf('Know alignment')>=0) list.push({key:'KnowAlign',label:'Know Alignment',max:level});
     return list;
   })();
+  // Proficiency slot totals
+  var profRates=PROF_RATES[classData.group]||PROF_RATES["Wizard"];
+  var totalWP=profRates.wpInit+Math.floor((level-1)/profRates.wpRate);
+  var totalNWP=profRates.nwpInit+Math.floor((level-1)/profRates.nwpRate);
+  if(cpAbil.indexOf('Weapon specialization')>=0&&isWizard) totalWP+=1;
+  if(cpAbil.indexOf('Proficiency group crossovers')>=0&&isWizard) totalNWP+=0;
 
   // Equipped custom gear bonuses
   function getActiveEffects(g){
@@ -1613,7 +1625,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
-    setCpDayUses({});setInventory([]);setCloudId(null);
+    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setInventory([]);setCloudId(null);
   }
 
   function exportPDF() {
@@ -1768,7 +1780,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,inventory,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,_version:1};
   }
   function applyCharacterData(d){
     if(!d)return;
@@ -1797,6 +1809,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
     if(d.gearItems)setGearItems(d.gearItems);
     if(d.cpDayUses)setCpDayUses(d.cpDayUses);
+    if(d.wpUsed!==undefined)setWpUsed(d.wpUsed);
+    if(d.nwpUsed!==undefined)setNwpUsed(d.nwpUsed);
     if(d.inventory)setInventory(d.inventory);
   }
 
@@ -2237,6 +2251,20 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>ALIGNMENT</Lbl>
               <select value={align} onChange={function(e){setAlign(e.target.value);}} style={ss(brd,txt)}>{["Lawful Good","Lawful Neutral","Lawful Evil","Neutral Good","True Neutral","Neutral Evil","Chaotic Good","Chaotic Neutral","Chaotic Evil"].map(function(a){return <option key={a}>{a}</option>;})}</select>
+            </Card>
+            <Card brd={brd} surf={surf}><Lbl dim={dim}>PROFICIENCIES</Lbl>
+              <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+                {[{label:"Weapon",used:wpUsed,total:totalWP,set:setWpUsed},{label:"Non-Weapon",used:nwpUsed,total:totalNWP,set:setNwpUsed}].map(function(p){
+                  var over=p.used>p.total;
+                  return <div key={p.label} style={{display:"flex",alignItems:"center",gap:"5px"}}>
+                    <span style={{fontSize:"10px",color:dim,fontFamily:"monospace",minWidth:"72px"}}>{p.label}</span>
+                    <span style={{fontSize:"14px",fontWeight:"bold",color:over?"#e06060":p.used===p.total?"#e0c060":g,fontFamily:"monospace",minWidth:"42px",textAlign:"center"}}>{p.used}/{p.total}</span>
+                    <button onClick={function(){p.set(function(v){return Math.max(0,v-1);});}} style={{background:"transparent",border:"1px solid #3a3a5a",color:p.used>0?g:dim,borderRadius:"3px",width:"18px",height:"18px",cursor:p.used>0?"pointer":"default",fontSize:"12px",lineHeight:"1",padding:"0"}}>−</button>
+                    <button onClick={function(){p.set(function(v){return v+1;});}} style={{background:"transparent",border:"1px solid #3a3a5a",color:"#80c080",borderRadius:"3px",width:"18px",height:"18px",cursor:"pointer",fontSize:"12px",lineHeight:"1",padding:"0"}}>+</button>
+                  </div>;
+                })}
+              </div>
+              <div style={{fontSize:"9px",color:dim,fontFamily:"monospace",marginTop:"4px"}}>{classData.group} · WP +1/lv{profRates.wpRate} · NWP +1/lv{profRates.nwpRate}</div>
             </Card>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px",flexWrap:"wrap",gap:"6px"}}>
@@ -2715,6 +2743,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               <Row l="HP" v={hp} l2={(buffStr>0||buffStrLvl>0)?("Dmg Adj*"+(effStrPct>0?" (ex)":"")):"Dmg Adj"} v2={(effStrB.dmg>=0?"+":"")+effStrB.dmg} />
               <Row l="Hit Dice" v={"d"+effectiveHD} l2="Con Adj" v2={(conB>=0?"+":"")+conB+"/die"} />
               <Row l="Movement" v={12} l2="Dex Missile" v2={(dexMis>=0?"+":"")+dexMis} />
+              <Row l={"WP ("+wpUsed+"/"+totalWP+")"} v={totalWP-wpUsed===0?"Full":"+"+(totalWP-wpUsed)} l2={"NWP ("+nwpUsed+"/"+totalNWP+")"} v2={totalNWP-nwpUsed===0?"Full":"+"+(totalNWP-nwpUsed)} />
             </div>
             <div>
               <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>SAVING THROWS</div>
@@ -2897,6 +2926,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 if(l==='Difficult memorization')     desc='Difficult Memorization: must memorize in specific location using materials worth 250 gp/level';
                 if(l==='Behavior/taboo')             desc='Behavior/Taboo: must observe code; violation loses all memorized spells until back in compliance';
                 if(l==='Supernatural constraint')    desc='Supernatural Constraint: DM-assigned supernatural vulnerability (5–15 pts depending on impact)';
+                if(l==='Limited items: Potions/scrolls') desc='Limited Items: may not use potions or scrolls (magic items restricted)';
+                if(l==='Limited items: Rings')          desc='Limited Items: may not use rings (magic items restricted)';
+                if(l==='Limited items: Rods/staves/wands') desc='Limited Items: may not use rods, staves, or wands (magic items restricted)';
+                if(l==='Limited items: Misc/weapons/armor') desc='Limited Items: may not use miscellaneous magic weapons or armor (magic items restricted)';
                 if(l==='Weapons: No proficiency')    desc='Weapons: may never have proficiency in any weapon';
                 if(l==='Weapons: Cannot wield')      desc='Weapons: may never attempt to wield a weapon at all — violation ends spell use for 1 month';
                 if(l==='Environmental condition (specific)') desc='Environmental Condition: can only cast in rare, specific circumstances';
