@@ -1875,7 +1875,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setCpDayUses(d.cpDayUses||{});
     if(d.wpUsed!==undefined)setWpUsed(d.wpUsed);
     if(d.nwpUsed!==undefined)setNwpUsed(d.nwpUsed);
-    if(d.inventory)setInventory(d.inventory);
+    setInventory(d.inventory||[]);
   }
 
   // ── JSON save / load ─────────────────────────────────────────────────────
