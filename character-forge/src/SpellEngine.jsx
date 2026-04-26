@@ -1206,6 +1206,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _cpSubTab=useState(null),cpSubTab=_cpSubTab[0],setCpSubTab=_cpSubTab[1];
   // Spell-like granted powers: [{id, spell, level, spellType, freq}]
   var _cpSpellPowers=useState([]),cpSpellPowers=_cpSpellPowers[0],setCpSpellPowers=_cpSpellPowers[1];
+  // Per-day ability uses: {[key]: usesUsedToday}
+  var _cpDayUses=useState({}),cpDayUses=_cpDayUses[0],setCpDayUses=_cpDayUses[1];
   // Form state for adding a new granted power (not persisted)
   var _cpPwSpell=useState(""),cpPwSpell=_cpPwSpell[0],setCpPwSpell=_cpPwSpell[1];
   var _cpPwLevel=useState(1),cpPwLevel=_cpPwLevel[0],setCpPwLevel=_cpPwLevel[1];
@@ -1238,11 +1240,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   useEffect(function(){
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems};
+        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems]);
+     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses]);
 
   // Restore autosave on first load
   useEffect(function(){
@@ -1328,6 +1330,19 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var cpDispelCharges=isWizard?(cpAbil.indexOf('Dispel (3/day)')>=0?3:cpAbil.indexOf('Dispel (1/day)')>=0?1:0):0;
   var cpPriestlyWizard=isWizard?(cpAbil.indexOf('Priestly wizard (major sphere)')>=0?'major':cpAbil.indexOf('Priestly wizard (minor sphere)')>=0?'minor':''):'';
   var cpEnhancedLevel=isWizard&&cpAbil.indexOf('Enhanced casting level')>=0;
+  // Per-day ability list (used for tracker UI)
+  var cpDayAbilList=(function(){
+    var list=[];
+    if(cpAbil.indexOf('Dispel (1/day)')>=0) list.push({key:'Dispel',label:'Dispel Magic',max:1});
+    if(cpAbil.indexOf('Dispel (3/day)')>=0) list.push({key:'Dispel',label:'Dispel Magic',max:3});
+    if(cpAbil.indexOf('Detect magic')>=0&&isWizard) list.push({key:'DetectMagic',label:'Detect Magic',max:Math.floor(level/2)||1});
+    if(cpAbil.indexOf('Read magic')>=0&&isWizard) list.push({key:'ReadMagic',label:'Read Magic',max:Math.floor(level/2)||1});
+    if(cpEnhancedLevel) list.push({key:'EnhancedLevel',label:'Enhanced Casting',max:1});
+    if(cpAbil.indexOf('Detect evil')>=0) list.push({key:'DetectEvil',label:'Detect Evil',max:1});
+    if(cpAbil.indexOf('Detect undead')>=0) list.push({key:'DetectUndead',label:'Detect Undead',max:1});
+    if(cpAbil.indexOf('Know alignment')>=0) list.push({key:'KnowAlign',label:'Know Alignment',max:level});
+    return list;
+  })();
 
   // Equipped custom gear bonuses
   function getActiveEffects(g){
@@ -1554,6 +1569,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setCombatRound(1);
     setActiveCasts([]);
   }
+  function newDay(){
+    setCpDayUses({});
+    setCombatRound(1);
+    setActiveCasts([]);
+  }
 
   // Spell filtering based on CP selections
   var availableSpells=compSpells.filter(function(s){
@@ -1593,7 +1613,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
-    setInventory([]);setCloudId(null);
+    setCpDayUses({});setInventory([]);setCloudId(null);
   }
 
   function exportPDF() {
@@ -1748,7 +1768,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,inventory,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,inventory,_version:1};
   }
   function applyCharacterData(d){
     if(!d)return;
@@ -1776,6 +1796,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
     if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
     if(d.gearItems)setGearItems(d.gearItems);
+    if(d.cpDayUses)setCpDayUses(d.cpDayUses);
     if(d.inventory)setInventory(d.inventory);
   }
 
@@ -2288,7 +2309,25 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             <span style={{fontSize:"18px",color:"#e0c080",fontWeight:"bold",fontFamily:"monospace",minWidth:"32px",textAlign:"center"}}>{combatRound}</span>
             <button onClick={nextRound} style={{background:"#1a2a1a",color:"#7db87d",border:"1px solid #2a4a2a",padding:"3px 10px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace"}}>⏭ Next Round</button>
             <button onClick={resetCombat} style={{background:"#1a1a1a",color:dim,border:"1px solid #333",padding:"3px 8px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace"}}>↺ Reset</button>
+            <button onClick={newDay} title="Reset combat + restore all per-day abilities" style={{marginLeft:"auto",background:"#1a1a28",color:"#80a0c0",border:"1px solid #2a2a4a",padding:"3px 10px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace"}}>🌅 New Day</button>
           </div>
+          {/* ── Daily Abilities ── */}
+          {cpDayAbilList.length>0&&<div style={{marginBottom:"10px",border:"1px solid #2a2a4a",borderRadius:"6px",overflow:"hidden"}}>
+            <div style={{background:"#0d0d1e",padding:"5px 12px",fontSize:"10px",color:"#80a0c0",fontFamily:"monospace",letterSpacing:"1px"}}>DAILY ABILITIES</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:"6px",padding:"8px 12px"}}>
+              {cpDayAbilList.map(function(ab){
+                var used=cpDayUses[ab.key]||0;
+                var remaining=ab.max-used;
+                var depleted=remaining<=0;
+                return <div key={ab.key} style={{display:"flex",alignItems:"center",gap:"6px",padding:"4px 10px",background:depleted?"#1a0a0a":"#0d1222",border:"1px solid "+(depleted?"#4a2020":"#2a2a4a"),borderRadius:"4px"}}>
+                  <span style={{fontSize:"11px",color:depleted?"#a06060":"#bbb",fontFamily:"monospace"}}>{ab.label}</span>
+                  <span style={{fontSize:"13px",color:depleted?"#e06060":g,fontWeight:"bold",fontFamily:"monospace",minWidth:"36px",textAlign:"center"}}>{remaining}/{ab.max}</span>
+                  <button onClick={function(){if(used<ab.max)setCpDayUses(function(p){var n=Object.assign({},p);n[ab.key]=(n[ab.key]||0)+1;return n;});}} disabled={depleted} style={{background:"transparent",border:"none",color:depleted?dim:"#e06060",cursor:depleted?"not-allowed":"pointer",fontSize:"14px",padding:"0 2px",lineHeight:1}} title="Use one charge">−</button>
+                  <button onClick={function(){if(used>0)setCpDayUses(function(p){var n=Object.assign({},p);n[ab.key]=Math.max(0,(n[ab.key]||0)-1);return n;});}} disabled={used<=0} style={{background:"transparent",border:"none",color:used<=0?dim:"#7db87d",cursor:used<=0?"not-allowed":"pointer",fontSize:"14px",padding:"0 2px",lineHeight:1}} title="Restore one charge">+</button>
+                </div>;
+              })}
+            </div>
+          </div>}
 
           {/* ── Active Casts ── */}
           {activeCasts.length>0&&<div style={{marginBottom:"10px",border:"1px solid #2a3a2a",borderRadius:"6px",overflow:"hidden"}}>
