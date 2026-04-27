@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { exportCharacterSheet } from "./exportPDF.js";
 import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsForCharacter, parsePDFCharacter, generateMagicItem } from "./claudeAI.js";
-import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, signIn, signUp, signOut, onAuthStateChange, resetPasswordForEmail, updatePassword, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash } from "./supabase.js";
+import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, signIn, signUp, signOut, onAuthStateChange, resetPasswordForEmail, updatePassword, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash, getSpellOverrides, saveSpellOverride, deleteSpellOverride } from "./supabase.js";
 
 // ======== CORE 2E TABLES ========
 var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
@@ -325,14 +325,14 @@ var BUFF_SPELLS={
   "Dark Aura":{"thac0Bonus":3,"dmgBonus":3,"desc":"Caster gets +3 to attack and damage; evil creatures in aura get +1 to attack/damage; good creatures get -1 penalty"},
   "Deadly Dance":{"acBonus":2,"desc":"Recipient gains +2 Dexterity and perfect balance for duration; the Dex bonus improves AC and related rolls"},
   "Defensive Harmony":{"acBonus":1,"desc":"Affected creatures gain a defensive AC bonus through coordinated group tactics; bonus improves as more allies participate"},
-  "Dragon Scales":{"acBonus":2,"desc":"Grants caster base AC 4 or +2 AC bonus (whichever is better) from dragon scales covering body for duration"},
+  "Dragon Scales":{"acBase":4,"desc":"Grants caster base AC 4 (sets base AC to 4, only helps if unarmored or wearing worse than AC 4); dragon scales covering body for duration"},
   "Draw Upon Holy Might":{"strLvlBonus":true,"desc":"+1 to one ability score (STR, DEX, CON, or CHA) per 3 caster levels"},
   "Dust Shield - Old Empire":{"acBonus":3,"desc":"When configured as arm shield: +3 bonus to Armor Class while spell is active"},
   "Ebony Hand":{"thac0Bonus":1,"desc":"+1 to attack rolls per 3 levels past 1st (max +4 at 10th) for touch-delivered harmful spells"},
   "Emotion Control":{"saveBonus":2,"desc":"+2 bonus to saving throws vs. spook, taunt, irritation, know alignment, scare, emotion, fear, phantasmal killer when cast on self"},
   "Endurance of Ilmater":{"saveBonus":2,"desc":"Doubles recipient hit points (bonus hp absorbed first); all Str/Con checks auto-succeed; +2 to saving throws; system shock and disease checks auto-succeed"},
   "Everchanging Self":{"acBonus":4,"desc":"AC improves 4 pts; -1 penalty attack rolls; -2 penalty damage rolls; -3 Dex"},
-  "Faith Armor":{"desc":"Sets caster AC to 0 regardless of encumbrance, Dexterity, or worn armor; also grants immunity to one chosen wizard school or priest sphere"},
+  "Faith Armor":{"acBase":0,"desc":"Sets caster base AC to 0 regardless of worn armor (best possible base AC); also grants immunity to one chosen wizard school or priest sphere"},
   "Favor":{"desc":"Recipient gains 1d6 bonus to saving throws for duration; also grants one divine intervention"},
   "Favor of Tymora":{"saveBonus":4,"desc":"Grants +4/+3/+2/+1 saving throw bonuses to next four saving throws (decreasing with each use until exhausted)"},
   "Find Companion":{"desc":"Priest gains +1 bonus to all surprise rolls while companion is nearby (heightened senses of the companion)"},
@@ -360,13 +360,13 @@ var BUFF_SPELLS={
   "Magi' .I, ~~ ~~ ~ ~":{"acBonus":4,"desc":"Enchants caster vestment to AC 5 (+1 per 3 levels beyond 5th, max AC 1), best AC applies, not cumulative"},
   "Manythings":{"acBonus":2,"desc":"Improves caster AC by 2 and deals 1d4 damage to creatures making bodily contact"},
   "Mental Prowess":{"saveBonus":6,"desc":"+6 to saving throws vs. mind-affecting spells and spell-like abilities for all in area"},
-  "Metal Skin":{"desc":"Creature AC becomes 2 (set, not a bonus); move halved; acts last in combat"},
+  "Metal Skin":{"acBase":2,"desc":"Sets base AC to 2 (not a bonus — only helps if current AC is worse than 2); movement halved; acts last in combat"},
   "Might of the Sorcerer-Kings":{"thac0Bonus":2,"dmgBonus":2,"desc":"+2 attack and +2 damage bonus for duration; recipient loses 1 hp when spell ends"},
   "Mists of Ghaunadaur - Drow":{"acBonus":2,"desc":"Caster is surrounded by violet mists, granting +2 AC bonus and foiling vision-based attacks"},
   "Mystic Lash":{"thac0Bonus":3,"desc":"+3 bonus to attack rolls with the mystic lash"},
   "Natural Attunement":{"saveBonus":1,"desc":"+2 bonus to surprise rolls, +1 initiative bonus, +1 saving throw bonus for duration; also grants tracking abilities"},
   "Om -Vedic":{"saveBonus":4,"desc":"+4 on saving throws with Wisdom bonuses; immune to sleep and charm while chanting"},
-  "Oxen Strength":{"strLvlBonus":true,"acBonus":2,"desc":"Druid gains +1 Strength per level (max 18/00) and unarmored AC 8 (effectively +2 AC vs base 10). Strength bonus increases all related attack/damage modifiers."},
+  "Oxen Strength":{"strLvlBonus":true,"acBase":8,"desc":"Druid gains +1 Strength per level (max 18/00) and sets base unarmored AC to 8 (does not stack with armor — only benefits unarmored characters or those with AC worse than 8). Strength bonus increases all related attack/damage modifiers."},
   "Prayer":{"thac0Bonus":1,"dmgBonus":1,"saveBonus":1,"desc":"Allies in area gain +1 to attack rolls, damage rolls, and saving throws; enemies suffer -1 penalties to same"},
   "Protection":{"saveBonus":1,"desc":"+1/3 levels (max +3 at 9th) to saving throws vs. charm spells and related effects"},
   "Protection From Animals":{"saveBonus":2,"desc":"-2 penalty on attack rolls of normal/giant mammals vs. protected creature; +2 bonus to saving throws vs. such creature attacks"},
@@ -381,12 +381,12 @@ var BUFF_SPELLS={
   "Protection From Spirits":{"saveBonus":2,"desc":"Recipients gain +2 on saving throws vs. lesser spirit magical attacks; +1 vs. greater spirit magical attacks"},
   "Recitation":{"thac0Bonus":2,"saveBonus":2,"desc":"+2 to attack rolls and saves for allies (+3 for same-faith); -2 penalty to enemies"},
   "Resist Acid and Corrosion":{"saveBonus":3,"desc":"Subject gains +3 bonus on saving throws vs. acid/corrosive attacks and takes half damage"},
-  "Reversed Form: Create Mirage":{"acBonus":4,"desc":"Barkskin - base AC 6, improving by 1 per 4 caster levels; +1 bonus on non-magic saving throws"},
+  "Reversed Form: Create Mirage":{"acBase":6,"desc":"Barkskin effect: sets base AC to 6, improving by 1 per 4 caster levels; +1 bonus on non-magic saving throws"},
   "Right of Might - Old Empire":{"strBonus":3,"desc":"STR +1d6 (average 3) plus proportional damage increase from size growth"},
   "Ruby Axe - Gnome":{"thac0Bonus":1,"dmgBonus":1,"desc":"Caster axe gains +1 attack and +1 damage (scaling to +2 attack/+3 damage at higher levels); caster must wield it"},
   "Sand Blade":{"dmgBonus":2,"desc":"+2 damage bonus on enchanted sand blade"},
   "Seeking Mote":{"thac0Bonus":4,"desc":"+4 bonus to attack roll; deals 2d4+2 damage; follows target like magic missile"},
-  "Segojan's Armor - Gnome":{"acBonus":4,"desc":"Provides AC 6 (scale mail equivalent); negates magic missiles; acts as real armor so incompatible with bracers of defense or armor spell"},
+  "Segojan's Armor - Gnome":{"acBase":6,"desc":"Sets base AC to 6 (scale mail equivalent); negates magic missiles; acts as real armor so incompatible with bracers of defense or armor spell"},
   "Shades of Rhondang - Gnome":{"thac0Bonus":1,"dmgBonus":1,"desc":"+1 to hit and damage with hammer (higher vs. specific creature types)"},
   "Shadow Sword":{"thac0Bonus":1,"desc":"Shadow sword functions as magical sword +1 in caster's hand"},
   "Shillelagh":{"thac0Bonus":1,"desc":"+1 to attack roll; 2d4 damage vs. man-sized, 1d4+1 vs. larger; considered magical weapon"},
@@ -1221,6 +1221,14 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _cpPwFreq=useState("week"),cpPwFreq=_cpPwFreq[0],setCpPwFreq=_cpPwFreq[1];
   var fr=useRef(null);
   var loadFileRef=useRef(null);
+  // Spell effect overrides (global, DM-managed, persisted in Supabase)
+  var _spellOverrides=useState({}),spellOverrides=_spellOverrides[0],setSpellOverrides=_spellOverrides[1];
+  // Spell editor UI state
+  var _spellEdSearch=useState(""),spellEdSearch=_spellEdSearch[0],setSpellEdSearch=_spellEdSearch[1];
+  var _spellEdSel=useState(null),spellEdSel=_spellEdSel[0],setSpellEdSel=_spellEdSel[1];
+  var _spellEdForm=useState(null),spellEdForm=_spellEdForm[0],setSpellEdForm=_spellEdForm[1];
+  var _spellEdStatus=useState(""),spellEdStatus=_spellEdStatus[0],setSpellEdStatus=_spellEdStatus[1];
+  var _spellEdSubTab=useState("gear"),spellEdSubTab=_spellEdSubTab[0],setSpellEdSubTab=_spellEdSubTab[1];
 
   // Cloud / auth state
   var _cloudId=useState(null),cloudId=_cloudId[0],setCloudId=_cloudId[1];
@@ -1258,6 +1266,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       var raw=localStorage.getItem("cf_autosave");
       if(raw){var d=JSON.parse(raw);applyCharacterData(d);}
     }catch(_){}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  // Load spell effect overrides on startup
+  useEffect(function(){
+    if(supabase) getSpellOverrides().then(setSpellOverrides);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -1384,15 +1398,24 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var exStr=(isWarrior||cpWarriorStr)&&adjStats.Str===18&&strPct>0;
   var strB=exStr?strExBonus(strPct):strBonus(adjStats.Str);
 
+  // Merge DM overrides onto BUFF_SPELLS (overrides win field-by-field)
+  var effectiveBuff={};
+  Object.keys(BUFF_SPELLS).forEach(function(k){
+    effectiveBuff[k]=spellOverrides[k]?Object.assign({},BUFF_SPELLS[k],spellOverrides[k]):BUFF_SPELLS[k];
+  });
+  Object.keys(spellOverrides).forEach(function(k){ if(!effectiveBuff[k]) effectiveBuff[k]=spellOverrides[k]; });
+
   // Active spell buffs
-  var buffStr=0,buffStrLvl=0,buffAC=0,buffSave=0,buffThac0=0,buffDmg=0,activeBuffs=[];
+  var buffStr=0,buffStrLvl=0,buffAC=0,buffACBase=null,buffSave=0,buffThac0=0,buffDmg=0,activeBuffs=[];
   activeCasts.forEach(function(m){
-    var sp=BUFF_SPELLS[m["Spell Name"]];
+    var sp=effectiveBuff[m["Spell Name"]];
     if(sp){
       activeBuffs.push(m["Spell Name"]);
       if(sp.strBonus)    buffStr+=sp.strBonus;
-      if(sp.strLvlBonus) buffStrLvl+=level; // +1 STR per caster level
+      if(sp.strLvlBonus) buffStrLvl+=level;
       if(sp.acBonus)     buffAC+=sp.acBonus;
+      // acBase sets a floor on unarmored AC (like Bracers of Defense — takes best)
+      if(sp.acBase!=null){ if(buffACBase===null||sp.acBase<buffACBase) buffACBase=sp.acBase; }
       if(sp.saveBonus)   buffSave+=sp.saveBonus;
       if(sp.thac0Bonus)  buffThac0+=sp.thac0Bonus;
       if(sp.dmgBonus)    buffDmg+=sp.dmgBonus;
@@ -1413,7 +1436,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
   var effStrB=effStrPct>0?strExBonus(effStrPct):strBonus(effStr);
   // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
-  var effAC=(gearBaseAC!==null?gearBaseAC:10)+dexAC(adjStats.Dex)-buffAC-gearAC-cpAcBonus;
+  // Base AC: best (lowest) among armor, spell-set base (acBase), and natural 10
+  var baseAC=gearBaseAC!==null?(buffACBase!==null?Math.min(gearBaseAC,buffACBase):gearBaseAC):(buffACBase!==null?buffACBase:10);
+  var effAC=baseAC+dexAC(adjStats.Dex)-buffAC-gearAC-cpAcBonus;
   var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-(gearSavesBySave[k]||0)-buffSave;});
@@ -3259,6 +3284,46 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             setGearLibStatus("Added: "+libItem.name);
             setTimeout(function(){setGearLibStatus("");},2000);
           }
+          // ── Spell Effect Override helpers ──────────────────────────────────
+          async function applySpellOverride(){
+            if(!spellEdSel||!spellEdForm)return;
+            setSpellEdStatus("Saving…");
+            var ok=await saveSpellOverride(spellEdSel,spellEdForm);
+            if(ok){
+              var fresh=await getSpellOverrides();
+              setSpellOverrides(fresh);
+              setSpellEdStatus("Saved ✓");
+            }else{
+              setSpellEdStatus("Error saving — check Supabase");
+            }
+            setTimeout(function(){setSpellEdStatus("");},3000);
+          }
+          async function resetSpellOverrideToDefault(){
+            if(!spellEdSel)return;
+            setSpellEdStatus("Resetting…");
+            var ok=await deleteSpellOverride(spellEdSel);
+            if(ok){
+              var fresh=await getSpellOverrides();
+              setSpellOverrides(fresh);
+              // reload form to show default
+              setSpellEdForm(Object.assign({acBonus:0,acBase:"",strBonus:0,strLvlBonus:false,thac0Bonus:0,saveBonus:0,dmgBonus:0,desc:""},BUFF_SPELLS[spellEdSel]||{}));
+              setSpellEdStatus("Reset to default ✓");
+            }else{
+              setSpellEdStatus("Error resetting");
+            }
+            setTimeout(function(){setSpellEdStatus("");},3000);
+          }
+          function selectSpellForEdit(name){
+            setSpellEdSel(name);
+            var base=BUFF_SPELLS[name]||{};
+            var over=spellOverrides[name]||{};
+            var merged=Object.assign({acBonus:0,acBase:"",strBonus:0,strLvlBonus:false,thac0Bonus:0,saveBonus:0,dmgBonus:0,desc:""},base,over);
+            // acBase: store as "" when null/undefined so input shows blank
+            if(merged.acBase==null) merged.acBase="";
+            setSpellEdForm(merged);
+            setSpellEdStatus("");
+          }
+
           function importAllFromLibrary(){
             if(!gearLibItems.length)return;
             var newGear=gearLibItems.map(function(libItem,i){
@@ -3350,6 +3415,80 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                           </div>
                       }
                     </div>}
+                    {/* DM sub-tabs: Gear | Spell Effects */}
+                    {gearLibRole==="dm"&&dmPwVerified&&<div style={{display:"flex",gap:"6px",marginBottom:"10px",borderBottom:"1px solid "+brd,paddingBottom:"8px"}}>
+                      {[["gear","Gear Library"],["spells","Spell Effects"]].map(function(pair){
+                        var on=spellEdSubTab===pair[0];
+                        return <button key={pair[0]} onClick={function(){setSpellEdSubTab(pair[0]);}} style={{padding:"3px 12px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:on?"#1a1a2a":"transparent",color:on?"#e0c080":dim,border:on?"1px solid #3a3a4a":"1px solid transparent"}}>{pair[1]}</button>;
+                      })}
+                    </div>}
+
+                    {/* Spell Effects Editor */}
+                    {gearLibRole==="dm"&&dmPwVerified&&spellEdSubTab==="spells"&&(function(){
+                      var allNames=Object.keys(effectiveBuff).sort();
+                      var filtered=spellEdSearch.trim()?allNames.filter(function(n){return n.toLowerCase().indexOf(spellEdSearch.toLowerCase())>=0;}):allNames;
+                      return <div style={{display:"flex",flexDirection:"column",gap:"8px",height:"100%"}}>
+                        <input value={spellEdSearch} onChange={function(e){setSpellEdSearch(e.target.value);setSpellEdSel(null);setSpellEdForm(null);}}
+                          placeholder="Search spell name…"
+                          style={{padding:"6px 10px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px",fontFamily:"monospace",outline:"none"}}/>
+                        <div style={{display:"flex",gap:"8px",flex:1,minHeight:0}}>
+                          {/* Spell list */}
+                          <div style={{flex:"0 0 180px",overflowY:"auto",border:"1px solid "+brd,borderRadius:"4px",background:"#08080f"}}>
+                            {filtered.map(function(name){
+                              var isOverridden=!!spellOverrides[name];
+                              var isSelected=spellEdSel===name;
+                              return <div key={name} onClick={function(){selectSpellForEdit(name);}}
+                                style={{padding:"5px 8px",cursor:"pointer",fontSize:"10px",fontFamily:"monospace",color:isSelected?"#e0c080":isOverridden?"#c0d890":dim,background:isSelected?"#1a1a2a":"transparent",borderBottom:"1px solid #0f0f18",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+                                {isOverridden&&<span style={{color:"#c0d890",fontSize:"8px",marginLeft:"4px",flexShrink:0}}>✎</span>}
+                              </div>;
+                            })}
+                          </div>
+                          {/* Edit form */}
+                          {spellEdForm&&<div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:"6px"}}>
+                            <div style={{color:txt,fontSize:"11px",fontWeight:"bold",fontFamily:"monospace"}}>{spellEdSel}</div>
+                            {spellOverrides[spellEdSel]&&<div style={{fontSize:"9px",color:"#c0d890",fontFamily:"monospace"}}>✎ Overridden</div>}
+                            {[
+                              ["acBonus","AC Bonus (flat, 2=+2 AC)","number"],
+                              ["acBase","Base AC (set, e.g. 8 = Bracers AC 8; blank=none)","text"],
+                              ["strBonus","STR Bonus (flat)","number"],
+                              ["thac0Bonus","THAC0 Bonus","number"],
+                              ["saveBonus","Save Bonus","number"],
+                              ["dmgBonus","Damage Bonus","number"],
+                            ].map(function(row){
+                              var fld=row[0],lbl=row[1],typ=row[2];
+                              return <div key={fld} style={{display:"flex",flexDirection:"column",gap:"2px"}}>
+                                <label style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>{lbl}</label>
+                                <input type={typ} value={spellEdForm[fld]===null||spellEdForm[fld]===undefined?"":spellEdForm[fld]}
+                                  onChange={function(e){var v=e.target.value;setSpellEdForm(function(f){return Object.assign({},f,{[fld]:v===""?"":typ==="number"?parseInt(v)||0:v});});}}
+                                  style={{padding:"3px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"3px",color:txt,fontSize:"11px",fontFamily:"monospace",outline:"none",width:"100%",boxSizing:"border-box"}}/>
+                              </div>;
+                            })}
+                            <div style={{display:"flex",flexDirection:"column",gap:"2px"}}>
+                              <label style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>STR Level Bonus (+1 STR/level)</label>
+                              <button onClick={function(){setSpellEdForm(function(f){return Object.assign({},f,{strLvlBonus:!f.strLvlBonus});});}}
+                                style={{padding:"3px 10px",background:spellEdForm.strLvlBonus?"#1a2a1a":"transparent",color:spellEdForm.strLvlBonus?"#7db87d":dim,border:"1px solid "+(spellEdForm.strLvlBonus?"#2a4a2a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px",alignSelf:"flex-start"}}>
+                                {spellEdForm.strLvlBonus?"ON":"OFF"}
+                              </button>
+                            </div>
+                            <div style={{display:"flex",flexDirection:"column",gap:"2px"}}>
+                              <label style={{fontSize:"9px",color:dim,fontFamily:"monospace"}}>Description (shown in spell buff tooltip)</label>
+                              <textarea value={spellEdForm.desc||""} onChange={function(e){setSpellEdForm(function(f){return Object.assign({},f,{desc:e.target.value});});}}
+                                rows={3} style={{padding:"4px 6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"3px",color:txt,fontSize:"10px",fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box",width:"100%"}}/>
+                            </div>
+                            {spellEdStatus&&<div style={{fontSize:"10px",fontFamily:"monospace",color:spellEdStatus.startsWith("Error")?"#e08080":"#7db87d"}}>{spellEdStatus}</div>}
+                            <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                              <button onClick={applySpellOverride} style={{padding:"4px 12px",background:"#1e1a2e",color:"#e0c080",border:"1px solid #4a3a0a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Save Override</button>
+                              {spellOverrides[spellEdSel]&&<button onClick={resetSpellOverrideToDefault} style={{padding:"4px 10px",background:"transparent",color:"#e08080",border:"1px solid #3a1a1a",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",fontSize:"10px"}}>Reset to Default</button>}
+                            </div>
+                          </div>}
+                          {!spellEdForm&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:dim,fontSize:"11px",fontFamily:"monospace"}}>Select a spell to edit</div>}
+                        </div>
+                      </div>;
+                    })()}
+
+                    {/* Gear list */}
+                    {(gearLibRole!=="dm"||!dmPwVerified||spellEdSubTab==="gear")&&<>
                     {gearLibLoading&&<div style={{padding:"20px",textAlign:"center",color:dim,fontFamily:"monospace",fontSize:"12px"}}>Loading…</div>}
                     {!gearLibLoading&&gearLibItems.length===0&&<div style={{padding:"20px",textAlign:"center",color:dim,fontSize:"12px"}}>No items in this library yet.</div>}
                     {!gearLibLoading&&gearLibItems.length>0&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:"8px"}}>
@@ -3382,6 +3521,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                         </div>
                       </div>;
                     })}
+                    </>}
                   </div>
                 )}
               </div>

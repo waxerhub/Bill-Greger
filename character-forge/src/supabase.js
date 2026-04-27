@@ -237,3 +237,43 @@ export async function setDmPasswordHash(hash) {
     if (error) throw new Error(error.message);
   }
 }
+
+// ── Spell Effect Overrides (stored in gear_library with role '_spell_override') ─
+// Allows the DM to correct incorrect spell mechanical effects globally.
+// Effects object shape: { acBonus, acBase, strBonus, strLvlBonus, thac0Bonus, saveBonus, dmgBonus, desc }
+// acBase (integer) sets an unarmored base AC floor (like Bracers of Defense); null = not set.
+
+export async function getSpellOverrides() {
+  if (!supabase) return {};
+  const { data } = await supabase
+    .from('gear_library')
+    .select('name, effects, description')
+    .eq('role', '_spell_override');
+  if (!data) return {};
+  return Object.fromEntries(data.map(function(r) {
+    var eff = Object.assign({}, r.effects);
+    if (r.description) eff.desc = r.description;
+    return [r.name, eff];
+  }));
+}
+
+export async function saveSpellOverride(spellName, effects) {
+  if (!supabase) return false;
+  var desc = effects.desc || '';
+  var effectsOnly = Object.assign({}, effects);
+  delete effectsOnly.desc;
+  await supabase.from('gear_library').delete()
+    .eq('role', '_spell_override').eq('name', spellName);
+  var { error } = await supabase.from('gear_library').insert({
+    name: spellName, role: '_spell_override',
+    effects: effectsOnly, description: desc, type: 'Spell Override',
+  });
+  return !error;
+}
+
+export async function deleteSpellOverride(spellName) {
+  if (!supabase) return false;
+  var { error } = await supabase.from('gear_library').delete()
+    .eq('role', '_spell_override').eq('name', spellName);
+  return !error;
+}
