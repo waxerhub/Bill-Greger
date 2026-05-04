@@ -1229,6 +1229,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _spellEdForm=useState(null),spellEdForm=_spellEdForm[0],setSpellEdForm=_spellEdForm[1];
   var _spellEdStatus=useState(""),spellEdStatus=_spellEdStatus[0],setSpellEdStatus=_spellEdStatus[1];
   var _spellEdSubTab=useState("gear"),spellEdSubTab=_spellEdSubTab[0],setSpellEdSubTab=_spellEdSubTab[1];
+  // Character slots (multi-character tabs): [{id, name}]
+  var _charSlots=useState([]),charSlots=_charSlots[0],setCharSlots=_charSlots[1];
+  var _activeSlotId=useState(null),activeSlotId=_activeSlotId[0],setActiveSlotId=_activeSlotId[1];
+  var slotSnapsRef=useRef({}); // {[slotId]: characterSnapshot} — updated without re-render
 
   // Cloud / auth state
   var _cloudId=useState(null),cloudId=_cloudId[0],setCloudId=_cloudId[1];
@@ -1250,21 +1254,50 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _acctStatus=useState(""),acctStatus=_acctStatus[0],setAcctStatus=_acctStatus[1];
   var _acctSearch=useState(""),acctSearch=_acctSearch[0],setAcctSearch=_acctSearch[1];
 
-  // Auto-save to localStorage on every change
+  // Auto-save to localStorage on every change; also keeps current slot snapshot in sync
   useEffect(function(){
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
         cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
+      if(activeSlotId){
+        slotSnapsRef.current[activeSlotId]=snap;
+        var slotsToSave=charSlots.map(function(s){
+          return {id:s.id,name:s.id===activeSlotId?(charName||"Unnamed"):s.name,snapshot:slotSnapsRef.current[s.id]||null};
+        });
+        localStorage.setItem("cf_char_slots",JSON.stringify({activeSlotId:activeSlotId,slots:slotsToSave}));
+      }
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed]);
+     cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
+     charSlots,activeSlotId]);
 
-  // Restore autosave on first load
+  // Restore character slots on first load (falls back to single slot from cf_autosave)
   useEffect(function(){
     try{
+      var slotsRaw=localStorage.getItem("cf_char_slots");
+      if(slotsRaw){
+        var parsed=JSON.parse(slotsRaw);
+        var slots=parsed.slots||[];
+        var activeId=parsed.activeSlotId;
+        if(slots.length&&activeId){
+          slots.forEach(function(s){if(s.snapshot)slotSnapsRef.current[s.id]=s.snapshot;});
+          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name};}));
+          setActiveSlotId(activeId);
+          var active=slots.find(function(s){return s.id===activeId;});
+          if(active&&active.snapshot)applyCharacterData(active.snapshot);
+          return;
+        }
+      }
+      // Legacy: single slot from cf_autosave
       var raw=localStorage.getItem("cf_autosave");
-      if(raw){var d=JSON.parse(raw);applyCharacterData(d);}
+      var snap=raw?JSON.parse(raw):null;
+      var id="slot_"+Date.now();
+      var name=snap?(snap.charName||"Unnamed"):"Unnamed";
+      if(snap)slotSnapsRef.current[id]=snap;
+      setCharSlots([{id:id,name:name}]);
+      setActiveSlotId(id);
+      if(snap)applyCharacterData(snap);
     }catch(_){}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
@@ -1644,14 +1677,52 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     return true;
   });
 
-  // Reset character
-  async function resetCharacter() {
+  // Reset character to blank state
+  function resetToBlank(){
     setCharName("");setRace("Human");setCls("Druid");setKit("");setLevel(1);setXP(0);setHP(8);setAlign("True Neutral");
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
-    setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);
+    setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
     setCpDayUses({});setWpUsed(0);setNwpUsed(0);setGearItems([]);setInventory([]);setCloudId(null);
   }
+
+  // ── Character slot (tab) operations ─────────────────────────────────────────
+  function newCharSlot(){
+    if(activeSlotId) slotSnapsRef.current[activeSlotId]=getCharacterSnapshot();
+    var id="slot_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+    var curName=charName||"Unnamed";
+    setCharSlots(function(prev){
+      return prev.map(function(s){return s.id===activeSlotId?{id:s.id,name:curName}:s;}).concat([{id:id,name:"Unnamed"}]);
+    });
+    setActiveSlotId(id);
+    resetToBlank();
+  }
+
+  function switchCharSlot(id){
+    if(id===activeSlotId)return;
+    if(activeSlotId) slotSnapsRef.current[activeSlotId]=getCharacterSnapshot();
+    var curName=charName||"Unnamed";
+    setCharSlots(function(prev){return prev.map(function(s){return s.id===activeSlotId?{id:s.id,name:curName}:s;});});
+    setActiveSlotId(id);
+    var snap=slotSnapsRef.current[id];
+    if(snap) applyCharacterData(snap);
+  }
+
+  function closeCharSlot(id){
+    if(charSlots.length<=1)return;
+    if(id===activeSlotId){
+      var idx=charSlots.findIndex(function(s){return s.id===id;});
+      var neighborId=charSlots[idx===0?1:idx-1].id;
+      setActiveSlotId(neighborId);
+      var snap=slotSnapsRef.current[neighborId];
+      if(snap) applyCharacterData(snap);
+    }
+    setCharSlots(function(prev){return prev.filter(function(s){return s.id!==id;});});
+    delete slotSnapsRef.current[id];
+  }
+
+  // Keep resetCharacter as alias (called in a few other places)
+  function resetCharacter(){ newCharSlot(); }
 
   function exportPDF() {
     var equippedForPDF=equipped.map(function(g){
@@ -1869,38 +1940,43 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,_version:1};
   }
+  // Unconditionally sets ALL character state — no conditionals so no bleed between tabs
   function applyCharacterData(d){
     if(!d)return;
-    if(d.charName!==undefined)setCharName(d.charName);
-    if(d.race&&RACES[d.race])setRace(d.race);
-    if(d.cls&&CLASSES[d.cls])changeClass(d.cls);
-    if(d.kit!==undefined)setKit(d.kit);
-    if(d.level)setLevel(parseInt(d.level)||1);
-    if(d.xp!==undefined)setXP(parseInt(d.xp)||0);
-    if(d.hp)setHP(parseInt(d.hp)||1);
-    if(d.align)setAlign(d.align);
-    if(d.stats)setStats({Str:d.stats.Str||10,Dex:d.stats.Dex||10,Con:d.stats.Con||10,Int:d.stats.Int||10,Wis:d.stats.Wis||10,Cha:d.stats.Cha||10});
-    if(d.strPct!==undefined)setStrPct(parseInt(d.strPct)||0);
-    if(d.memorized)setMemorized(d.memorized);
-    if(d.notes!==undefined)setNotes(d.notes);
-    if(d.cpBudget)setCpBudget(d.cpBudget);
-    if(d.cpMajor)setCpMajor(d.cpMajor);
-    if(d.cpMinor)setCpMinor(d.cpMinor);
-    if(d.cpSchools)setCpSchools(d.cpSchools);
-    if(d.cpAbil)setCpAbil(d.cpAbil);
-    if(d.cpLim)setCpLim(d.cpLim);
-    if(d.cpSpellPowers)setCpSpellPowers(d.cpSpellPowers);
-    if(d.dmOverride!==undefined)setDmOverride(d.dmOverride);
-    if(d.totemAnimal!==undefined)setTotemAnimal(d.totemAnimal);
-    if(d.shapeUsesLeft!==undefined)setShapeUsesLeft(d.shapeUsesLeft);
-    if(d.shapeFailed!==undefined)setShapeFailed(d.shapeFailed);
+    setCharName(d.charName||"");
+    if(d.race&&RACES[d.race])setRace(d.race); else setRace("Human");
+    if(d.cls&&CLASSES[d.cls])changeClass(d.cls); else changeClass("Druid");
+    setKit(d.kit||"");
+    setLevel(parseInt(d.level)||1);
+    setXP(parseInt(d.xp)||0);
+    setHP(parseInt(d.hp)||1);
+    setAlign(d.align||"True Neutral");
+    setStats(d.stats?{Str:d.stats.Str||10,Dex:d.stats.Dex||10,Con:d.stats.Con||10,Int:d.stats.Int||10,Wis:d.stats.Wis||10,Cha:d.stats.Cha||10}:{Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});
+    setStrPct(parseInt(d.strPct)||0);
+    setMemorized(d.memorized||[]);
+    setNotes(d.notes||"");
+    setCpBudget(d.cpBudget||120);
+    setCpMajor(d.cpMajor||[]);
+    setCpMinor(d.cpMinor||[]);
+    setCpSchools(d.cpSchools||[]);
+    setCpAbil(d.cpAbil||[]);
+    setCpLim(d.cpLim||[]);
+    setCpSpellPowers(d.cpSpellPowers||[]);
+    setDmOverride(d.dmOverride||false);
+    setTotemAnimal(d.totemAnimal||"");
+    setShapeUsesLeft(parseInt(d.shapeUsesLeft)||0);
+    setShapeFailed(parseInt(d.shapeFailed)||0);
     setGearItems(d.gearItems||[]);
     setCpDayUses(d.cpDayUses||{});
-    if(d.wpUsed!==undefined)setWpUsed(d.wpUsed);
-    if(d.nwpUsed!==undefined)setNwpUsed(d.nwpUsed);
+    setWpUsed(parseInt(d.wpUsed)||0);
+    setNwpUsed(parseInt(d.nwpUsed)||0);
     setInventory(d.inventory||[]);
+    setCloudId(d.cloudId||null);
+    // Clear transient combat/session state that doesn't travel with the character
+    setActiveCasts([]);setCombatRound(1);setCastingSpell(null);
+    setTab("stats");
   }
 
   // ── JSON save / load ─────────────────────────────────────────────────────
@@ -2021,8 +2097,18 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setAcctOpen(false);setCloudStatus("Loading…");
     try{
       var rec=await loadCharacterById(id);
-      applyCharacterData(rec.data);
-      setCloudId(id);
+      var snap=Object.assign({},rec.data,{cloudId:id});
+      // Save current slot state before opening new one
+      if(activeSlotId) slotSnapsRef.current[activeSlotId]=getCharacterSnapshot();
+      var curName=charName||"Unnamed";
+      var newId="slot_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+      slotSnapsRef.current[newId]=snap;
+      setCharSlots(function(prev){
+        return prev.map(function(s){return s.id===activeSlotId?{id:s.id,name:curName}:s;})
+          .concat([{id:newId,name:snap.charName||"Unnamed"}]);
+      });
+      setActiveSlotId(newId);
+      applyCharacterData(snap);
       setCloudStatus("Loaded ✓");
       setTimeout(function(){setCloudStatus("");},2000);
     }catch(err){setCloudStatus("Error: "+err.message);}
@@ -2050,6 +2136,22 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         onReroll={rerollDice}
         onClose={function(){setRollModalOpen(false);setIsRolling(false);}}
       />}
+      {/* Character slot tabs */}
+      {charSlots.length>0&&<div style={{display:"flex",alignItems:"stretch",background:"#06060c",borderBottom:"1px solid "+brd,overflowX:"auto",flexShrink:0,minHeight:"30px"}}>
+        {charSlots.map(function(s){
+          var isActive=s.id===activeSlotId;
+          var displayName=isActive?(charName||"Unnamed"):s.name;
+          return <div key={s.id} onClick={function(){switchCharSlot(s.id);}}
+            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 8px 0 12px",background:isActive?"#12111a":"transparent",borderRight:"1px solid "+brd,borderBottom:isActive?"2px solid "+g:"2px solid transparent",marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"70px",boxSizing:"border-box"}}>
+            <span style={{fontSize:"11px",color:isActive?g:dim,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,padding:"5px 0"}}>{displayName}</span>
+            {charSlots.length>1&&<button onClick={function(e){e.stopPropagation();closeCharSlot(s.id);}}
+              style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"1px 2px",fontSize:"12px",lineHeight:1,flexShrink:0,opacity:0.7}}>×</button>}
+          </div>;
+        })}
+        <button onClick={newCharSlot} title="New character tab"
+          style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"0 13px",fontSize:"16px",flexShrink:0,borderLeft:"1px solid "+brd}}>+</button>
+      </div>}
+
       {/* Header */}
       <div style={{padding:"10px 16px",borderBottom:"1px solid "+brd,background:"#12111a",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
         <div style={{display:"flex",alignItems:"baseline",gap:"12px"}}>
@@ -2060,7 +2162,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           {tabs.map(function(t){var id=t.replace("✦ ","");
             return <button key={t} onClick={function(){setTab(id);}} style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",letterSpacing:"1px",textTransform:"uppercase",background:tab===id?"#1a1a30":"transparent",color:tab===id?g:dim,border:tab===id?"1px solid #2a2a4a":"1px solid transparent"}}>{t}</button>;
           })}
-          <button onClick={resetCharacter} style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#2a1a1a",color:"#a07d7d",border:"1px solid #4e2e2e"}}>NEW</button>
+          <button onClick={newCharSlot} style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#2a1a1a",color:"#a07d7d",border:"1px solid #4e2e2e"}}>NEW</button>
           <button onClick={exportPDF} style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a2a1a",color:"#7db87d",border:"1px solid #2e4e2e"}}>PDF</button>
           <button onClick={saveJSON} title="Download character as JSON" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a2a",color:"#80a0e0",border:"1px solid #2a2a5a"}}>💾 Save</button>
           <button onClick={function(){loadFileRef.current&&loadFileRef.current.click();}} disabled={pdfParsing} title="Load from JSON or import from PDF" style={{padding:"6px 14px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",fontFamily:"monospace",background:"#1a1a2a",color:pdfParsing?"#555":"#80a0e0",border:"1px solid #2a2a5a"}}>{pdfParsing?"…":"📂 Load"}</button>
