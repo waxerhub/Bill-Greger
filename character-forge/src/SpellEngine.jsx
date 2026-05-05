@@ -1353,6 +1353,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _charSlots=useState([]),charSlots=_charSlots[0],setCharSlots=_charSlots[1];
   var _activeSlotId=useState(null),activeSlotId=_activeSlotId[0],setActiveSlotId=_activeSlotId[1];
   var slotSnapsRef=useRef({}); // {[slotId]: characterSnapshot} — updated without re-render
+  var henchArchiveRef=useRef({}); // {[slotId]: {snapshot, name, pcId}} — closed henchman snapshots
+  var _slotCtxMenu=useState(null),slotCtxMenu=_slotCtxMenu[0],setSlotCtxMenu=_slotCtxMenu[1]; // {slotId, x, y}
 
   // Cloud / auth state
   var _cloudId=useState(null),cloudId=_cloudId[0],setCloudId=_cloudId[1];
@@ -1389,9 +1391,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       if(activeSlotId){
         slotSnapsRef.current[activeSlotId]=snap;
         var slotsToSave=charSlots.map(function(s){
-          return {id:s.id,name:s.id===activeSlotId?(charName||"Unnamed"):s.name,snapshot:slotSnapsRef.current[s.id]||null};
+          return {id:s.id,name:s.id===activeSlotId?(charName||"Unnamed"):s.name,type:s.type||null,pcId:s.pcId||null,snapshot:slotSnapsRef.current[s.id]||null};
         });
         localStorage.setItem("cf_char_slots",JSON.stringify({activeSlotId:activeSlotId,slots:slotsToSave}));
+        localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));
       }
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
@@ -1409,7 +1412,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         var activeId=parsed.activeSlotId;
         if(slots.length&&activeId){
           slots.forEach(function(s){if(s.snapshot)slotSnapsRef.current[s.id]=s.snapshot;});
-          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name};}));
+          var archRaw=localStorage.getItem("cf_hench_archive");
+          if(archRaw)try{henchArchiveRef.current=JSON.parse(archRaw);}catch(_){}
+          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null};}));
           setActiveSlotId(activeId);
           var active=slots.find(function(s){return s.id===activeId;});
           if(active&&active.snapshot)applyCharacterData(active.snapshot);
@@ -1839,7 +1844,24 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(id===activeSlotId)return;
     if(activeSlotId) slotSnapsRef.current[activeSlotId]=getCharacterSnapshot();
     var curName=charName||"Unnamed";
-    setCharSlots(function(prev){return prev.map(function(s){return s.id===activeSlotId?{id:s.id,name:curName}:s;});});
+    setCharSlots(function(prev){
+      var updated=prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;});
+      // Auto-open archived henchmen when switching to a PC tab
+      var targetSlot=updated.find(function(s){return s.id===id;});
+      if(targetSlot&&targetSlot.type==='pc'){
+        var openIds=new Set(updated.map(function(s){return s.id;}));
+        Object.keys(henchArchiveRef.current).forEach(function(hid){
+          var h=henchArchiveRef.current[hid];
+          if(h.pcId===id&&!openIds.has(hid)){
+            slotSnapsRef.current[hid]=h.snapshot;
+            updated=updated.concat([{id:hid,name:h.name,type:'henchman',pcId:id}]);
+            delete henchArchiveRef.current[hid];
+          }
+        });
+        try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
+      }
+      return updated;
+    });
     setActiveSlotId(id);
     var snap=slotSnapsRef.current[id];
     if(snap) applyCharacterData(snap);
@@ -1847,6 +1869,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
   function closeCharSlot(id){
     if(charSlots.length<=1)return;
+    // Archive henchman snapshot so it can be reopened with its PC
+    var closingSlot=charSlots.find(function(s){return s.id===id;});
+    if(closingSlot&&closingSlot.type==='henchman'){
+      var archSnap=id===activeSlotId?getCharacterSnapshot():slotSnapsRef.current[id];
+      if(archSnap){
+        henchArchiveRef.current[id]={snapshot:archSnap,name:closingSlot.name,pcId:closingSlot.pcId||null};
+        try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
+      }
+    }
     if(id===activeSlotId){
       var idx=charSlots.findIndex(function(s){return s.id===id;});
       var neighborId=charSlots[idx===0?1:idx-1].id;
@@ -1856,6 +1887,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }
     setCharSlots(function(prev){return prev.filter(function(s){return s.id!==id;});});
     delete slotSnapsRef.current[id];
+  }
+
+  function setSlotType(id,type,pcId){
+    setCharSlots(function(prev){
+      return prev.map(function(s){return s.id===id?Object.assign({},s,{type:type||null,pcId:pcId||null}):s;});
+    });
   }
 
   // Keep resetCharacter as alias (called in a few other places)
@@ -2283,9 +2320,19 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {charSlots.map(function(s){
           var isActive=s.id===activeSlotId;
           var displayName=isActive?(charName||"Unnamed"):s.name;
+          var isPC=s.type==='pc';
+          var isHench=s.type==='henchman';
+          var pcSlot=isHench?charSlots.find(function(p){return p.id===s.pcId;}):null;
+          // Visual accent: PC = gold underline, Henchman = blue-grey underline
+          var accentColor=isPC?"#c09030":isHench?"#5080a0":g;
+          var bottomBorder=isActive?"2px solid "+accentColor:"2px solid transparent";
           return <div key={s.id} onClick={function(){switchCharSlot(s.id);}}
-            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 8px 0 12px",background:isActive?"#12111a":"transparent",borderRight:"1px solid "+brd,borderBottom:isActive?"2px solid "+g:"2px solid transparent",marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"70px",boxSizing:"border-box"}}>
-            <span style={{fontSize:"11px",color:isActive?g:dim,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,padding:"5px 0"}}>{displayName}</span>
+            onContextMenu={function(e){e.preventDefault();setSlotCtxMenu({slotId:s.id,x:e.clientX,y:e.clientY});}}
+            title={isHench?(pcSlot?"Henchman of "+pcSlot.name:"Henchman"):isPC?"PC":"Right-click to tag as PC or Henchman"}
+            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 8px 0 10px",background:isActive?"#12111a":"transparent",borderRight:"1px solid "+brd,borderBottom:bottomBorder,marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"60px",boxSizing:"border-box"}}>
+            {isPC&&<span style={{fontSize:"9px",color:"#c09030",flexShrink:0}} title="PC">♦</span>}
+            {isHench&&<span style={{fontSize:"9px",color:"#5080a0",flexShrink:0}} title={"Henchman"+(pcSlot?" of "+pcSlot.name:"")}>→</span>}
+            <span style={{fontSize:"11px",color:isActive?g:isPC?"#d4a840":isHench?"#7090b0":dim,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,padding:"5px 0"}}>{displayName}</span>
             {charSlots.length>1&&<button onClick={function(e){e.stopPropagation();closeCharSlot(s.id);}}
               style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"1px 2px",fontSize:"12px",lineHeight:1,flexShrink:0,opacity:0.7}}>×</button>}
           </div>;
@@ -2293,6 +2340,32 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         <button onClick={newCharSlot} title="New character tab"
           style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"0 13px",fontSize:"16px",flexShrink:0,borderLeft:"1px solid "+brd}}>+</button>
       </div>}
+      {/* Tab right-click context menu */}
+      {slotCtxMenu&&(function(){
+        var menuSlot=charSlots.find(function(s){return s.id===slotCtxMenu.slotId;});
+        if(!menuSlot)return null;
+        var pcSlots=charSlots.filter(function(s){return s.type==='pc'&&s.id!==menuSlot.id;});
+        return <div style={{position:"fixed",inset:0,zIndex:1100}} onClick={function(){setSlotCtxMenu(null);}}>
+          <div style={{position:"fixed",left:slotCtxMenu.x,top:slotCtxMenu.y,background:"#12111a",border:"1px solid #2a2a4a",borderRadius:"6px",padding:"6px 0",minWidth:"200px",boxShadow:"0 4px 16px rgba(0,0,0,0.7)",zIndex:1101}} onClick={function(e){e.stopPropagation();}}>
+            <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",padding:"4px 14px 6px",borderBottom:"1px solid #2a2a4a"}}>{(menuSlot.id===activeSlotId?charName:menuSlot.name)||"Unnamed"}</div>
+            <button onClick={function(){setSlotType(slotCtxMenu.slotId,'pc',null);setSlotCtxMenu(null);}}
+              style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px",background:menuSlot.type==='pc'?"#1a1a2a":"transparent",color:menuSlot.type==='pc'?"#d4a840":g,border:"none",cursor:"pointer",fontSize:"12px",fontFamily:"monospace"}}>♦ Mark as PC</button>
+            {pcSlots.length>0&&<div>
+              <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",padding:"6px 14px 3px"}}>HENCHMAN OF</div>
+              {pcSlots.map(function(pc){
+                var pcName=pc.id===activeSlotId?charName:pc.name;
+                var isLinked=menuSlot.type==='henchman'&&menuSlot.pcId===pc.id;
+                return <button key={pc.id} onClick={function(){setSlotType(slotCtxMenu.slotId,'henchman',pc.id);setSlotCtxMenu(null);}}
+                  style={{display:"block",width:"100%",textAlign:"left",padding:"6px 14px 6px 22px",background:isLinked?"#1a1a2a":"transparent",color:isLinked?"#7090b0":g,border:"none",cursor:"pointer",fontSize:"12px",fontFamily:"monospace"}}>
+                  {isLinked?"✓ ":""}{pcName||"Unnamed"}
+                </button>;
+              })}
+            </div>}
+            {menuSlot.type&&<button onClick={function(){setSlotType(slotCtxMenu.slotId,null,null);setSlotCtxMenu(null);}}
+              style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px",background:"transparent",color:"#a06060",border:"none",borderTop:"1px solid #2a2a4a",cursor:"pointer",fontSize:"12px",fontFamily:"monospace",marginTop:"4px"}}>✕ Clear tag</button>}
+          </div>
+        </div>;
+      })()}
 
       {/* Header */}
       <div style={{padding:"10px 16px",borderBottom:"1px solid "+brd,background:"#12111a",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
