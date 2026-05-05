@@ -5,11 +5,11 @@ import { streamSpellSearch, extractSpellNames, generateCharacter, suggestSpellsF
 import { supabase, saveCharacter as supabaseSave, loadCharacterById, listMyCharacters, signIn, signUp, signOut, onAuthStateChange, resetPasswordForEmail, updatePassword, saveGearToLibrary, listGearLibrary, deleteGearFromLibrary, getDmPasswordHash, setDmPasswordHash, getSpellOverrides, saveSpellOverride, deleteSpellOverride } from "./supabase.js";
 
 // ======== CORE 2E TABLES ========
-var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
-var CLASSES={"Fighter":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:null,group:"Warrior"},"Ranger":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"ranger",group:"Warrior"},"Paladin":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"paladin",group:"Warrior"},"Cleric":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Druid":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Mage":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Illusionist":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Thief":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:null,group:"Rogue"},"Bard":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:"bard",group:"Rogue"}};
+var RACES={"Human":{adj:{},classes:["Fighter","Ranger","Paladin","Cleric","Druid","Mage","Thief","Bard","Monk"]},"Elf":{adj:{Dex:1,Con:-1},classes:["Fighter","Ranger","Cleric","Mage","Thief"]},"Half-Elf":{adj:{},classes:["Fighter","Ranger","Cleric","Druid","Mage","Thief","Bard","Monk"]},"Dwarf":{adj:{Con:1,Cha:-1},classes:["Fighter","Cleric","Thief"]},"Gnome":{adj:{Int:1,Wis:-1},classes:["Fighter","Cleric","Thief","Illusionist"]},"Halfling":{adj:{Dex:1,Str:-1},classes:["Fighter","Cleric","Thief"]},"Half-Orc":{adj:{Str:1,Con:1,Int:-1,Cha:-2},classes:["Fighter","Cleric","Thief"]}};
+var CLASSES={"Fighter":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:null,group:"Warrior"},"Ranger":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"ranger",group:"Warrior"},"Paladin":{hd:10,prime:"Str",thac0:"war",saves:"war",spells:"paladin",group:"Warrior"},"Cleric":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Druid":{hd:8,prime:"Wis",thac0:"pri",saves:"pri",spells:"priest",group:"Priest"},"Mage":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Illusionist":{hd:4,prime:"Int",thac0:"wiz",saves:"wiz",spells:"wizard",group:"Wizard"},"Thief":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:null,group:"Rogue"},"Bard":{hd:6,prime:"Dex",thac0:"rog",saves:"rog",spells:"bard",group:"Rogue"},"Monk":{hd:4,prime:null,thac0:"rog",saves:"rog",spells:null,group:"Monk"}};
 // Weapon & Non-Weapon Proficiency rates per class group (PHB)
 // wpInit/nwpInit: slots at level 1; wpRate/nwpRate: gain 1 slot per N levels
-var PROF_RATES={"Warrior":{wpInit:4,wpRate:3,nwpInit:3,nwpRate:3},"Priest":{wpInit:2,wpRate:4,nwpInit:4,nwpRate:3},"Wizard":{wpInit:1,wpRate:6,nwpInit:4,nwpRate:3},"Rogue":{wpInit:2,wpRate:4,nwpInit:3,nwpRate:4}};
+var PROF_RATES={"Warrior":{wpInit:4,wpRate:3,nwpInit:3,nwpRate:3},"Priest":{wpInit:2,wpRate:4,nwpInit:4,nwpRate:3},"Wizard":{wpInit:1,wpRate:6,nwpInit:4,nwpRate:3},"Rogue":{wpInit:2,wpRate:4,nwpInit:3,nwpRate:4},"Monk":{wpInit:2,wpRate:4,nwpInit:5,nwpRate:3}};
 // PHB XP tables — index 0 = XP needed to reach level 1 (always 0), index 19 = level 20
 var XP_TABLE={
   Fighter:    [0,2000,4000,8000,16000,32000,64000,125000,250000,500000,750000,1000000,1250000,1500000,1750000,2000000,2250000,2500000,2750000,3000000],
@@ -21,9 +21,10 @@ var XP_TABLE={
   Illusionist:[0,2250,4500,9000,18000,36000,62000,95000,145000,200000,400000,600000,800000,1000000,1200000,1400000,1600000,1800000,2000000,2200000],
   Thief:      [0,1250,2500,5000,10000,20000,40000,70000,110000,160000,220000,440000,660000,880000,1100000,1320000,1540000,1760000,1980000,2200000],
   Bard:       [0,1500,3000,6000,13000,27500,55000,110000,200000,400000,600000,800000,1000000,1200000,1400000,1600000,1800000,2000000,2200000,2400000],
+  Monk:       [0,2250,4750,10000,22500,47500,98000,200000,350000,500000,700000,950000,1250000,1750000,2250000,2750000,3250000,null,null,null],
 };
 function xpForLevel(cls,lvl){var t=XP_TABLE[cls];return t?t[Math.max(0,Math.min(19,lvl-1))]||0:0;}
-function xpToNextLevel(cls,lvl){if(lvl>=20)return null;var t=XP_TABLE[cls];return t?t[Math.min(19,lvl)]:null;}
+function xpToNextLevel(cls,lvl){if(cls==="Monk"&&lvl>=17)return null;if(lvl>=20)return null;var t=XP_TABLE[cls];return t?t[Math.min(19,lvl)]:null;}
 function fmt(n){return n>=1000000?(n/1000000).toFixed(2).replace(/\.?0+$/,"")+"M":n>=1000?Math.round(n/100)/10+"k":String(n);}
 function getThac0(t,l){
   // PHB tables: Warriors improve 1/level (THAC0 20 at L1)
@@ -288,6 +289,125 @@ function spellPowerCost(spellLevel,spellType,freq){
 
 // Wizard Limitations
 var WIZARD_LIMITS={"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Difficult memorization":{r:5},"Hazardous spells":{r:10},"Learning penalty -15%":{r:5},"Learning penalty -25%":{r:8},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc/weapons/armor":{r:5},"Reduced HP (d3)":{r:10},"Reduced spell knowledge":{r:7},"Reduced spell progression":{r:15},"Slower casting time +3":{r:2},"Slower casting time (next unit)":{r:5},"Supernatural constraint":{r:5},"Talisman required":{r:8},"Weapons: No proficiency":{r:3},"Weapons: Cannot wield":{r:5},"Environmental condition (specific)":{r:5},"Environmental condition (common)":{r:15},"Environmental condition (everyday)":{r:20}};
+
+// ── OA MONK DATA ─────────────────────────────────────────────────────────────
+// Table 21: Monk Capabilities by level (index = level, 1-17)
+var MONK_CAPS=[null,
+  {ac:10,move:15,addAT:null, addDmg:null,     openLock:25,findTrap:20,moveSilent:15,hideShadow:10,hearNoise:10,climbWall:85,surprise:"Normal"},
+  {ac:9, move:16,addAT:null, addDmg:null,     openLock:29,findTrap:25,moveSilent:21,hideShadow:15,hearNoise:10,climbWall:86,surprise:32},
+  {ac:8, move:17,addAT:null, addDmg:null,     openLock:33,findTrap:30,moveSilent:27,hideShadow:20,hearNoise:15,climbWall:87,surprise:30},
+  {ac:7, move:18,addAT:"1/4",addDmg:null,     openLock:37,findTrap:35,moveSilent:33,hideShadow:25,hearNoise:15,climbWall:88,surprise:28},
+  {ac:7, move:19,addAT:"1/4",addDmg:"+1",     openLock:42,findTrap:40,moveSilent:40,hideShadow:31,hearNoise:20,climbWall:89,surprise:26},
+  {ac:6, move:20,addAT:"1/2",addDmg:"+2",     openLock:47,findTrap:45,moveSilent:47,hideShadow:37,hearNoise:20,climbWall:90,surprise:24},
+  {ac:5, move:21,addAT:"1/2",addDmg:"+2",     openLock:52,findTrap:50,moveSilent:55,hideShadow:43,hearNoise:25,climbWall:91,surprise:22},
+  {ac:4, move:22,addAT:"1/2",addDmg:"+1D",    openLock:57,findTrap:55,moveSilent:62,hideShadow:49,hearNoise:25,climbWall:92,surprise:20},
+  {ac:3, move:23,addAT:"1/1",addDmg:"+1D+1",  openLock:62,findTrap:60,moveSilent:70,hideShadow:56,hearNoise:30,climbWall:93,surprise:18},
+  {ac:3, move:24,addAT:"1/1",addDmg:"+1D+2",  openLock:67,findTrap:65,moveSilent:78,hideShadow:63,hearNoise:30,climbWall:94,surprise:16},
+  {ac:2, move:25,addAT:"3/2",addDmg:"+1D+2",  openLock:72,findTrap:70,moveSilent:86,hideShadow:70,hearNoise:35,climbWall:95,surprise:14},
+  {ac:1, move:26,addAT:"3/2",addDmg:"+2D",    openLock:77,findTrap:75,moveSilent:94,hideShadow:77,hearNoise:35,climbWall:96,surprise:12},
+  {ac:0, move:27,addAT:"3/2",addDmg:"+2D",    openLock:82,findTrap:80,moveSilent:99,hideShadow:85,hearNoise:40,climbWall:97,surprise:10},
+  {ac:-1,move:28,addAT:"2/1",addDmg:"+2D+1",  openLock:87,findTrap:85,moveSilent:99,hideShadow:93,hearNoise:40,climbWall:98,surprise:8},
+  {ac:-1,move:29,addAT:"2/1",addDmg:"+3D",    openLock:92,findTrap:90,moveSilent:99,hideShadow:99,hearNoise:50,climbWall:99,surprise:6},
+  {ac:-2,move:30,addAT:"3/1",addDmg:"+3D+1",  openLock:97,findTrap:95,moveSilent:99,hideShadow:99,hearNoise:50,climbWall:99,surprise:4},
+  {ac:-3,move:32,addAT:"3/1",addDmg:"+4D",    openLock:99,findTrap:99,moveSilent:99,hideShadow:99,hearNoise:55,climbWall:99,surprise:2},
+];
+var MONK_LEVEL_TITLES=["","Novice","Initiate","Brother","Disciple","Immaculate","Master","Superior Master","Master of Dragons","Master of the North Wind","Master of the West Wind","Master of the South Wind","Master of the East Wind","Master of Winter","Master of Autumn","Master of Summer","Master of Spring","Grand Master of Flowers"];
+// Martial arts style form and method data (Table 69)
+var STYLE_FORM_DATA={"Hard":{acMod:1,atMod:1,dmgMod:4},"Soft":{acMod:3,atMod:0,dmgMod:2},"Hard/Soft":{acMod:2,atMod:1,dmgMod:3}};
+var STYLE_METHOD_DATA={
+  "Kick":      {acMod:1,atMod:1,dmgMod:4,bodyPart:"Foot"},
+  "Lock":      {acMod:1,atMod:1,dmgMod:2,bodyPart:"Body"},
+  "Movement":  {acMod:2,atMod:1,dmgMod:2,bodyPart:"Legs"},
+  "Push":      {acMod:2,atMod:1,dmgMod:1,bodyPart:"Hand"},
+  "Strike":    {acMod:1,atMod:1,dmgMod:4,bodyPart:"Hand"},
+  "Throw":     {acMod:1,atMod:1,dmgMod:2,bodyPart:"Body"},
+  "Vital Area":{acMod:2,atMod:1,dmgMod:4,bodyPart:"Hand and foot"},
+  "Weapon":    {acMod:1,atMod:1,dmgMod:0,bodyPart:"Hand and arm"},
+};
+function dmgModToDie(m){if(m<=4)return 4;if(m<=6)return 6;if(m<=8)return 8;if(m<=10)return 10;return 12;}
+// Common pre-built styles
+var COMMON_STYLES={
+  "Karate":     {form:"Hard",    method:"Strike",   name:"Karate"},
+  "Kung-fu":    {form:"Soft",    method:"Lock",     name:"Kung-fu"},
+  "Tae Kwon Do":{form:"Hard",    method:"Kick",     name:"Tae Kwon Do"},
+  "Jujutsu":    {form:"Soft",    method:"Throw",    name:"Jujutsu"},
+};
+// Special maneuvers by method, ranked by difficulty
+var MONK_MANEUVERS={
+  "Kick":[
+    {name:"Circle Kick",   rank:1,type:"hard",     desc:"Spinning kick: 2× damage on hit; lose next attack if miss"},
+    {name:"Flying Kick",   rank:2,type:"hard",     desc:"5ft run-up; 3× damage on hit; fall down (lose round) if miss"},
+    {name:"Backward Kick", rank:3,type:"hard/soft",desc:"Attack foe directly behind without turning; normal damage; no penalty on miss"},
+  ],
+  "Lock":[
+    {name:"Choke Hold",   rank:1,type:"hard/soft",desc:"Apply: opponent unconscious in 1 round if can't escape (escape roll −2); no attacks while applying"},
+    {name:"Locking Block",rank:2,type:"soft",     desc:"Lock weapon/limb; locked foe can't attack; +4 to foot attacks vs. locked foe"},
+    {name:"Incapacitator",rank:3,type:"hard/soft",desc:"2× damage + render limb useless 24hr; victim saves vs. paralyzation to resist"},
+    {name:"Immobilizing", rank:4,type:"hard/soft",desc:"Hold foe unable to act; can still attack with free hand/foot; victim escapes on to-hit −6"},
+  ],
+  "Movement":[
+    {name:"Feint",            rank:1,type:"hard/soft",desc:"Costs one attack; next attack +2 to hit on success; no penalty on miss"},
+    {name:"Prone Fighting",   rank:2,type:"soft",     desc:"Always in effect: fight normally while prone"},
+    {name:"Immovability",     rank:3,type:"soft",     desc:"Always in effect: save vs. paralyzation when knocked/thrown off feet"},
+    {name:"Missile Deflection",rank:4,type:"soft",    desc:"Always in effect: save vs. paralyzation to dodge each nonmagical missile (must be aware)"},
+    {name:"Leap",             rank:5,type:"soft",     desc:"Standing: 4ft up, 3+level ft fwd. Running: 8ft up, 10+level ft fwd. Costs one attack"},
+    {name:"Speed",            rank:6,type:"hard/soft",desc:"1/day, 5 rounds: 2× melee attacks and 2× combat movement; rest 1d3 rounds after"},
+    {name:"Slow Resistance",  rank:7,type:"hard/soft",desc:"Always in effect: immune to all slow effects"},
+  ],
+  "Push":[
+    {name:"Concentrated Push",rank:1,type:"soft",desc:"Knock foe 1ft/level back; if >3ft, save vs. paralyzation or fall; miss → foes get +2 to hit"},
+    {name:"Sticking Touch",   rank:2,type:"soft",desc:"+2 to hit and +2 AC while in contact; broken by speed/Leap beyond your ability"},
+    {name:"One Finger",       rank:3,type:"soft",desc:"Concentrated Push at range (1ft/level) without touching; only action that round"},
+  ],
+  "Strike":[
+    {name:"Iron Fist",    rank:1,type:"hard",desc:"Always in effect (hand styles): 1d10 dmg/attack; else 1d10 on one attack/round"},
+    {name:"Crushing Blow",rank:2,type:"hard",desc:"Only action that round; break 1/2in wood or 1/4in stone per level; vs. living: normal + level dmg"},
+    {name:"Eagle Claw",   rank:3,type:"hard",desc:"Only action that round; shatter objects, crush metal, 3d10 damage on hit"},
+  ],
+  "Throw":[
+    {name:"Fall",         rank:1,type:"hard/soft",desc:"Always in effect: take only ½ damage from any fall"},
+    {name:"Instant Stand",rank:2,type:"hard/soft",desc:"Regain feet automatically using one attack slot"},
+    {name:"Hurl",         rank:3,type:"hard",     desc:"Throw foe 1d4 ft; 2× damage; miss → lose remaining attacks and lose next init"},
+    {name:"Great Throw",  rank:4,type:"soft",     desc:"Throw stationary foe 1ft/level or charging foe 6+1ft/level; 3× damage; miss → knocked down"},
+  ],
+  "Vital Area":[
+    {name:"Pain Touch",      rank:1,type:"soft",desc:"No damage; hit → −2 to hit and +2 to be hit for 1d3 rounds; no penalty on miss"},
+    {name:"Stunning Touch",  rank:2,type:"soft",desc:"No damage; hit → save vs. paralyzation or stunned 1d4 rounds"},
+    {name:"Paralyzing Touch",rank:3,type:"soft",desc:"Hit + failed save → paralyzed 1d6 turns"},
+    {name:"Distance Death",  rank:4,type:"soft",desc:"Range 1ft/level; choose Pain (no save), Stunning (−2 save), Paralyzing, or 3× normal damage"},
+  ],
+  "Weapon":[
+    {name:"Weapon Catch",  rank:1,type:"hard/soft",desc:"Lock enemy weapon/limb; +2 to hit locked foe; miss → own weapon disarmed"},
+    {name:"Weapon Breaker",rank:2,type:"hard/soft",desc:"Break enemy weapon on successful hit (save vs. crushing blow); no damage"},
+    {name:"Steel Cloth",   rank:3,type:"soft",     desc:"Wield cloth as a spear (cannot throw); automatic"},
+  ],
+  "Mental":[
+    {name:"Meditation",       rank:1,type:"hard/soft",desc:"Gain all shukenja meditation powers"},
+    {name:"All-around Sight", rank:2,type:"soft",     desc:"Always in effect: detect all non-invisible foes; immune to back-attack penalty"},
+    {name:"Mental Resistance",rank:3,type:"soft",     desc:"Always in effect: +2 to saves vs. charm, illusion, hold spells"},
+    {name:"Blind Fighting",   rank:4,type:"soft",     desc:"Always in effect: only −1 penalty in darkness/blindness; disabled if also silenced"},
+    {name:"Ironskin",         rank:5,type:"hard",     desc:"+2 to AC (only when unarmored; always in effect)"},
+    {name:"Levitation",       rank:6,type:"soft",     desc:"After 1 turn concentration: levitate at 5ft/round; no actions while levitating"},
+  ],
+};
+// Level-by-level special abilities text (for sheet display)
+var MONK_LEVEL_ABILITIES=[
+  "",
+  "Ki Power: once/day/level — on successful save vs. magic, take NO damage (normally ½). Declare before or after the die is rolled.",
+  "Ki Power: 1/day/level. Unarmed weapon damage: +1 per 2 levels.",
+  "Speak with Animals (non-magical, as per spell).",
+  "Fall ≤20ft without damage (within 1ft of wall). ESP: only 30% success vs. monk (−2%/level beyond 4).",
+  "Immune to disease. Immune to haste and slow spells.",
+  "Fall ≤30ft without damage (within 4ft of wall). Cataleptic state: simulate death for up to 2×level turns (must declare duration).",
+  "Self-heal 2–5 HP/day (1d4+1). +1 HP/day per level beyond 7.",
+  "Speak with Plants (as per spell). Attract 2–5 1st-level monk followers (if monastery HQ exists).",
+  "Ki Power (improved): ½ damage even on a failed save vs. magic. Charm/hypnosis/suggestion: only 50% chance to affect (+5%/level beyond 9).",
+  "Telepathic/mind blast: defend as INT 18.",
+  "Immune to all poison.",
+  "Immune to geas and quest spells.",
+  "Free special maneuver of player's choice (any method, any rank).",
+  "","","",""
+];
 
 var BUFF_SPELLS={
   "Ability Alteration":{"desc":"Temporarily transfers ability points between physical abilities at 2:1 ratio; can boost STR, DEX, CON etc. at cost of another stat"},
@@ -1253,12 +1373,18 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _acctLoading=useState(false),acctLoading=_acctLoading[0],setAcctLoading=_acctLoading[1];
   var _acctStatus=useState(""),acctStatus=_acctStatus[0],setAcctStatus=_acctStatus[1];
   var _acctSearch=useState(""),acctSearch=_acctSearch[0],setAcctSearch=_acctSearch[1];
+  // Monk martial arts state
+  var _monkStyleForm=useState("Hard"),monkStyleForm=_monkStyleForm[0],setMonkStyleForm=_monkStyleForm[1];
+  var _monkStyleMethod=useState("Strike"),monkStyleMethod=_monkStyleMethod[0],setMonkStyleMethod=_monkStyleMethod[1];
+  var _monkStyleName=useState(""),monkStyleName=_monkStyleName[0],setMonkStyleName=_monkStyleName[1];
+  var _monkManeuvers=useState([]),monkManeuvers=_monkManeuvers[0],setMonkManeuvers=_monkManeuvers[1];
 
   // Auto-save to localStorage on every change; also keeps current slot snapshot in sync
   useEffect(function(){
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed};
+        cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
+        monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
       if(activeSlotId){
         slotSnapsRef.current[activeSlotId]=snap;
@@ -1270,6 +1396,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
+     monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
      charSlots,activeSlotId]);
 
   // Restore character slots on first load (falls back to single slot from cf_autosave)
@@ -1337,6 +1464,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var classData=CLASSES[cls]||CLASSES.Druid;
   var isPriest=classData.group==="Priest";
   var isWizard=classData.group==="Wizard";
+  var isMonk=classData.group==="Monk";
+  var monkCaps=isMonk?MONK_CAPS[Math.min(level,17)]:null;
   // CP ability mechanical effects (computed before base stat derivation)
   var cpThac0Type=classData.thac0;
   if(cpAbil.indexOf('Combat bonus (warrior THAC0)')>=0) cpThac0Type='war';
@@ -1471,8 +1600,16 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // gear bonuses: positive = benefit (AC+2 means AC goes from 10→8, THAC0+2 means 20→18)
   // Base AC: best (lowest) among armor, spell-set base (acBase), and natural 10
   var baseAC=gearBaseAC!==null?(buffACBase!==null?Math.min(gearBaseAC,buffACBase):gearBaseAC):(buffACBase!==null?buffACBase:10);
-  var effAC=baseAC+dexAC(adjStats.Dex)-buffAC-gearAC-cpAcBonus;
-  var effThac0=thac0-effStrB.hit-gearThac0-buffThac0;
+  // Monks: natural AC from level table (no DEX modifier, no armor); Ironskin maneuver gives +2
+  var monkIronskin=isMonk&&monkManeuvers.indexOf("Ironskin")>=0;
+  var monkStyleAC=(isMonk&&monkStyleForm&&monkStyleMethod&&STYLE_FORM_DATA[monkStyleForm]&&STYLE_METHOD_DATA[monkStyleMethod])?(10-(STYLE_FORM_DATA[monkStyleForm].acMod+STYLE_METHOD_DATA[monkStyleMethod].acMod)):null;
+  var effAC=isMonk?(function(){
+    var nat=monkCaps?monkCaps.ac:10;
+    var best=monkStyleAC!==null?Math.min(nat,monkStyleAC):nat;
+    return best-(monkIronskin?2:0)-buffAC-cpAcBonus;
+  })():baseAC+dexAC(adjStats.Dex)-buffAC-gearAC-cpAcBonus;
+  // Monks: no STR bonus to hit; THAC0 improves with level (rogue table already set)
+  var effThac0=isMonk?(thac0-gearThac0-buffThac0):(thac0-effStrB.hit-gearThac0-buffThac0);
   var effSaves={};
   Object.keys(saves).forEach(function(k){effSaves[k]=saves[k]-(gearSavesBySave[k]||0)-buffSave;});
   if(cpSaveMod>0) effSaves=Object.assign({},effSaves,{Spell:Math.max(1,effSaves.Spell-cpSaveMod)});
@@ -1940,7 +2077,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
-      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,_version:1};
+      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,
+      monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,_version:1};
   }
   // Unconditionally sets ALL character state — no conditionals so no bleed between tabs
   function applyCharacterData(d){
@@ -1974,6 +2112,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setNwpUsed(parseInt(d.nwpUsed)||0);
     setInventory(d.inventory||[]);
     setCloudId(d.cloudId||null);
+    setMonkStyleForm(d.monkStyleForm||"Hard");
+    setMonkStyleMethod(d.monkStyleMethod||"Strike");
+    setMonkStyleName(d.monkStyleName||"");
+    setMonkManeuvers(d.monkManeuvers||[]);
     // Clear transient combat/session state that doesn't travel with the character
     setActiveCasts([]);setCombatRound(1);setCastingSpell(null);
     setTab("stats");
@@ -2653,10 +2795,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {/* ═══ CP TAB ═══ */}
         {tab==="CP"&&(function(){
           // Derive active sub-tab: explicit selection or auto from class
-          var activeSub=cpSubTab||(isPriest?'priest':isWizard?'wizard':'priest');
+          var activeSub=cpSubTab||(isPriest?'priest':isWizard?'wizard':isMonk?'monk':'priest');
           var SUB_TABS=[
             {id:'priest',label:'Priest',classMatch:isPriest,classNames:'Cleric / Druid'},
-            {id:'monk',  label:'Monk',  classMatch:false,    classNames:'Monk'},
+            {id:'monk',  label:'Monk',  classMatch:isMonk,   classNames:'Monk'},
             {id:'wizard',label:'Wizard',classMatch:isWizard, classNames:'Mage / Illusionist'},
           ];
           // Per-sub-tab abilities/limits for display (browsing any tab is allowed)
@@ -2800,17 +2942,152 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>}
 
             {/* ── MONK SUB-TAB ── */}
-            {activeSub==='monk'&&<div style={{padding:"30px 20px",textAlign:"center"}}>
-              <div style={{fontSize:"32px",marginBottom:"16px",opacity:0.4}}>☯</div>
-              <div style={{fontSize:"15px",color:"#80a0e0",fontWeight:"bold",marginBottom:"10px",fontVariant:"small-caps",letterSpacing:"2px"}}>Monk CP System</div>
-              <div style={{fontSize:"12px",color:dim,maxWidth:"480px",margin:"0 auto",lineHeight:"1.7",marginBottom:"20px"}}>
-                The Monk character creation system from <em style={{color:txt}}>Player's Option: Spells & Magic</em> will be added here.
-                Monk CP options cover disciplines such as mental fortitude, martial arts progressions, ki powers, and ascetic limitations.
-              </div>
-              <div style={{display:"inline-block",padding:"8px 20px",background:"#1a1a2a",border:"1px solid #2a3a5a",borderRadius:"6px",fontSize:"11px",color:"#6080a0",fontFamily:"monospace"}}>
-                Coming soon — upload the Monk CP data to enable this section
-              </div>
-            </div>}
+            {activeSub==='monk'&&(function(){
+              if(!isMonk)return <div style={{padding:"10px 14px",marginBottom:"12px",background:"#1a1010",border:"1px solid #4a2a2a",borderRadius:"6px",fontSize:"11px",color:"#c08080"}}>
+                ⚠ Viewing only — select Monk on the Stats tab to make this section editable.
+              </div>;
+              var sf=STYLE_FORM_DATA[monkStyleForm]||STYLE_FORM_DATA["Hard"];
+              var sm=STYLE_METHOD_DATA[monkStyleMethod]||STYLE_METHOD_DATA["Strike"];
+              var styleAC=10-(sf.acMod+sm.acMod);
+              var styleAT=sf.atMod+sm.atMod;
+              var styleDmg=dmgModToDie(sf.dmgMod+sm.dmgMod);
+              var mainMethodManeuvers=MONK_MANEUVERS[monkStyleMethod]||[];
+              var mentalManeuvers=MONK_MANEUVERS["Mental"]||[];
+              var otherMethods=Object.keys(MONK_MANEUVERS).filter(function(m){return m!==monkStyleMethod&&m!=="Mental";});
+              function toggleMan(name){setMonkManeuvers(monkManeuvers.indexOf(name)>=0?monkManeuvers.filter(function(x){return x!==name;}):monkManeuvers.concat([name]));}
+              var monkMove=monkCaps?monkCaps.move:15;
+              return <div>
+                {!isMonk&&<div style={{padding:"10px 14px",marginBottom:"12px",background:"#1a1010",border:"1px solid #4a2a2a",borderRadius:"6px",fontSize:"11px",color:"#c08080"}}>
+                  ⚠ Viewing only — select Monk on the Stats tab to make this section editable.
+                </div>}
+                {/* Requirements banner */}
+                <div style={{background:"#0d0d1a",border:"1px solid #2a2a5a",borderRadius:"6px",padding:"10px 14px",marginBottom:"14px",fontSize:"11px",fontFamily:"monospace",color:dim}}>
+                  <span style={{color:"#80a0e0",fontWeight:"bold"}}>REQUIREMENTS: </span>
+                  <span style={{color:adjStats.Str>=15?"#60e060":"#e06060"}}>STR {adjStats.Str}/15</span>{" · "}
+                  <span style={{color:adjStats.Wis>=15?"#60e060":"#e06060"}}>WIS {adjStats.Wis}/15</span>{" · "}
+                  <span style={{color:adjStats.Dex>=15?"#60e060":"#e06060"}}>DEX {adjStats.Dex}/15</span>{" · "}
+                  <span style={{color:adjStats.Con>=11?"#60e060":"#e06060"}}>CON {adjStats.Con}/11</span>
+                  <span style={{marginLeft:"16px",color:"#6080a0"}}>Alignment: Lawful only</span>
+                </div>
+
+                {/* Level summary */}
+                <div style={{background:"#0d1a14",border:"1px solid #2a4a3a",borderRadius:"6px",padding:"10px 14px",marginBottom:"14px",fontSize:"11px",fontFamily:"monospace"}}>
+                  <span style={{color:g,fontWeight:"bold"}}>Level {level} — {MONK_LEVEL_TITLES[level]||"Monk"}</span>
+                  {"  "}
+                  <span style={{color:dim}}>Natural AC: <span style={{color:"#80a0e0"}}>{monkCaps?monkCaps.ac:10}</span></span>
+                  {"  "}
+                  <span style={{color:dim}}>Move: <span style={{color:"#80a0e0"}}>{monkMove}"</span></span>
+                  {"  "}
+                  <span style={{color:dim}}>Surprise: <span style={{color:"#80a0e0"}}>{monkCaps?(typeof monkCaps.surprise==="number"?monkCaps.surprise+"%":"Normal"):"Normal"}</span></span>
+                  {monkCaps&&monkCaps.addAT&&<span style={{color:dim}}>{"  "}Extra AT: <span style={{color:"#e08060"}}>{monkCaps.addAT}</span></span>}
+                  {monkCaps&&monkCaps.addDmg&&<span style={{color:dim}}>{"  "}Add Dmg: <span style={{color:"#e08060"}}>{monkCaps.addDmg}</span></span>}
+                  {level>=2&&MONK_LEVEL_ABILITIES[level]&&<div style={{marginTop:"6px",color:"#c0d8f0",lineHeight:"1.5"}}>{MONK_LEVEL_ABILITIES[level]}</div>}
+                </div>
+
+                {/* Style builder */}
+                <Lbl dim={dim}>MARTIAL ARTS STYLE</Lbl>
+                {/* Quick-select common styles */}
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"10px"}}>
+                  {Object.keys(COMMON_STYLES).map(function(sn){
+                    var cs=COMMON_STYLES[sn];
+                    var active=monkStyleName===sn;
+                    return <button key={sn} onClick={function(){
+                      setMonkStyleForm(cs.form);setMonkStyleMethod(cs.method);setMonkStyleName(sn);
+                    }} style={{padding:"4px 10px",fontSize:"11px",borderRadius:"4px",cursor:"pointer",fontFamily:"monospace",
+                      background:active?"#1a2a18":surf,border:"1px solid "+(active?"#3a5a3a":brd),color:active?g:dim}}>
+                      {sn}
+                    </button>;
+                  })}
+                  <span style={{color:dim,fontSize:"10px",alignSelf:"center",fontFamily:"monospace"}}>— or build custom:</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+                  <label style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                    <span style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px"}}>FORM</span>
+                    <select value={monkStyleForm} onChange={function(e){setMonkStyleForm(e.target.value);setMonkStyleName("");}} style={{padding:"5px",background:"#0a0a14",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                      {Object.keys(STYLE_FORM_DATA).map(function(f){return <option key={f}>{f}</option>;})}
+                    </select>
+                  </label>
+                  <label style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                    <span style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px"}}>METHOD</span>
+                    <select value={monkStyleMethod} onChange={function(e){setMonkStyleMethod(e.target.value);setMonkStyleName("");}} style={{padding:"5px",background:"#0a0a14",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}}>
+                      {Object.keys(STYLE_METHOD_DATA).map(function(m){return <option key={m}>{m}</option>;})}
+                    </select>
+                  </label>
+                  <label style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                    <span style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px"}}>STYLE NAME</span>
+                    <input value={monkStyleName} onChange={function(e){setMonkStyleName(e.target.value);}} placeholder="e.g. Tiger Claw" style={{padding:"5px",background:"#0a0a14",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"11px"}} />
+                  </label>
+                </div>
+                {/* Computed style stats */}
+                <div style={{display:"flex",gap:"12px",padding:"8px 12px",background:"#0a1420",border:"1px solid #1a3a5a",borderRadius:"6px",marginBottom:"14px",fontFamily:"monospace",fontSize:"11px",flexWrap:"wrap"}}>
+                  <span style={{color:dim}}>Style AC: <span style={{color:"#80a0e0",fontWeight:"bold"}}>{styleAC}</span></span>
+                  <span style={{color:dim}}>Attacks/round: <span style={{color:"#80a0e0",fontWeight:"bold"}}>{styleAT}</span></span>
+                  <span style={{color:dim}}>Damage: <span style={{color:"#80a0e0",fontWeight:"bold"}}>1d{styleDmg}</span></span>
+                  <span style={{color:dim}}>Body part: <span style={{color:"#80a0e0",fontWeight:"bold"}}>{sm.bodyPart}</span></span>
+                  <span style={{color:"#60e060"}}>Natural AC: {monkCaps?monkCaps.ac:10} → active: {Math.min(styleAC,monkCaps?monkCaps.ac:10)+(monkManeuvers.indexOf("Ironskin")>=0?-2:0)}</span>
+                </div>
+
+                {/* Primary method maneuvers */}
+                <Lbl dim={dim}>{monkStyleMethod.toUpperCase()} MANEUVERS <span style={{color:dim,fontWeight:"normal"}}>(primary method)</span></Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"1fr",gap:"4px",marginBottom:"12px"}}>
+                  {mainMethodManeuvers.map(function(mn){
+                    var on=monkManeuvers.indexOf(mn.name)>=0;
+                    var prevLocked=mn.rank>1&&!mainMethodManeuvers.filter(function(x){return x.rank<mn.rank;}).every(function(x){return monkManeuvers.indexOf(x.name)>=0;});
+                    return <label key={mn.name} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"5px 8px",cursor:prevLocked?"not-allowed":"pointer",fontSize:"11px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:prevLocked?dim+"80":dim,opacity:prevLocked?0.5:1}}>
+                      <input type="checkbox" checked={on} disabled={prevLocked} onChange={function(){toggleMan(mn.name);}} style={{accentColor:g,marginTop:"1px",flexShrink:0}} />
+                      <span style={{flex:1}}>
+                        <span style={{color:on?g:dim,fontWeight:"bold"}}>{mn.name}</span>
+                        <span style={{fontSize:"9px",color:dim,marginLeft:"6px"}}>rank {mn.rank} · {mn.type}</span>
+                        <br/><span style={{fontSize:"10px",color:on?"#9ab890":dim}}>{mn.desc}</span>
+                      </span>
+                    </label>;
+                  })}
+                </div>
+
+                {/* Mental & Physical Training (available to all styles) */}
+                <Lbl dim={dim}>MENTAL & PHYSICAL TRAINING <span style={{color:dim,fontWeight:"normal"}}>(any style)</span></Lbl>
+                <div style={{display:"grid",gridTemplateColumns:"1fr",gap:"4px",marginBottom:"12px"}}>
+                  {/* Missile Deflection is always free for monks */}
+                  <div style={{padding:"5px 8px",fontSize:"11px",background:"#1a1a2a",border:"1px solid #2a3a5a",borderRadius:"4px",color:"#80a0e0"}}>
+                    ★ Missile Deflection — always free for monks (rank 4 · soft) — save vs. paralyzation to dodge each nonmagical missile
+                  </div>
+                  {mentalManeuvers.map(function(mn){
+                    var on=monkManeuvers.indexOf(mn.name)>=0;
+                    var prevLocked=mn.rank>1&&!mentalManeuvers.filter(function(x){return x.rank<mn.rank;}).every(function(x){return monkManeuvers.indexOf(x.name)>=0;});
+                    return <label key={mn.name} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"5px 8px",cursor:prevLocked?"not-allowed":"pointer",fontSize:"11px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:prevLocked?dim+"80":dim,opacity:prevLocked?0.5:1}}>
+                      <input type="checkbox" checked={on} disabled={prevLocked} onChange={function(){toggleMan(mn.name);}} style={{accentColor:g,marginTop:"1px",flexShrink:0}} />
+                      <span style={{flex:1}}>
+                        <span style={{color:on?g:dim,fontWeight:"bold"}}>{mn.name}</span>
+                        <span style={{fontSize:"9px",color:dim,marginLeft:"6px"}}>rank {mn.rank} · {mn.type}</span>
+                        <br/><span style={{fontSize:"10px",color:on?"#9ab890":dim}}>{mn.desc}</span>
+                      </span>
+                    </label>;
+                  })}
+                </div>
+
+                {/* Cross-training maneuvers from other methods */}
+                <Lbl dim={dim}>CROSS-TRAINING <span style={{color:dim,fontWeight:"normal"}}>(other methods — limited slots)</span></Lbl>
+                {otherMethods.map(function(method){
+                  var mlist=MONK_MANEUVERS[method]||[];
+                  return <div key={method} style={{marginBottom:"10px"}}>
+                    <div style={{fontSize:"10px",color:"#6080a0",fontFamily:"monospace",letterSpacing:"1px",marginBottom:"4px"}}>{method.toUpperCase()}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                      {mlist.map(function(mn){
+                        var on=monkManeuvers.indexOf(mn.name)>=0;
+                        return <label key={mn.name} style={{display:"flex",alignItems:"flex-start",gap:"6px",padding:"4px 7px",cursor:"pointer",fontSize:"10px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim}}>
+                          <input type="checkbox" checked={on} onChange={function(){toggleMan(mn.name);}} style={{accentColor:g,marginTop:"1px",flexShrink:0}} />
+                          <span>
+                            <span style={{color:on?g:dim}}>{mn.name}</span>
+                            <span style={{fontSize:"9px",color:dim}}> (r{mn.rank})</span>
+                            <br/><span style={{fontSize:"9px",color:on?"#9ab890":dim}}>{mn.desc}</span>
+                          </span>
+                        </label>;
+                      })}
+                    </div>
+                  </div>;
+                })}
+              </div>;
+            })()}
 
             {/* ── WIZARD SUB-TAB ── */}
             {activeSub==='wizard'&&<div>
@@ -2859,8 +3136,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>}
 
             {/* No CP class */}
-            {!(isPriest||isWizard)&&activeSub!=='monk'&&<div style={{padding:"30px",textAlign:"center",color:dim,fontSize:"12px",marginTop:"8px"}}>
-              Select Cleric, Druid, Mage, or Illusionist to enable CP editing for this character.
+            {!(isPriest||isWizard||isMonk)&&activeSub!=='monk'&&<div style={{padding:"30px",textAlign:"center",color:dim,fontSize:"12px",marginTop:"8px"}}>
+              Select Cleric, Druid, Mage, Illusionist, or Monk to enable CP editing for this character.
             </div>}
           </div>;
         })()}
@@ -2929,11 +3206,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"12px"}}>
             <div>
               <div style={{color:g,fontWeight:"bold",marginBottom:"4px"}}>COMBAT</div>
-              <Row l={cpThac0Type!==classData.thac0?"THAC0*":"THAC0"} v={thac0} l2={(buffStr>0||buffStrLvl>0)?("Str Hit*"+(effStrPct>0?" (ex)":"")):"Str Hit"} v2={(effStrB.hit>=0?"+":"")+effStrB.hit} />
-              <Row l={(buffAC>0||cpAcBonus>0)?"AC*":"AC"} v={effAC} l2="Dex Def" v2={(dexAC(adjStats.Dex)>=0?"+":"")+dexAC(adjStats.Dex)} />
-              <Row l="HP" v={hp} l2={(buffStr>0||buffStrLvl>0)?("Dmg Adj*"+(effStrPct>0?" (ex)":"")):"Dmg Adj"} v2={(effStrB.dmg>=0?"+":"")+effStrB.dmg} />
-              <Row l="Hit Dice" v={"d"+effectiveHD} l2="Con Adj" v2={(conB>=0?"+":"")+conB+"/die"} />
-              <Row l="Movement" v={12} l2="Dex Missile" v2={(dexMis>=0?"+":"")+dexMis} />
+              <Row l={cpThac0Type!==classData.thac0?"THAC0*":"THAC0"} v={thac0} l2={isMonk?"Wpn Dmg Bonus":"Str Hit"} v2={isMonk?("+"+Math.floor(level/2)):(effStrB.hit>=0?"+":"")+effStrB.hit} />
+              <Row l={(buffAC>0||cpAcBonus>0||isMonk)?"AC*":"AC"} v={effAC} l2={isMonk?"Natural AC":"Dex Def"} v2={isMonk?(monkCaps?monkCaps.ac:10):((dexAC(adjStats.Dex)>=0?"+":"")+dexAC(adjStats.Dex))} />
+              <Row l="HP" v={hp} l2={isMonk?"Style Dmg":"Dmg Adj"} v2={isMonk?("1d"+(monkStyleForm&&monkStyleMethod?dmgModToDie((STYLE_FORM_DATA[monkStyleForm]||{dmgMod:4}).dmgMod+(STYLE_METHOD_DATA[monkStyleMethod]||{dmgMod:4}).dmgMod):6)):((effStrB.dmg>=0?"+":"")+effStrB.dmg)} />
+              <Row l="Hit Dice" v={"d"+effectiveHD+(isMonk?" (2d4 L1)":"")} l2="Con Adj" v2={(conB>=0?"+":"")+conB+"/die"} />
+              <Row l="Movement" v={isMonk?(monkCaps?monkCaps.move:15)+'"':12} l2={isMonk?"Style AC":"Dex Missile"} v2={isMonk?(monkStyleForm&&monkStyleMethod?String(10-((STYLE_FORM_DATA[monkStyleForm]||{acMod:1}).acMod+(STYLE_METHOD_DATA[monkStyleMethod]||{acMod:1}).acMod)):"—"):((dexMis>=0?"+":"")+dexMis)} />
               <Row l={"WP ("+wpUsed+"/"+totalWP+")"} v={totalWP-wpUsed===0?"Full":"+"+(totalWP-wpUsed)} l2={"NWP ("+nwpUsed+"/"+totalNWP+")"} v2={totalNWP-nwpUsed===0?"Full":"+"+(totalNWP-nwpUsed)} />
             </div>
             <div>
@@ -2946,6 +3223,47 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               })}
             </div>
           </div>
+          {isMonk&&monkCaps&&<div style={{marginBottom:"12px",border:"1px solid #1a3a5a",borderRadius:"6px",padding:"10px 12px"}}>
+            <div style={{color:"#80a0e0",fontWeight:"bold",marginBottom:"6px",fontSize:"11px",letterSpacing:"1px"}}>MONK ABILITIES <span style={{color:dim,fontWeight:"normal",letterSpacing:"0"}}>(Level {level} — {MONK_LEVEL_TITLES[level]||""})</span></div>
+            {/* Style info */}
+            {monkStyleName&&<div style={{marginBottom:"6px",fontSize:"11px",color:txt}}>
+              Style: <span style={{color:g,fontWeight:"bold"}}>{monkStyleName}</span>
+              <span style={{color:dim,marginLeft:"8px"}}>{monkStyleForm} · {monkStyleMethod}</span>
+              <span style={{color:"#80a0e0",marginLeft:"8px"}}>AC {monkStyleAC!==null?monkStyleAC:"—"} · {(STYLE_FORM_DATA[monkStyleForm]||{atMod:0}).atMod+(STYLE_METHOD_DATA[monkStyleMethod]||{atMod:0}).atMod} AT/round · 1d{monkStyleMethod&&monkStyleForm?dmgModToDie((STYLE_FORM_DATA[monkStyleForm]||{dmgMod:4}).dmgMod+(STYLE_METHOD_DATA[monkStyleMethod]||{dmgMod:4}).dmgMod):6} dmg · {(STYLE_METHOD_DATA[monkStyleMethod]||{bodyPart:"Hand"}).bodyPart}</span>
+            </div>}
+            {monkCaps.addAT&&<div style={{fontSize:"11px",color:"#e08060",marginBottom:"3px"}}>Extra attacks: <span style={{fontWeight:"bold"}}>{monkCaps.addAT}</span>{monkCaps.addDmg&&<span style={{marginLeft:"10px"}}>Bonus damage: <span style={{fontWeight:"bold"}}>{monkCaps.addDmg} per attack</span></span>}</div>}
+            <div style={{fontSize:"11px",color:dim,marginBottom:"3px"}}>Movement: <span style={{color:txt}}>{monkCaps.move}"</span>{"  "}Ki uses/day: <span style={{color:txt}}>{level}</span>{"  "}Surprise: <span style={{color:txt}}>{typeof monkCaps.surprise==="number"?monkCaps.surprise+"%":"Normal"}</span></div>
+            {/* Thief skills */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"3px",marginTop:"6px",marginBottom:"6px",fontSize:"10px",fontFamily:"monospace"}}>
+              {[["Open Locks",monkCaps.openLock],["Find/Remove Traps",monkCaps.findTrap],["Move Silently",monkCaps.moveSilent],["Hide in Shadows",monkCaps.hideShadow],["Hear Noise",monkCaps.hearNoise],["Climb Walls",monkCaps.climbWall]].map(function(r){
+                return <div key={r[0]} style={{background:"#0a0a18",border:"1px solid #1a2a4a",borderRadius:"3px",padding:"3px 6px"}}>
+                  <div style={{color:dim,fontSize:"9px"}}>{r[0]}</div>
+                  <div style={{color:"#80a0e0",fontWeight:"bold"}}>{r[1]}%</div>
+                </div>;
+              })}
+            </div>
+            {/* Level abilities */}
+            {MONK_LEVEL_ABILITIES[level]&&<div style={{fontSize:"10px",color:"#c0d8f0",borderTop:"1px solid #1a3a5a",paddingTop:"6px",lineHeight:"1.5"}}>{MONK_LEVEL_ABILITIES[level]}</div>}
+            {/* Innate abilities from lower levels */}
+            {level>=3&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",lineHeight:"1.6"}}>
+              {level>=3&&<div>• Speak with Animals</div>}
+              {level>=4&&<div>• Fall 20ft safely (near wall) · ESP only {Math.max(2,30-2*(level-4))}% vs. you</div>}
+              {level>=5&&<div>• Immune to disease · Immune to haste/slow</div>}
+              {level>=6&&<div>• Fall 30ft safely (4ft from wall) · Cataleptic state ({level*2} turns)</div>}
+              {level>=7&&<div>• Self-heal {1+(level-7)+2}–{4+(level-7)+1} HP/day</div>}
+              {level>=8&&<div>• Speak with Plants · Followers (monastery required)</div>}
+              {level>=9&&<div>• Ki improved: ½ dmg on failed save · Charm {Math.max(5,50-5*(level-9))}% effective</div>}
+              {level>=10&&<div>• Telepathy/mind blast: defend as INT 18</div>}
+              {level>=11&&<div>• Immune to poison</div>}
+              {level>=12&&<div>• Immune to geas/quest</div>}
+              {level>=13&&<div>• Free special maneuver of choice</div>}
+            </div>}
+            {/* Selected maneuvers */}
+            {(monkManeuvers.length>0||(isMonk))&&<div style={{marginTop:"6px"}}>
+              <div style={{fontSize:"9px",color:dim,letterSpacing:"1px",marginBottom:"3px"}}>KNOWN MANEUVERS</div>
+              <div style={{fontSize:"10px",color:"#80a0e0"}}>★ Missile Deflection (free){monkManeuvers.length>0&&" · "+monkManeuvers.join(" · ")}</div>
+            </div>}
+          </div>}
           {wisImm.length>0&&<div style={{marginBottom:"12px",border:"1px solid #3a2a4a",borderRadius:"6px",padding:"8px 12px"}}>
             <div style={{color:"#c080e0",fontWeight:"bold",marginBottom:"6px",fontSize:"11px",letterSpacing:"1px"}}>WIS SPELL IMMUNITIES <span style={{color:"#7a5a8a",fontWeight:"normal"}}>(WIS {adjStats.Wis})</span></div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
