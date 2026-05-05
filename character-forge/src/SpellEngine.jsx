@@ -1391,7 +1391,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       if(activeSlotId){
         slotSnapsRef.current[activeSlotId]=snap;
         var slotsToSave=charSlots.map(function(s){
-          return {id:s.id,name:s.id===activeSlotId?(charName||"Unnamed"):s.name,type:s.type||null,pcId:s.pcId||null,snapshot:slotSnapsRef.current[s.id]||null};
+          return {id:s.id,name:s.id===activeSlotId?(charName||"Unnamed"):s.name,type:s.type||null,pcId:s.pcId||null,dead:s.dead||false,snapshot:slotSnapsRef.current[s.id]||null};
         });
         localStorage.setItem("cf_char_slots",JSON.stringify({activeSlotId:activeSlotId,slots:slotsToSave}));
         localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));
@@ -1414,7 +1414,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           slots.forEach(function(s){if(s.snapshot)slotSnapsRef.current[s.id]=s.snapshot;});
           var archRaw=localStorage.getItem("cf_hench_archive");
           if(archRaw)try{henchArchiveRef.current=JSON.parse(archRaw);}catch(_){}
-          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null};}));
+          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null,dead:s.dead||false};}));
           setActiveSlotId(activeId);
           var active=slots.find(function(s){return s.id===activeId;});
           if(active&&active.snapshot)applyCharacterData(active.snapshot);
@@ -1834,7 +1834,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     var id="slot_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
     var curName=charName||"Unnamed";
     setCharSlots(function(prev){
-      return prev.map(function(s){return s.id===activeSlotId?{id:s.id,name:curName}:s;}).concat([{id:id,name:"Unnamed"}]);
+      return prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;}).concat([{id:id,name:"Unnamed"}]);
     });
     setActiveSlotId(id);
     resetToBlank();
@@ -1844,23 +1844,28 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(id===activeSlotId)return;
     if(activeSlotId) slotSnapsRef.current[activeSlotId]=getCharacterSnapshot();
     var curName=charName||"Unnamed";
-    setCharSlots(function(prev){
-      var updated=prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;});
-      // Auto-open archived henchmen when switching to a PC tab
-      var targetSlot=updated.find(function(s){return s.id===id;});
-      if(targetSlot&&targetSlot.type==='pc'){
-        var openIds=new Set(updated.map(function(s){return s.id;}));
-        Object.keys(henchArchiveRef.current).forEach(function(hid){
-          var h=henchArchiveRef.current[hid];
-          if(h.pcId===id&&!openIds.has(hid)){
-            slotSnapsRef.current[hid]=h.snapshot;
-            updated=updated.concat([{id:hid,name:h.name,type:'henchman',pcId:id}]);
-            delete henchArchiveRef.current[hid];
-          }
-        });
+    // Pre-compute henchmen to reopen OUTSIDE the state updater (updater runs twice in StrictMode)
+    var henchToOpen=[];
+    var targetForSwitch=charSlots.find(function(s){return s.id===id;});
+    if(targetForSwitch&&targetForSwitch.type==='pc'){
+      var curIds=new Set(charSlots.map(function(s){return s.id;}));
+      Object.keys(henchArchiveRef.current).forEach(function(hid){
+        var h=henchArchiveRef.current[hid];
+        if(h.pcId===id&&!curIds.has(hid)){
+          slotSnapsRef.current[hid]=h.snapshot;
+          henchToOpen.push({id:hid,name:h.name,type:'henchman',pcId:id});
+          delete henchArchiveRef.current[hid];
+        }
+      });
+      if(henchToOpen.length>0){
         try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
       }
-      return updated;
+    }
+    setCharSlots(function(prev){
+      var updated=prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;});
+      // Add pre-computed henchmen (filter out any already present in prev)
+      var prevIds=new Set(prev.map(function(s){return s.id;}));
+      return updated.concat(henchToOpen.filter(function(h){return !prevIds.has(h.id);}));
     });
     setActiveSlotId(id);
     var snap=slotSnapsRef.current[id];
@@ -1874,7 +1879,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(closingSlot&&closingSlot.type==='henchman'){
       var archSnap=id===activeSlotId?getCharacterSnapshot():slotSnapsRef.current[id];
       if(archSnap){
-        henchArchiveRef.current[id]={snapshot:archSnap,name:closingSlot.name,pcId:closingSlot.pcId||null};
+        var archiveName=id===activeSlotId?(charName||closingSlot.name):closingSlot.name;
+        henchArchiveRef.current[id]={snapshot:archSnap,name:archiveName,pcId:closingSlot.pcId||null};
         try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
       }
     }
@@ -2289,7 +2295,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       var newId="slot_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
       slotSnapsRef.current[newId]=snap;
       setCharSlots(function(prev){
-        return prev.map(function(s){return s.id===activeSlotId?{id:s.id,name:curName}:s;})
+        return prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;})
           .concat([{id:newId,name:snap.charName||"Unnamed"}]);
       });
       setActiveSlotId(newId);
