@@ -1895,6 +1895,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     });
   }
 
+  function setSlotDead(id,dead){
+    setCharSlots(function(prev){
+      return prev.map(function(s){return s.id===id?Object.assign({},s,{dead:dead||false}):s;});
+    });
+  }
+
   // Keep resetCharacter as alias (called in a few other places)
   function resetCharacter(){ newCharSlot(); }
 
@@ -2317,22 +2323,26 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       />}
       {/* Character slot tabs */}
       {charSlots.length>0&&<div style={{display:"flex",alignItems:"stretch",background:"#06060c",borderBottom:"1px solid "+brd,overflowX:"auto",flexShrink:0,minHeight:"30px"}}>
-        {charSlots.map(function(s){
+        {charSlots.slice().sort(function(a,b){return (a.dead?1:0)-(b.dead?1:0);}).map(function(s){
           var isActive=s.id===activeSlotId;
           var displayName=isActive?(charName||"Unnamed"):s.name;
           var isPC=s.type==='pc';
           var isHench=s.type==='henchman';
+          var isDead=!!s.dead;
           var pcSlot=isHench?charSlots.find(function(p){return p.id===s.pcId;}):null;
-          // Visual accent: PC = gold underline, Henchman = blue-grey underline
-          var accentColor=isPC?"#c09030":isHench?"#5080a0":g;
+          // Visual accent: dead = dark red, PC = gold, Henchman = blue-grey
+          var accentColor=isDead?"#6a2020":isPC?"#c09030":isHench?"#5080a0":g;
           var bottomBorder=isActive?"2px solid "+accentColor:"2px solid transparent";
+          var nameColor=isDead?(isActive?"#8a5050":"#554040"):isActive?g:isPC?"#d4a840":isHench?"#7090b0":dim;
+          var tabTitle=isDead?"☠ Dead — right-click to resurrect":isHench?(pcSlot?"Henchman of "+pcSlot.name:"Henchman"):isPC?"PC":"Right-click to tag as PC or Henchman";
           return <div key={s.id} onClick={function(){switchCharSlot(s.id);}}
             onContextMenu={function(e){e.preventDefault();setSlotCtxMenu({slotId:s.id,x:e.clientX,y:e.clientY});}}
-            title={isHench?(pcSlot?"Henchman of "+pcSlot.name:"Henchman"):isPC?"PC":"Right-click to tag as PC or Henchman"}
-            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 8px 0 10px",background:isActive?"#12111a":"transparent",borderRight:"1px solid "+brd,borderBottom:bottomBorder,marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"60px",boxSizing:"border-box"}}>
-            {isPC&&<span style={{fontSize:"9px",color:"#c09030",flexShrink:0}} title="PC">♦</span>}
-            {isHench&&<span style={{fontSize:"9px",color:"#5080a0",flexShrink:0}} title={"Henchman"+(pcSlot?" of "+pcSlot.name:"")}>→</span>}
-            <span style={{fontSize:"11px",color:isActive?g:isPC?"#d4a840":isHench?"#7090b0":dim,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,padding:"5px 0"}}>{displayName}</span>
+            title={tabTitle}
+            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 8px 0 10px",background:isActive?(isDead?"#1a0a0a":"#12111a"):"transparent",borderRight:"1px solid "+brd,borderBottom:bottomBorder,marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"60px",boxSizing:"border-box",opacity:isDead?0.65:1}}>
+            {isDead&&<span style={{fontSize:"9px",color:"#8a4040",flexShrink:0}} title="Dead">☠</span>}
+            {!isDead&&isPC&&<span style={{fontSize:"9px",color:"#c09030",flexShrink:0}} title="PC">♦</span>}
+            {!isDead&&isHench&&<span style={{fontSize:"9px",color:"#5080a0",flexShrink:0}} title={"Henchman"+(pcSlot?" of "+pcSlot.name:"")}>→</span>}
+            <span style={{fontSize:"11px",color:nameColor,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,padding:"5px 0",textDecoration:isDead?"line-through":"none"}}>{displayName}</span>
             {charSlots.length>1&&<button onClick={function(e){e.stopPropagation();closeCharSlot(s.id);}}
               style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"1px 2px",fontSize:"12px",lineHeight:1,flexShrink:0,opacity:0.7}}>×</button>}
           </div>;
@@ -2363,6 +2373,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </div>}
             {menuSlot.type&&<button onClick={function(){setSlotType(slotCtxMenu.slotId,null,null);setSlotCtxMenu(null);}}
               style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px",background:"transparent",color:"#a06060",border:"none",borderTop:"1px solid #2a2a4a",cursor:"pointer",fontSize:"12px",fontFamily:"monospace",marginTop:"4px"}}>✕ Clear tag</button>}
+            <div style={{borderTop:"1px solid #2a2a4a",marginTop:"4px"}}>
+              {!menuSlot.dead?(
+                <button onClick={function(){setSlotDead(slotCtxMenu.slotId,true);setSlotCtxMenu(null);}}
+                  style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px",background:"transparent",color:"#b04040",border:"none",cursor:"pointer",fontSize:"12px",fontFamily:"monospace"}}>☠ Mark as Dead</button>
+              ):(
+                <button onClick={function(){setSlotDead(slotCtxMenu.slotId,false);setSlotCtxMenu(null);}}
+                  style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px",background:"transparent",color:"#60b060",border:"none",cursor:"pointer",fontSize:"12px",fontFamily:"monospace"}}>✦ Resurrect</button>
+              )}
+            </div>
           </div>
         </div>;
       })()}
