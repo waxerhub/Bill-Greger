@@ -2127,9 +2127,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
   // ── Character data helpers ───────────────────────────────────────────────
   function getCharacterSnapshot(){
+    var activeSlot=charSlots.find(function(s){return s.id===activeSlotId;});
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
       cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,
-      monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,_version:1};
+      monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
+      slotType:activeSlot?activeSlot.type||null:null,
+      _version:1};
   }
   // Unconditionally sets ALL character state — no conditionals so no bleed between tabs
   function applyCharacterData(d){
@@ -2187,7 +2190,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     var ext=file.name.split(".").pop().toLowerCase();
     if(ext==="json"){
       var reader=new FileReader();
-      reader.onload=function(ev){try{applyCharacterData(JSON.parse(ev.target.result));setCloudStatus("Loaded from file");}catch(_){setCloudStatus("Error: invalid JSON");}};
+      reader.onload=function(ev){try{var d=JSON.parse(ev.target.result);applyCharacterData(d);if(d.slotType&&activeSlotId)setSlotType(activeSlotId,d.slotType,null);setCloudStatus("Loaded from file");}catch(_){setCloudStatus("Error: invalid JSON");}};
       reader.readAsText(file);
     } else if(ext==="pdf"){
       var reader2=new FileReader();
@@ -2298,7 +2301,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       slotSnapsRef.current[newId]=snap;
       setCharSlots(function(prev){
         return prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;})
-          .concat([{id:newId,name:snap.charName||"Unnamed"}]);
+          .concat([{id:newId,name:snap.charName||"Unnamed",type:snap.slotType||null,pcId:null,dead:false}]);
       });
       setActiveSlotId(newId);
       applyCharacterData(snap);
