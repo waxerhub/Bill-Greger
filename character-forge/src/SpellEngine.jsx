@@ -1418,27 +1418,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           slots.forEach(function(s){if(s.snapshot)slotSnapsRef.current[s.id]=s.snapshot;});
           var archRaw=localStorage.getItem("cf_hench_archive");
           if(archRaw)try{henchArchiveRef.current=JSON.parse(archRaw);}catch(_){}
-          // Auto-open archived henchmen for every PC slot being restored
-          var openSlots=slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null,dead:s.dead||false};});
-          var openIds=new Set(openSlots.map(function(s){return s.id;}));
-          var archiveChanged=false;
-          openSlots.slice().forEach(function(pcSlot){
-            if(pcSlot.type!=='pc')return;
-            Object.keys(henchArchiveRef.current).forEach(function(hid){
-              var h=henchArchiveRef.current[hid];
-              if(h.pcId===pcSlot.id&&!openIds.has(hid)){
-                slotSnapsRef.current[hid]=h.snapshot;
-                openSlots=openSlots.concat([{id:hid,name:h.name,type:'henchman',pcId:pcSlot.id,dead:false}]);
-                openIds.add(hid);
-                delete henchArchiveRef.current[hid];
-                archiveChanged=true;
-              }
-            });
-          });
-          if(archiveChanged){
-            try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
-          }
-          setCharSlots(openSlots);
+          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null,dead:s.dead||false};}));
           setActiveSlotId(activeId);
           var active=slots.find(function(s){return s.id===activeId;});
           if(active&&active.snapshot)applyCharacterData(active.snapshot);
@@ -1868,28 +1848,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(id===activeSlotId)return;
     if(activeSlotId) slotSnapsRef.current[activeSlotId]=getCharacterSnapshot();
     var curName=charName||"Unnamed";
-    // Pre-compute henchmen to reopen OUTSIDE the state updater (updater runs twice in StrictMode)
-    var henchToOpen=[];
-    var targetForSwitch=charSlots.find(function(s){return s.id===id;});
-    if(targetForSwitch&&targetForSwitch.type==='pc'){
-      var curIds=new Set(charSlots.map(function(s){return s.id;}));
-      Object.keys(henchArchiveRef.current).forEach(function(hid){
-        var h=henchArchiveRef.current[hid];
-        if(h.pcId===id&&!curIds.has(hid)){
-          slotSnapsRef.current[hid]=h.snapshot;
-          henchToOpen.push({id:hid,name:h.name,type:'henchman',pcId:id});
-          delete henchArchiveRef.current[hid];
-        }
-      });
-      if(henchToOpen.length>0){
-        try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
-      }
-    }
     setCharSlots(function(prev){
-      var updated=prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;});
-      // Add pre-computed henchmen (filter out any already present in prev)
-      var prevIds=new Set(prev.map(function(s){return s.id;}));
-      return updated.concat(henchToOpen.filter(function(h){return !prevIds.has(h.id);}));
+      return prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;});
     });
     setActiveSlotId(id);
     var snap=slotSnapsRef.current[id];
@@ -1917,6 +1877,25 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }
     setCharSlots(function(prev){return prev.filter(function(s){return s.id!==id;});});
     delete slotSnapsRef.current[id];
+  }
+
+  function openHenchmen(pcId){
+    var curIds=new Set(charSlots.map(function(s){return s.id;}));
+    var toOpen=[];
+    Object.keys(henchArchiveRef.current).forEach(function(hid){
+      var h=henchArchiveRef.current[hid];
+      if(h.pcId===pcId&&!curIds.has(hid)){
+        slotSnapsRef.current[hid]=h.snapshot;
+        toOpen.push({id:hid,name:h.name,type:'henchman',pcId:pcId,dead:false});
+        delete henchArchiveRef.current[hid];
+      }
+    });
+    if(toOpen.length===0)return;
+    try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
+    setCharSlots(function(prev){
+      var prevIds=new Set(prev.map(function(s){return s.id;}));
+      return prev.concat(toOpen.filter(function(h){return !prevIds.has(h.id);}));
+    });
   }
 
   function setSlotType(id,type,pcId){
@@ -2389,11 +2368,14 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         var menuSlot=charSlots.find(function(s){return s.id===slotCtxMenu.slotId;});
         if(!menuSlot)return null;
         var pcSlots=charSlots.filter(function(s){return s.type==='pc'&&s.id!==menuSlot.id;});
+        var archivedHenchCount=menuSlot.type==='pc'?Object.values(henchArchiveRef.current).filter(function(h){return h.pcId===menuSlot.id;}).length:0;
         return <div style={{position:"fixed",inset:0,zIndex:1100}} onClick={function(){setSlotCtxMenu(null);}}>
           <div style={{position:"fixed",left:slotCtxMenu.x,top:slotCtxMenu.y,background:"#12111a",border:"1px solid #2a2a4a",borderRadius:"6px",padding:"6px 0",minWidth:"200px",boxShadow:"0 4px 16px rgba(0,0,0,0.7)",zIndex:1101}} onClick={function(e){e.stopPropagation();}}>
             <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",padding:"4px 14px 6px",borderBottom:"1px solid #2a2a4a"}}>{(menuSlot.id===activeSlotId?charName:menuSlot.name)||"Unnamed"}</div>
             <button onClick={function(){setSlotType(slotCtxMenu.slotId,'pc',null);setSlotCtxMenu(null);}}
               style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px",background:menuSlot.type==='pc'?"#1a1a2a":"transparent",color:menuSlot.type==='pc'?"#d4a840":g,border:"none",cursor:"pointer",fontSize:"12px",fontFamily:"monospace"}}>♦ Mark as PC</button>
+            {archivedHenchCount>0&&<button onClick={function(){openHenchmen(menuSlot.id);setSlotCtxMenu(null);}}
+              style={{display:"block",width:"100%",textAlign:"left",padding:"7px 14px 7px 22px",background:"transparent",color:"#7090b0",border:"none",cursor:"pointer",fontSize:"12px",fontFamily:"monospace"}}>→ Open Henchmen ({archivedHenchCount})</button>}
             {pcSlots.length>0&&<div>
               <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",padding:"6px 14px 3px"}}>HENCHMAN OF</div>
               {pcSlots.map(function(pc){
