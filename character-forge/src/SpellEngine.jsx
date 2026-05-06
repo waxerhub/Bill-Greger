@@ -1354,7 +1354,6 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _activeSlotId=useState(null),activeSlotId=_activeSlotId[0],setActiveSlotId=_activeSlotId[1];
   var slotSnapsRef=useRef({}); // {[slotId]: characterSnapshot} — updated without re-render
   var henchArchiveRef=useRef({}); // {[slotId]: {snapshot, name, pcId}} — closed henchman snapshots
-  var longPressRef=useRef(null); // timer id for long-press tab context menu
   var didRestoreRef=useRef(false); // guard against StrictMode double-run of restore effect
   var _slotCtxMenu=useState(null),slotCtxMenu=_slotCtxMenu[0],setSlotCtxMenu=_slotCtxMenu[1]; // {slotId, x, y}
 
@@ -2343,19 +2342,17 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           var accentColor=isDead?"#6a2020":isPC?"#c09030":isHench?"#5080a0":g;
           var bottomBorder=isActive?"2px solid "+accentColor:"2px solid transparent";
           var nameColor=isDead?(isActive?"#8a5050":"#554040"):isActive?g:isPC?"#d4a840":isHench?"#7090b0":dim;
-          var tabTitle=isDead?"☠ Dead — hold to open menu":isHench?(pcSlot?"Henchman of "+pcSlot.name:"Henchman"):isPC?"PC":"Hold to tag as PC or Henchman";
           var sid=s.id;
           return <div key={sid} onClick={function(){switchCharSlot(sid);}}
-            onContextMenu={function(e){e.preventDefault();setSlotCtxMenu({slotId:sid,x:e.clientX,y:e.clientY});}}
-            onTouchStart={function(e){var t=e.touches[0];longPressRef.current=setTimeout(function(){setSlotCtxMenu({slotId:sid,x:t.clientX,y:Math.min(t.clientY,window.innerHeight-220)});},500);}}
-            onTouchEnd={function(){clearTimeout(longPressRef.current);}}
-            onTouchMove={function(){clearTimeout(longPressRef.current);}}
-            title={tabTitle}
-            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 8px 0 10px",background:isActive?(isDead?"#1a0a0a":"#12111a"):"transparent",borderRight:"1px solid "+brd,borderBottom:bottomBorder,marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"60px",boxSizing:"border-box",opacity:isDead?0.65:1}}>
-            {isDead&&<span style={{fontSize:"9px",color:"#8a4040",flexShrink:0}} title="Dead">☠</span>}
-            {!isDead&&isPC&&<span style={{fontSize:"9px",color:"#c09030",flexShrink:0}} title="PC">♦</span>}
-            {!isDead&&isHench&&<span style={{fontSize:"9px",color:"#5080a0",flexShrink:0}} title={"Henchman"+(pcSlot?" of "+pcSlot.name:"")}>→</span>}
+            onContextMenu={function(e){e.preventDefault();var r=e.currentTarget.getBoundingClientRect();setSlotCtxMenu({slotId:sid,x:r.left,y:r.bottom});}}
+            style={{display:"flex",alignItems:"center",gap:"5px",padding:"0 4px 0 10px",background:isActive?(isDead?"#1a0a0a":"#12111a"):"transparent",borderRight:"1px solid "+brd,borderBottom:bottomBorder,marginBottom:"-1px",cursor:isActive?"default":"pointer",flexShrink:0,maxWidth:"200px",minWidth:"60px",boxSizing:"border-box",opacity:isDead?0.65:1}}>
+            {isDead&&<span style={{fontSize:"9px",color:"#8a4040",flexShrink:0}}>☠</span>}
+            {!isDead&&isPC&&<span style={{fontSize:"9px",color:"#c09030",flexShrink:0}}>♦</span>}
+            {!isDead&&isHench&&<span style={{fontSize:"9px",color:"#5080a0",flexShrink:0}} title={pcSlot?"Henchman of "+pcSlot.name:"Henchman"}>→</span>}
             <span style={{fontSize:"11px",color:nameColor,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,padding:"5px 0",textDecoration:isDead?"line-through":"none"}}>{displayName}</span>
+            <button onClick={function(e){e.stopPropagation();var r=e.currentTarget.getBoundingClientRect();setSlotCtxMenu({slotId:sid,x:r.left,y:r.bottom});}}
+              title="Tag / manage this character"
+              style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"1px 3px",fontSize:"13px",lineHeight:1,flexShrink:0,opacity:0.6}}>⋯</button>
             {charSlots.length>1&&<button onClick={function(e){e.stopPropagation();closeCharSlot(s.id);}}
               style={{background:"transparent",border:"none",color:dim,cursor:"pointer",padding:"1px 2px",fontSize:"12px",lineHeight:1,flexShrink:0,opacity:0.7}}>×</button>}
           </div>;
