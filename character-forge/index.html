@@ -17,7 +17,18 @@
         cfError(String(msg) + '\n' + String(src) + ':' + line);
       };
       window.addEventListener('unhandledrejection', function(e) {
-        cfError('Promise rejection: ' + String(e.reason));
+        var msg = String(e.reason);
+        // Supabase auth uses the Web Locks API on IndexedDB; on iOS Safari the lock
+        // can be "stolen" when a tab is suspended and resumed. This is non-fatal —
+        // auth falls back to localStorage — so suppress the full-screen crash.
+        if (msg.indexOf('Lock was stolen') !== -1 ||
+            msg.indexOf('AbortError') !== -1 ||
+            msg.indexOf('IDBTransaction') !== -1) {
+          console.warn('[Character Forge] Suppressed non-fatal storage error:', msg);
+          e.preventDefault();
+          return;
+        }
+        cfError('Promise rejection: ' + msg);
       });
       // Fallback: if React hasn't mounted after 20s, show a helpful message
       window.__cfMounted = false;

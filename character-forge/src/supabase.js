@@ -57,7 +57,13 @@ function makeClient() {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
-    return createClient(url, key);
+    return createClient(url, key, {
+      auth: {
+        storage: window.localStorage,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
   } catch {
     console.warn('[Character Forge] Supabase init skipped — VITE_SUPABASE_URL is invalid:', url);
     return null;
