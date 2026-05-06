@@ -1898,8 +1898,14 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
 
   function setSlotType(id,type,pcId){
+    // When linking a henchman, capture the PC's cloudId as a stable cross-session reference
+    var pcCloudId=null;
+    if(type==='henchman'&&pcId){
+      var pcSnap=pcId===activeSlotId?getCharacterSnapshot():slotSnapsRef.current[pcId];
+      if(pcSnap)pcCloudId=pcSnap.cloudId||null;
+    }
     setCharSlots(function(prev){
-      return prev.map(function(s){return s.id===id?Object.assign({},s,{type:type||null,pcId:pcId||null}):s;});
+      return prev.map(function(s){return s.id===id?Object.assign({},s,{type:type||null,pcId:pcId||null,slotPcRef:pcCloudId}):s;});
     });
   }
 
@@ -2132,6 +2138,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,
       monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
       slotType:activeSlot?activeSlot.type||null:null,
+      slotPcRef:activeSlot?activeSlot.slotPcRef||null:null,
       _version:1};
   }
   // Unconditionally sets ALL character state — no conditionals so no bleed between tabs
@@ -2270,6 +2277,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     try{
       var rec=await supabaseSave(getCharacterSnapshot(),cloudId||undefined);
       setCloudId(rec.id);
+      // If this is a PC, update all open henchmen so their slotPcRef points to the fresh cloudId
+      var savedSlot=charSlots.find(function(s){return s.id===activeSlotId;});
+      if(savedSlot&&savedSlot.type==='pc'){
+        setCharSlots(function(prev){
+          return prev.map(function(s){
+            return(s.type==='henchman'&&s.pcId===activeSlotId)?Object.assign({},s,{slotPcRef:rec.id}):s;
+          });
+        });
+      }
       setCloudStatus("Saved ✓");
       setTimeout(function(){setCloudStatus("");},2500);
       refreshAcctChars();
@@ -2289,6 +2305,31 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       refreshAcctChars();
     }catch(err){setAcctStatus("Error: "+err.message);}
   }
+  async function autoOpenCloudHenchmen(pcCloudId,pcSlotId){
+    if(!supabase||!pcCloudId)return;
+    try{
+      var userRes=await supabase.auth.getUser();
+      var user=userRes.data&&userRes.data.user;
+      if(!user)return;
+      var res=await supabase.from("characters").select("id,name,data")
+        .eq("user_id",user.id).filter("data->>slotPcRef","eq",pcCloudId);
+      var henchChars=res.data||[];
+      henchChars.forEach(function(hc){
+        var hSnap=Object.assign({},hc.data,{cloudId:hc.id});
+        var hId="slot_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+        slotSnapsRef.current[hId]=hSnap;
+        setCharSlots(function(prev){
+          // Skip if already open (same cloudId already in a slot's snapshot)
+          var alreadyOpen=prev.some(function(s){
+            var sn=slotSnapsRef.current[s.id];
+            return sn&&sn.cloudId===hc.id;
+          });
+          if(alreadyOpen)return prev;
+          return prev.concat([{id:hId,name:hSnap.charName||"Unnamed",type:"henchman",pcId:pcSlotId,dead:false,slotPcRef:pcCloudId}]);
+        });
+      });
+    }catch(e){console.warn("[CF] Could not auto-open henchmen:",e);}
+  }
   async function loadAcctChar(id){
     setAcctOpen(false);setCloudStatus("Loading…");
     try{
@@ -2301,10 +2342,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       slotSnapsRef.current[newId]=snap;
       setCharSlots(function(prev){
         return prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;})
-          .concat([{id:newId,name:snap.charName||"Unnamed",type:snap.slotType||null,pcId:null,dead:false}]);
+          .concat([{id:newId,name:snap.charName||"Unnamed",type:snap.slotType||null,pcId:null,dead:false,slotPcRef:snap.slotPcRef||null}]);
       });
       setActiveSlotId(newId);
       applyCharacterData(snap);
+      // Auto-open henchmen if this is a PC with a cloud link
+      if(snap.slotType==='pc')autoOpenCloudHenchmen(id,newId);
       setCloudStatus("Loaded ✓");
       setTimeout(function(){setCloudStatus("");},2000);
     }catch(err){setCloudStatus("Error: "+err.message);}
