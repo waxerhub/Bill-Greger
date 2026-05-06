@@ -1355,6 +1355,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var slotSnapsRef=useRef({}); // {[slotId]: characterSnapshot} — updated without re-render
   var henchArchiveRef=useRef({}); // {[slotId]: {snapshot, name, pcId}} — closed henchman snapshots
   var longPressRef=useRef(null); // timer id for long-press tab context menu
+  var didRestoreRef=useRef(false); // guard against StrictMode double-run of restore effect
   var _slotCtxMenu=useState(null),slotCtxMenu=_slotCtxMenu[0],setSlotCtxMenu=_slotCtxMenu[1]; // {slotId, x, y}
 
   // Cloud / auth state
@@ -1405,6 +1406,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
   // Restore character slots on first load (falls back to single slot from cf_autosave)
   useEffect(function(){
+    if(didRestoreRef.current)return;
+    didRestoreRef.current=true;
     try{
       var slotsRaw=localStorage.getItem("cf_char_slots");
       if(slotsRaw){
@@ -1415,7 +1418,27 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
           slots.forEach(function(s){if(s.snapshot)slotSnapsRef.current[s.id]=s.snapshot;});
           var archRaw=localStorage.getItem("cf_hench_archive");
           if(archRaw)try{henchArchiveRef.current=JSON.parse(archRaw);}catch(_){}
-          setCharSlots(slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null,dead:s.dead||false};}));
+          // Auto-open archived henchmen for every PC slot being restored
+          var openSlots=slots.map(function(s){return {id:s.id,name:s.name,type:s.type||null,pcId:s.pcId||null,dead:s.dead||false};});
+          var openIds=new Set(openSlots.map(function(s){return s.id;}));
+          var archiveChanged=false;
+          openSlots.slice().forEach(function(pcSlot){
+            if(pcSlot.type!=='pc')return;
+            Object.keys(henchArchiveRef.current).forEach(function(hid){
+              var h=henchArchiveRef.current[hid];
+              if(h.pcId===pcSlot.id&&!openIds.has(hid)){
+                slotSnapsRef.current[hid]=h.snapshot;
+                openSlots=openSlots.concat([{id:hid,name:h.name,type:'henchman',pcId:pcSlot.id,dead:false}]);
+                openIds.add(hid);
+                delete henchArchiveRef.current[hid];
+                archiveChanged=true;
+              }
+            });
+          });
+          if(archiveChanged){
+            try{localStorage.setItem("cf_hench_archive",JSON.stringify(henchArchiveRef.current));}catch(_){}
+          }
+          setCharSlots(openSlots);
           setActiveSlotId(activeId);
           var active=slots.find(function(s){return s.id===activeId;});
           if(active&&active.snapshot)applyCharacterData(active.snapshot);
