@@ -10,6 +10,57 @@
 
 The top bar is always visible regardless of which tab you're on. It shows your character's **name, race, class, level, HP, AC, THAC0, and CP** at a glance — all updating live as you edit. The tab row lets you switch between the nine sections. **NEW** clears everything for a fresh character. **PDF** exports a printable character sheet. **💾 Save** downloads a `.json` backup. **📂 Load** restores from a `.json` file or imports a Character Forge PDF. **👤 Sign In** (or your username when logged in) opens the account modal for cloud save, cloud load, and character management.
 
+Directly above the header is the **character tab bar** — a row of named tabs, one per open character. Click any tab to switch to that character. The **+** button opens a blank character in a new tab. Each tab has a **⋯** button and a **×** close button.
+
+---
+
+## Multiple Characters & Party Management
+
+You can keep your entire party open at once — each character in its own tab. The tab bar sits at the very top of the page.
+
+### Opening and Switching Characters
+
+- **+ button** — opens a new blank character in a fresh tab
+- **Click a tab** — switches to that character; your current character is saved automatically
+- **× on a tab** — closes that character (henchman tabs are archived rather than deleted — see below)
+
+### Tagging Characters (⋯ Menu)
+
+Each tab has a **⋯** button that opens a management dropdown. Right-clicking a tab on desktop does the same thing.
+
+| Option | What it does |
+|--------|-------------|
+| **♦ Mark as PC** | Tags this character as a Player Character. The tab gets a gold ♦ icon. |
+| **HENCHMAN OF → [name]** | Links this character as a henchman of the named PC. The tab gets a blue → icon and shows the PC's name on hover. |
+| **→ Open Henchmen (N)** | Appears on PC tabs only when archived henchmen exist. Reopens all of that PC's closed henchman tabs at once. |
+| **✕ Clear tag** | Removes the PC or henchman tag from this character. |
+| **☠ Mark as Dead** | Greys out the tab, adds a ☠ icon, strikes through the name, and moves it to the end of the tab bar. |
+| **✦ Resurrect** | Removes the dead status and restores the tab to normal. |
+
+### Henchman Tabs
+
+Henchman tabs behave differently when closed:
+
+- Closing a henchman tab **archives** it (rather than permanently removing it) along with its full character data and its link to the PC.
+- To reopen archived henchmen, click **⋯** on the PC's tab — if archived henchmen exist you'll see **→ Open Henchmen (N)**.
+
+### Auto-Opening Henchmen from Cloud
+
+If you use cloud save, loading a PC from your account automatically opens all of that PC's henchmen alongside it — no manual reopening needed.
+
+**One-time setup required:**
+
+1. Load or create the PC character → tag as **♦ PC** → **☁ Save**
+2. Load or create each henchman → tag as **Henchman of [PC name]** → **☁ Save**
+
+After that, every time you load the PC from your cloud account list, all linked henchmen load automatically into their own tabs.
+
+> **Note:** The link is stored using the PC's cloud ID. The henchman must be saved to the cloud *after* being tagged to the PC for the link to be established. If you tag first and save later, the save captures the link correctly. If you tag before the PC has ever been cloud-saved, save the PC first, then re-tag the henchman.
+
+### Dead Characters
+
+Dead character tabs are visually distinct — greyed out with a ☠ icon and strikethrough name — and sorted to the end of the tab bar. Their data is fully preserved. Use **✦ Resurrect** in the ⋯ menu to restore them.
+
 ---
 
 ## Tab 1 — Stats
@@ -150,3 +201,5 @@ Click **👤 Sign In**, enter your email and password on the **Sign In** tab, an
 | 👤 Account → Cloud Save | Full cloud save with history list | Managing multiple characters |
 
 > Auto-save is browser-local. Use **💾 Save** before clearing browser data or switching browsers.
+
+> **PC/henchman tags** are included in all save formats (JSON download, cloud save, auto-save). When you load a character back — from file or cloud — its tag is restored automatically.
