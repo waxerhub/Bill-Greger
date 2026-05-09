@@ -195,7 +195,18 @@ var WIZARD_SCHOOLS=["Abjuration","Alteration","Chronomancy","Conjuration/Summoni
 // Priest Presets
 var PRIEST_PRESETS={"Cleric":{cost:100,major:["All","Astral","Charm","Combat","Creation","Divination","Guardian","Healing","Necromantic","Protection","Summoning"],minor:["Elemental Water","Elemental Earth"],abilities:["Turn undead"],limitations:[]},"Druid":{cost:70,major:["All","Animal","Elemental (All)","Healing","Plant","Sun","Weather"],minor:[],abilities:["Identify plants/animals","Pass without trace","Shapechange","Communication","Immunity to charm"],limitations:["Armor: Leather only","Weapons: Druid list"]},"Crusader":{cost:55,major:["All","Combat","Guardian","Healing","War","Wards"],minor:["Necromantic","Protection"],abilities:["Combat bonus (warrior THAC0)"],limitations:[]},"Monk":{cost:60,major:["All","Divination","Guardian","Numbers","Thought"],minor:["Combat","Healing","Necromantic","Time"],abilities:["AC improvement","Unarmed combat"],limitations:["Armor: None"]},"Shaman":{cost:60,major:["All","Animal","Protection","Summoning","Travelers","Wards"],minor:["Healing","Plant"],abilities:["Spirit powers (all)"],limitations:[]}};
 
-// Priest Abilities
+// Wizard Presets — each specialist's signature school + standard learning bonus; Illusionist adds
+// the +2/-2 save bonus and 3/day dispel phantasmal force per Player's Option: Spells & Magic.
+var WIZARD_PRESETS={
+  "Illusionist":{cost:33,schools:["Illusion/Phantasm"],abilities:["School knowledge +2/-2 saves","Dispel (3/day)","Learning bonus +15% (one school)"],limitations:[]},
+  "Evoker":     {cost:15,schools:["Invocation/Evocation"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+  "Necromancer":{cost:15,schools:["Necromancy"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+  "Abjurer":    {cost:15,schools:["Abjuration"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+  "Conjurer":   {cost:15,schools:["Conjuration/Summoning"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+  "Diviner":    {cost:15,schools:["Divination"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+  "Enchanter":  {cost:15,schools:["Enchantment/Charm"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+  "Transmuter": {cost:15,schools:["Alteration"],abilities:["School knowledge +1/-1 saves","Learning bonus +15% (one school)"],limitations:[]},
+};
 var PRIEST_ABILITIES={"Animal empathy":{c:10},"AC improvement":{c:15},"Casting time reduction":{c:5},"Cold resistance":{c:5},"Combat bonus (warrior THAC0)":{c:20},"Communication":{c:10},"Detect evil":{c:10},"Detect undead":{c:10},"Expert healer":{c:10},"Extended duration (one sphere)":{c:10},"Extended duration (all)":{c:15},"Fire/electrical resistance":{c:7},"Followers (8th level)":{c:5},"Followers (any level)":{c:10},"Hit point bonus (d10)":{c:10},"Identify plants/animals":{c:5},"Identify plants/animals (1st)":{c:8},"Immunity to charm":{c:5},"Immunity to magic":{c:15},"Immunity to disease":{c:10},"Inspire allies":{c:5},"Enrage allies":{c:10},"Know alignment":{c:15},"Lay on hands":{c:10},"Pass without trace":{c:5},"Pass without trace (1st)":{c:7},"Shapechange":{c:15},"Turn undead":{c:15},"Unarmed combat":{c:15},"Warrior Con bonus":{c:15},"Warrior Con + Str":{c:20},"Weapon: one edged":{c:5},"Weapon: any":{c:10},"Weapon specialization":{c:25},"Wizardly priest":{c:25},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Spirit powers (one)":{c:30},"Spirit powers (all)":{c:40}};
 
 // Priest Limitations
@@ -1659,6 +1670,10 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     var p=PRIEST_PRESETS[name];if(!p)return;
     setCpMajor(p.major.slice());setCpMinor(p.minor.slice());
     setCpAbil(p.abilities.slice());setCpLim(p.limitations.slice());
+  }
+  function loadWizardPreset(name){
+    var p=WIZARD_PRESETS[name];if(!p)return;
+    setCpSchools(p.schools.slice());setCpAbil(p.abilities.slice());setCpLim(p.limitations.slice());
   }
 
   function toggle(list,setList,item){
@@ -3245,6 +3260,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               {!isWizard&&<div style={{padding:"10px 14px",marginBottom:"12px",background:"#1a1010",border:"1px solid #4a2a2a",borderRadius:"6px",fontSize:"11px",color:"#c08080"}}>
                 ⚠ Viewing only — select Mage or Illusionist on the Stats tab to make this section editable.
               </div>}
+              {/* Specialist Presets */}
+              <div style={{marginBottom:"12px",display:"flex",flexWrap:"wrap",alignItems:"center",gap:"6px"}}>
+                <span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>PRESETS:</span>
+                {Object.keys(WIZARD_PRESETS).map(function(n){return <button key={n} disabled={!isWizard} onClick={function(){loadWizardPreset(n);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:isWizard?"pointer":"not-allowed",fontSize:"10px",fontFamily:"monospace",background:"#1a1a28",color:isWizard?g:dim,border:"1px solid "+brd,opacity:isWizard?1:0.5}}>{n} ({WIZARD_PRESETS[n].cost})</button>;})}
+              </div>
               {/* Schools */}
               <div style={{marginBottom:"12px"}}>
                 <Lbl dim={dim}>SCHOOLS OF MAGIC <span style={{color:g}}>(5 CP each, Universal is free)</span></Lbl>
