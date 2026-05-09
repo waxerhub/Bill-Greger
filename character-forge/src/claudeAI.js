@@ -9,20 +9,23 @@ const MODEL = 'claude-opus-4-6';
 // onChunk(text) called with each text delta
 // onDone(fullText) called when stream completes
 export async function streamSpellSearch(query, spellData, onChunk, onDone) {
+  var is1e = spellData.length > 0 && spellData[0]._1eClass;
+  var edition = is1e ? '1st' : '2nd';
   var spellIndex = spellData.map(function(s) {
     var parts = [s['Spell Name'], 'L' + s.Level];
     if (s.Sphere) parts.push('Sphere:' + s.Sphere);
     if (s.School) parts.push('School:' + s.School);
     if (s.Category) parts.push(s.Category);
+    if (s.Description) parts.push(s.Description.slice(0, 80));
     return parts.join(' | ');
   }).join('\n');
 
   var systemPrompt =
-    'You are an AD&D 2nd Edition spell reference assistant.\n' +
+    'You are an AD&D ' + edition + ' Edition spell reference assistant.\n' +
     'Answer questions about spells from the compendium below.\n' +
     'When you name a specific spell, write it in **bold** using its exact name from the list.\n' +
     'Be concise. Group related spells together. Include level and brief effect.\n\n' +
-    'COMPENDIUM (Name | Level | Sphere/School | Category):\n' +
+    'COMPENDIUM (Name | Level | Sphere/School | Category | Description):\n' +
     spellIndex;
 
   var response = await fetch(API_URL, {

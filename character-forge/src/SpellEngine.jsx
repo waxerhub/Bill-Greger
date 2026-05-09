@@ -2135,12 +2135,23 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   async function doSpellSearch(){
     if(!aiQuery.trim()||aiLoading)return;
     setAiLoading(true);setAiResult("");setAiHighlight([]);
+    // In 1E mode use the active 1E spell list, otherwise the full 2E data
+    var searchDb=edition==='1e'&&isWizard
+      ?spells1e.filter(function(s){
+          return cls==='Illusionist'?(s._1eClass==='illusionist'||s._1eClass==='mu/i'):(s._1eClass==='mu'||s._1eClass==='mu/i');
+        })
+      :SPELL_DATA;
     try{
-      await streamSpellSearch(aiQuery,SPELL_DATA,
+      await streamSpellSearch(aiQuery,searchDb,
         function(chunk){setAiResult(function(p){return p+chunk;});},
         function(full){setAiHighlight(extractSpellNames(full));setAiLoading(false);}
       );
     }catch(e){setAiResult("Error: "+e.message);setAiLoading(false);}
+  }
+  function prepareFromAI(spell){
+    setMemorized(function(prev){
+      return prev.concat([Object.assign({},spell,{prepId:Date.now()+"_"+Math.random()})]);
+    });
   }
   async function doGenChar(){
     if(!genPrompt.trim()||genLoading)return;
@@ -4696,8 +4707,35 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               <input value={aiQuery} onChange={function(e){setAiQuery(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doSpellSearch();}} placeholder="e.g. healing over time, charm a humanoid, conjure fire, teleport…" style={Object.assign({},is(brd,txt),{flex:1})} />
               <button onClick={doSpellSearch} disabled={aiLoading} style={{padding:"6px 18px",background:aiLoading?"#1a1a28":"#1a2a1a",color:aiLoading?dim:"#7db87d",border:"1px solid "+(aiLoading?brd:"#3a6a3a"),borderRadius:"4px",cursor:aiLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"11px"}}>{aiLoading?"…":"Search"}</button>
             </div>
-            {aiResult&&<div style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"14px",fontSize:"12px",lineHeight:"1.8",whiteSpace:"pre-wrap",color:txt,maxHeight:"50vh",overflowY:"auto"}}>{renderBold(aiResult)}</div>}
-            {aiHighlight.length>0&&<div style={{marginTop:"8px",fontSize:"11px",color:"#7db87d",fontFamily:"monospace"}}>↑ {aiHighlight.length} spell{aiHighlight.length!==1?"s":""} highlighted in compendium — switch to the Spells tab to see them</div>}
+            {aiResult&&<div style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"14px",fontSize:"12px",lineHeight:"1.8",whiteSpace:"pre-wrap",color:txt,maxHeight:"40vh",overflowY:"auto"}}>{renderBold(aiResult)}</div>}
+            {aiHighlight.length>0&&(function(){
+              var db=edition==='1e'&&isWizard?spells1e:compSpells;
+              var matched=db.filter(function(s){return aiHighlight.indexOf(s["Spell Name"])>=0;});
+              if(matched.length===0)return null;
+              return <div style={{marginTop:"12px"}}>
+                <div style={{fontSize:"10px",color:dim,fontFamily:"monospace",letterSpacing:"1px",marginBottom:"6px"}}>SUGGESTED SPELLS</div>
+                {matched.map(function(spell){
+                  var lvl=parseInt(spell.Level)||1;
+                  var used=memoCount(lvl);
+                  var max=adjSlots[lvl-1]||0;
+                  var alreadyPrepped=memorized.some(function(m){return m["Spell Name"]===spell["Spell Name"];});
+                  var slotFull=!alreadyPrepped&&used>=max&&max>0;
+                  var isNonCaster=max===0;
+                  return <div key={spell["Spell Name"]} style={{display:"flex",alignItems:"center",gap:"8px",padding:"5px 10px",marginBottom:"3px",background:surf,border:"1px solid "+(alreadyPrepped?"#2a4a2a":brd),borderRadius:"4px"}}>
+                    <span style={{fontSize:"10px",color:"#80b0e0",fontFamily:"monospace",minWidth:"36px"}}>L{lvl}</span>
+                    <span style={{flex:1,fontSize:"12px",color:alreadyPrepped?"#7db87d":txt}}>{spell["Spell Name"]}</span>
+                    {alreadyPrepped
+                      ?<span style={{fontSize:"10px",color:"#7db87d",fontFamily:"monospace"}}>✓ Prepared</span>
+                      :isNonCaster
+                        ?<span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>—</span>
+                        :<button onClick={function(){prepareFromAI(spell);}} disabled={slotFull}
+                          style={{padding:"3px 10px",background:slotFull?"transparent":"#1a2a1a",color:slotFull?dim:"#7db87d",border:"1px solid "+(slotFull?brd:"#3a6a3a"),borderRadius:"3px",cursor:slotFull?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"10px",whiteSpace:"nowrap"}}>
+                          {slotFull?"Full":"+ Prepare"}
+                        </button>}
+                  </div>;
+                })}
+              </div>;
+            })()}
           </div>}
           {aiMode==="gen"&&<div>
             <Lbl dim={dim}>DESCRIBE YOUR CHARACTER CONCEPT</Lbl>
