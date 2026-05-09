@@ -1939,6 +1939,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       return prev.map(function(s){return s.id===activeSlotId?Object.assign({},s,{name:curName}):s;});
     });
     setActiveSlotId(id);
+    // Clear AI spell search results so prepare buttons don't bleed across characters
+    setAiHighlight([]);setAiResult("");
     var snap=slotSnapsRef.current[id];
     if(snap) applyCharacterData(snap);
   }
