@@ -1455,6 +1455,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     try{
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
         cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
+        inventory,cloudId,edition,
         monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
       if(activeSlotId){
@@ -1468,6 +1469,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }catch(_){}
   },[charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
+     inventory,cloudId,edition,
      monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
      charSlots,activeSlotId]);
 
