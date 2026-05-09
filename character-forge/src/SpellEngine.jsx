@@ -1868,10 +1868,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Spell filtering based on CP selections
   var activeSpellDb=(edition==='1e'&&isWizard)?spells1e:compSpells;
   var availableSpells=activeSpellDb.filter(function(s){
-    // 1E mode: filter by exact class, skip school filtering
+    // 1E mode: Class column uses "MU", "MU/I", "Illusionist"
+    // Mage sees MU + MU/I; Illusionist sees Illusionist + MU/I
     if(edition==='1e'&&isWizard){
-      if(cls==='Mage'&&s._1eClass!=='mage')return false;
-      if(cls==='Illusionist'&&s._1eClass!=='illusionist')return false;
+      var c1e=s._1eClass||'';
+      if(cls==='Mage'&&c1e!=='mu'&&c1e!=='mu/i')return false;
+      if(cls==='Illusionist'&&c1e!=='illusionist'&&c1e!=='mu/i')return false;
       if(spellLvlFilter&&s.Level!=parseInt(spellLvlFilter))return false;
       if(spellFilter){var q=spellFilter.toLowerCase();return(s["Spell Name"]||"").toLowerCase().indexOf(q)>=0;}
       return true;
