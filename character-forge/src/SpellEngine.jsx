@@ -2717,7 +2717,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               </div>
               {edition==='1e'&&!spells1eLoaded&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>Loading 1E spells…</div>}
               {edition==='1e'&&spells1eLoaded&&spells1e.length===0&&<div style={{fontSize:"10px",color:"#e08060",marginTop:"4px",fontFamily:"monospace"}}>⚠ 1e-spells.xlsx not found in /public</div>}
-              {edition==='1e'&&spells1e.length>0&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>{spells1e.filter(function(s){return s._1eClass===(cls==='Illusionist'?'illusionist':'mage');}).length} spells loaded</div>}
+              {edition==='1e'&&spells1e.length>0&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>{spells1e.filter(function(s){return cls==='Illusionist'?(s._1eClass==='illusionist'||s._1eClass==='mu/i'):(s._1eClass==='mu'||s._1eClass==='mu/i');}).length} spells loaded</div>}
             </Card>}
             <Card brd={brd} surf={surf}><Lbl dim={dim}>KIT</Lbl>
               {isDruid
