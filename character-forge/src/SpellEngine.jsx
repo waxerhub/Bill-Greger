@@ -195,42 +195,42 @@ var WIZARD_SCHOOLS=["Abjuration","Alteration","Chronomancy","Conjuration/Summoni
 // Priest Presets
 var PRIEST_PRESETS={"Cleric":{cost:100,major:["All","Astral","Charm","Combat","Creation","Divination","Guardian","Healing","Necromantic","Protection","Summoning"],minor:["Elemental Water","Elemental Earth"],abilities:["Turn undead"],limitations:[]},"Druid":{cost:70,major:["All","Animal","Elemental (All)","Healing","Plant","Sun","Weather"],minor:[],abilities:["Identify plants/animals","Pass without trace","Shapechange","Communication","Immunity to charm"],limitations:["Armor: Leather only","Weapons: Druid list"]},"Crusader":{cost:55,major:["All","Combat","Guardian","Healing","War","Wards"],minor:["Necromantic","Protection"],abilities:["Combat bonus (warrior THAC0)"],limitations:[]},"Monk":{cost:60,major:["All","Divination","Guardian","Numbers","Thought"],minor:["Combat","Healing","Necromantic","Time"],abilities:["AC improvement","Unarmed combat"],limitations:["Armor: None"]},"Shaman":{cost:60,major:["All","Animal","Protection","Summoning","Travelers","Wards"],minor:["Healing","Plant"],abilities:["Spirit powers (all)"],limitations:[]}};
 
-// Wizard Presets — sourced from Player's Option: Spells & Magic specialist wizard descriptions.
-// Each preset selects the specialty school plus the nearest CP-ability equivalents of the
-// class's level-based powers. Illusionist already committed; all others updated from book scans.
+// Wizard Presets — book-accurate specialist class features from Player's Option: Spells & Magic.
+// Class features (c:0) are innate abilities, not CP purchases. Learning bonus +15% (one school)
+// is the only real CP spend (5 CP); school selection costs 5 CP. Remaining ~30 CP are free.
 var WIZARD_PRESETS={
-  "Illusionist":{cost:33,schools:["Illusion/Phantasm"],
-    abilities:["School knowledge +2/-2 saves","Dispel (3/day)","Learning bonus +15% (one school)"],
+  "Illusionist":{cost:10,schools:["Illusion/Phantasm"],
+    abilities:["Illusionist: +2 saves vs illusions (8th)","Illusionist: Dispel illusion 3/day (11th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"8th level: +2 saves vs illusion spells cast by non-illusionists. 11th level: Dispel (3/day) models dispel phantasmal force / improved phantasmal force (range 30 yds, 50% ±5%/level diff). Opposed schools: Necromancy, Invocation/Evocation, Abjuration."},
-  "Abjurer":    {cost:29,schools:["Abjuration"],
-    abilities:["School knowledge +2/-2 saves","Immunity (one spell)","Learning bonus +15% (one school)"],
+    note:"Req: INT 16. Opposed schools: Necromancy, Invocation/Evocation, Abjuration."},
+  "Abjurer":    {cost:10,schools:["Abjuration"],
+    abilities:["Abjurer: +2 saves vs para/poison/death (8th)","Abjurer: AC bonus +1 (11th)","Abjurer: Immune to hold spells (14th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"8th level: +2 saves vs paralyzation, poison, and death magic (School knowledge +2/-2 is the nearest CP equivalent — the bonus applies vs those save categories, not just abjuration spells). 11th level: AC improves by 1 (no direct CP analog; note it on your sheet). 14th level: immunity to all hold spells — set Immunity (one spell) to hold person or hold monster. Opposed schools: Alteration, Illusion/Phantasm."},
-  "Conjurer":   {cost:30,schools:["Conjuration/Summoning"],
-    abilities:["No components (one school)","Dispel (3/day)","Learning bonus +15% (one school)"],
+    note:"Req: CON 15. Opposed schools: Alteration, Illusion/Phantasm."},
+  "Conjurer":   {cost:10,schools:["Conjuration/Summoning"],
+    abilities:["Conjurer: No components for conjurations (11th)","Conjurer: Dispel summoned creatures 3/day (14th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"11th level: cast all conjuration/summoning spells without material components. 14th level: Dispel (3/day) models the ability to dispel summoned creatures (up to 10 HD worth, only creatures 5 HD or less per use). Opposed schools: Divination, Invocation/Evocation."},
-  "Diviner":    {cost:20,schools:["Divination"],
-    abilities:["Thief ability (1)","Learning bonus +15% (one school)"],
+    note:"Req: CON 15. Opposed schools: Divination, Invocation/Evocation."},
+  "Diviner":    {cost:10,schools:["Divination"],
+    abilities:["Diviner: Find traps 3/day (11th)","Diviner: Immune to scrying spells (14th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"11th level: Thief ability (1) represents find traps 3×/day (equivalent to the 2nd-level priest spell — point and concentrate one round). 14th level: immunity to all scrying spells (ESP, know alignment, clairaudience) — no CP analog; note it on your sheet. Only one opposed school: Conjuration/Summoning. 11 CP remain for further customization."},
-  "Enchanter":  {cost:26,schools:["Enchantment/Charm"],
-    abilities:["No components (one school)","Immunity (one spell)","Learning bonus +15% (one school)"],
+    note:"Req: INT 16. Opposed school: Conjuration/Summoning only."},
+  "Enchanter":  {cost:10,schools:["Enchantment/Charm"],
+    abilities:["Enchanter: Free action 1/day (11th)","Enchanter: Immune to charm spells (14th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"11th level: No components (one school) models the free action ability (cast on self or touched creature, CT 1, no components, lasts 1 hour, duplicates 4th-level priest spell free action). 14th level: set Immunity (one spell) to charm person or charm monster. Opposed schools: Invocation/Evocation, Necromancy."},
-  "Evoker":     {cost:29,schools:["Invocation/Evocation"],
-    abilities:["School knowledge +2/-2 saves","Immunity (one spell)","Learning bonus +15% (one school)"],
+    note:"Req: INT 16. Opposed schools: Invocation/Evocation, Necromancy."},
+  "Evoker":     {cost:10,schools:["Invocation/Evocation"],
+    abilities:["Evoker: +2 saves vs invocation/evocation (8th)","Evoker: +3 saves vs invocation/evocation (11th)","Evoker: Immune to one invocation spell ≤3rd level (14th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"8th level: +2 saves vs invocation/evocation (also applies to magic items that simulate these spells, such as a wand of fire). 11th level: save bonus increases to +3 — the CP system has no +3 tier; add a note on your sheet. 14th level: immunity to one invocation/evocation spell of 3rd level or lower of your choice — set Immunity (one spell) accordingly. Opposed schools: Enchantment/Charm, Conjuration/Summoning."},
-  "Necromancer":{cost:28,schools:["Necromancy"],
-    abilities:["School knowledge +2/-2 saves","Priestly wizard (minor sphere)","Learning bonus +15% (one school)"],
+    note:"Req: CON 16. Opposed schools: Enchantment/Charm, Conjuration/Summoning."},
+  "Necromancer":{cost:10,schools:["Necromancy"],
+    abilities:["Necromancer: +2 saves vs necromancy (8th)","Necromancer: Speak with dead at will (11th)","Necromancer: +2 saves vs undead attacks (14th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"8th level: +2 saves vs necromancy spells. 11th level: Priestly wizard (minor sphere) models speak with dead at will (no verbal or material components — point and concentrate one round; converse up to one turn, ask 4 questions). Set minor sphere to Necromantic. 14th level: +2 saves vs undead special attacks (strength drain, paralyzation); may attempt save vs death magic at −4 for normally-unsaveable attacks — note both on your sheet. Opposed schools: Illusion/Phantasm, Enchantment/Charm."},
-  "Transmuter": {cost:28,schools:["Alteration"],
-    abilities:["School knowledge +2/-2 saves","Extended duration (one school)","Learning bonus +15% (one school)"],
+    note:"Req: WIS 16. Opposed schools: Illusion/Phantasm, Enchantment/Charm."},
+  "Transmuter": {cost:10,schools:["Alteration"],
+    abilities:["Transmuter: +2 saves vs alteration (8th)","Transmuter: +3 saves vs alteration (11th)","Learning bonus +15% (one school)"],
     limitations:[],
-    note:"8th level: +2 saves vs alteration spells and related magic items (e.g. wand of polymorph). 11th level: save bonus increases to +3 — the CP system has no +3 tier; note it on your sheet. Extended duration (one school) represents mastery over alteration effects (spells like haste, strength, passwall last longer). Opposed schools: Necromancy, Abjuration."},
+    note:"Req: DEX 15. Opposed schools: Necromancy, Abjuration."},
 };
 var PRIEST_ABILITIES={"Animal empathy":{c:10},"AC improvement":{c:15},"Casting time reduction":{c:5},"Cold resistance":{c:5},"Combat bonus (warrior THAC0)":{c:20},"Communication":{c:10},"Detect evil":{c:10},"Detect undead":{c:10},"Expert healer":{c:10},"Extended duration (one sphere)":{c:10},"Extended duration (all)":{c:15},"Fire/electrical resistance":{c:7},"Followers (8th level)":{c:5},"Followers (any level)":{c:10},"Hit point bonus (d10)":{c:10},"Identify plants/animals":{c:5},"Identify plants/animals (1st)":{c:8},"Immunity to charm":{c:5},"Immunity to magic":{c:15},"Immunity to disease":{c:10},"Inspire allies":{c:5},"Enrage allies":{c:10},"Know alignment":{c:15},"Lay on hands":{c:10},"Pass without trace":{c:5},"Pass without trace (1st)":{c:7},"Shapechange":{c:15},"Turn undead":{c:15},"Unarmed combat":{c:15},"Warrior Con bonus":{c:15},"Warrior Con + Str":{c:20},"Weapon: one edged":{c:5},"Weapon: any":{c:10},"Weapon specialization":{c:25},"Wizardly priest":{c:25},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Spirit powers (one)":{c:30},"Spirit powers (all)":{c:40}};
 
@@ -238,7 +238,16 @@ var PRIEST_ABILITIES={"Animal empathy":{c:10},"AC improvement":{c:15},"Casting t
 var PRIEST_LIMITS={"Armor: Chain or lighter":{r:5},"Armor: Studded leather":{r:10},"Armor: None":{r:15},"Armor: Leather only":{r:8},"Awkward casting":{r:5},"Behavior/taboo":{r:2},"Ceremony/observance":{r:5},"Difficult spell acquisition":{r:5},"Fanaticism":{r:5},"Hazardous spells":{r:10},"Limited items: Potions/scrolls":{r:5},"Limited items: Rings":{r:5},"Limited items: Rods/staves/wands":{r:5},"Limited items: Misc magic":{r:5},"Limited items: Weapons/armor":{r:5},"Limited spell selection":{r:5},"Reduced HP (d6)":{r:10},"Reduced HP (d4)":{r:20},"Reduced spell progression":{r:15},"Slower casting times":{r:5},"Talisman required":{r:8},"Weapons: Staff/club/hammer/mace/flail":{r:5},"Weapons: None":{r:15},"Weapons: Druid list":{r:3}};
 
 // Wizard Abilities
-var WIZARD_ABILITIES={"Armor: Padded":{c:5},"Armor: Leather/studded":{c:10},"Armor: Any":{c:15},"Auto spell acquisition (one school)":{c:2},"Auto spell acquisition (any school)":{c:5},"Bonus spells (one school)":{c:10},"Bonus spells (any school)":{c:15},"Casting time reduction (one school)":{c:2},"Casting time reduction (all)":{c:5},"Combat bonus (rogue THAC0)":{c:8},"Combat bonus (priest THAC0)":{c:10},"Constitution adjustment (warrior)":{c:5},"Detect magic":{c:10},"Dispel (1/day)":{c:10},"Dispel (3/day)":{c:15},"Enhanced casting level":{c:10},"Extended duration (one school)":{c:10},"Extended duration (all)":{c:15},"Followers":{c:10},"Improved Hit Die (d6)":{c:10},"Improved Hit Die (d8)":{c:20},"Learning bonus +15% (one school)":{c:5},"Learning bonus +25% (one school)":{c:7},"No components (one school)":{c:5},"No components (any school)":{c:8},"Priestly wizard (minor sphere)":{c:10},"Priestly wizard (major sphere)":{c:15},"Range increase +25% (one school)":{c:5},"Range increase +50% (one school)":{c:7},"Read magic":{c:5},"Research bonus (one school)":{c:5},"Research bonus (all)":{c:10},"School knowledge +1/-1 saves":{c:5},"School knowledge +2/-2 saves":{c:8},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Weapon: Cleric/thief list":{c:10},"Weapon: Any":{c:15},"Weapon specialization":{c:15},"Learning bonus +15% (all schools)":{c:10},"Learning bonus +25% (all schools)":{c:14},"Range increase +25% (all schools)":{c:10},"Range increase +50% (all schools)":{c:14},"Proficiency group crossovers":{c:5},"Immunity (one spell)":{c:11}};
+var WIZARD_ABILITIES={"Armor: Padded":{c:5},"Armor: Leather/studded":{c:10},"Armor: Any":{c:15},"Auto spell acquisition (one school)":{c:2},"Auto spell acquisition (any school)":{c:5},"Bonus spells (one school)":{c:10},"Bonus spells (any school)":{c:15},"Casting time reduction (one school)":{c:2},"Casting time reduction (all)":{c:5},"Combat bonus (rogue THAC0)":{c:8},"Combat bonus (priest THAC0)":{c:10},"Constitution adjustment (warrior)":{c:5},"Detect magic":{c:10},"Dispel (1/day)":{c:10},"Dispel (3/day)":{c:15},"Enhanced casting level":{c:10},"Extended duration (one school)":{c:10},"Extended duration (all)":{c:15},"Followers":{c:10},"Improved Hit Die (d6)":{c:10},"Improved Hit Die (d8)":{c:20},"Learning bonus +15% (one school)":{c:5},"Learning bonus +25% (one school)":{c:7},"No components (one school)":{c:5},"No components (any school)":{c:8},"Priestly wizard (minor sphere)":{c:10},"Priestly wizard (major sphere)":{c:15},"Range increase +25% (one school)":{c:5},"Range increase +50% (one school)":{c:7},"Read magic":{c:5},"Research bonus (one school)":{c:5},"Research bonus (all)":{c:10},"School knowledge +1/-1 saves":{c:5},"School knowledge +2/-2 saves":{c:8},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Weapon: Cleric/thief list":{c:10},"Weapon: Any":{c:15},"Weapon specialization":{c:15},"Learning bonus +15% (all schools)":{c:10},"Learning bonus +25% (all schools)":{c:14},"Range increase +25% (all schools)":{c:10},"Range increase +50% (all schools)":{c:14},"Proficiency group crossovers":{c:5},"Immunity (one spell)":{c:11},
+// Specialist class features — innate abilities from the book, not CP purchases
+"Illusionist: +2 saves vs illusions (8th)":{c:0},"Illusionist: Dispel illusion 3/day (11th)":{c:0},
+"Abjurer: +2 saves vs para/poison/death (8th)":{c:0},"Abjurer: AC bonus +1 (11th)":{c:0},"Abjurer: Immune to hold spells (14th)":{c:0},
+"Conjurer: No components for conjurations (11th)":{c:0},"Conjurer: Dispel summoned creatures 3/day (14th)":{c:0},
+"Diviner: Find traps 3/day (11th)":{c:0},"Diviner: Immune to scrying spells (14th)":{c:0},
+"Enchanter: Free action 1/day (11th)":{c:0},"Enchanter: Immune to charm spells (14th)":{c:0},
+"Evoker: +2 saves vs invocation/evocation (8th)":{c:0},"Evoker: +3 saves vs invocation/evocation (11th)":{c:0},"Evoker: Immune to one invocation spell ≤3rd level (14th)":{c:0},
+"Necromancer: +2 saves vs necromancy (8th)":{c:0},"Necromancer: Speak with dead at will (11th)":{c:0},"Necromancer: +2 saves vs undead attacks (14th)":{c:0},
+"Transmuter: +2 saves vs alteration (8th)":{c:0},"Transmuter: +3 saves vs alteration (11th)":{c:0}};
 
 // CP ability descriptive text for Sheet tab display
 var CP_ABILITY_DESC={
@@ -3311,10 +3320,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 <Lbl dim={dim}>ABILITIES</Lbl>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
                   {Object.keys(WIZARD_ABILITIES).map(function(a){var d=WIZARD_ABILITIES[a];var on=cpAbil.indexOf(a)>=0;
-                    return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
-                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:g}} />
+                    var isClassFeat=d.c===0;
+                    return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?(isClassFeat?"#1a1e28":"#1a2a18"):surf,border:"1px solid "+(on?(isClassFeat?"#3a4a68":"#3a5a3a"):brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
+                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:isClassFeat?"#6080c0":g}} />
                       <span style={{flex:1}}>{a}</span>
-                      <span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>{d.c}</span>
+                      <span style={{fontFamily:"monospace",fontSize:"10px",color:isClassFeat?"#6080c0":"#e08060"}}>{isClassFeat?"—":d.c}</span>
                     </label>;
                   })}
                 </div>
@@ -3608,6 +3618,26 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 if(a==='Extended duration (all)')    desc='Extended Duration: +1 time unit per 2 levels for all spells';
                 if(a==='Proficiency group crossovers') desc='Proficiency Crossovers: may select proficiencies from any character or general group';
                 if(a==='Persistent spell effect')    desc='Persistent Spell Effect: one known spell maintained as long as concentrated (cost: 15 + 2/spell level)';
+                // Specialist class features (innate, not CP purchased)
+                if(a==='Illusionist: +2 saves vs illusions (8th)')       desc='Specialist: +2 to all saves vs illusion spells cast by non-illusionists (8th level and above)';
+                if(a==='Illusionist: Dispel illusion 3/day (11th)')      desc='Specialist: dispel phantasmal force / improved phantasmal force 3×/day (11th level); range 30 yds, 50% ±5%/level diff';
+                if(a==='Abjurer: +2 saves vs para/poison/death (8th)')   desc='Specialist: +2 to saves vs paralyzation, poison, and death magic (8th level and above)';
+                if(a==='Abjurer: AC bonus +1 (11th)')                    desc='Specialist: AC improves by 1 (11th level and above; add to your AC on the Stats tab)';
+                if(a==='Abjurer: Immune to hold spells (14th)')          desc='Specialist: complete immunity to all hold spells (hold person, hold monster, etc.) at 14th level';
+                if(a==='Conjurer: No components for conjurations (11th)') desc='Specialist: all conjuration/summoning spells may be cast without material components (11th level and above)';
+                if(a==='Conjurer: Dispel summoned creatures 3/day (14th)') desc='Specialist: dispel summoned/conjured creatures 3×/day — up to 10 HD total, max 5 HD per creature (14th level)';
+                if(a==='Diviner: Find traps 3/day (11th)')               desc='Specialist: find traps 3×/day as the 2nd-level priest spell — point and concentrate 1 round (11th level)';
+                if(a==='Diviner: Immune to scrying spells (14th)')       desc='Specialist: immune to all scrying spells (ESP, know alignment, clairaudience, clairvoyance, etc.) at 14th level';
+                if(a==='Enchanter: Free action 1/day (11th)')            desc='Specialist: free action 1×/day — no components, CT 1, targets self or touch, lasts 1 hour (11th level)';
+                if(a==='Enchanter: Immune to charm spells (14th)')       desc='Specialist: immune to all charm spells (charm person, charm monster, etc.) at 14th level';
+                if(a==='Evoker: +2 saves vs invocation/evocation (8th)') desc='Specialist: +2 to all saves vs invocation/evocation spells and related magic items (8th level and above)';
+                if(a==='Evoker: +3 saves vs invocation/evocation (11th)') desc='Specialist: save bonus vs invocation/evocation increases to +3 (11th level and above)';
+                if(a==='Evoker: Immune to one invocation spell ≤3rd level (14th)') desc='Specialist: choose one invocation/evocation spell of 3rd level or lower — immune to it at 14th level';
+                if(a==='Necromancer: +2 saves vs necromancy (8th)')      desc='Specialist: +2 to all saves vs necromancy spells (8th level and above)';
+                if(a==='Necromancer: Speak with dead at will (11th)')    desc='Specialist: speak with dead at will — no verbal or material components; concentrate 1 round, converse 1 turn, ask 4 questions (11th level)';
+                if(a==='Necromancer: +2 saves vs undead attacks (14th)') desc='Specialist: +2 saves vs undead special attacks (strength drain, paralyzation); may save vs death magic at −4 for normally-unsaveable attacks (14th level)';
+                if(a==='Transmuter: +2 saves vs alteration (8th)')       desc='Specialist: +2 to all saves vs alteration spells and related magic items (8th level and above)';
+                if(a==='Transmuter: +3 saves vs alteration (11th)')      desc='Specialist: save bonus vs alteration increases to +3 (11th level and above)';
               }
               return <div key={i} style={{fontSize:"11px",color:"#bbb",marginBottom:"3px",lineHeight:"1.5"}}>• {desc}</div>;
             })}
