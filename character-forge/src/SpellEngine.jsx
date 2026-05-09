@@ -201,35 +201,36 @@ var PRIEST_PRESETS={"Cleric":{cost:100,major:["All","Astral","Charm","Combat","C
 var WIZARD_PRESETS={
   "Illusionist":{cost:33,schools:["Illusion/Phantasm"],
     abilities:["School knowledge +2/-2 saves","Dispel (3/day)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 8th: +2 saves vs para/poison/death; 11th: AC+1; 14th: hold immunity
+    limitations:[],
+    note:"8th level: +2 saves vs illusion spells cast by non-illusionists. 11th level: Dispel (3/day) models dispel phantasmal force / improved phantasmal force (range 30 yds, 50% ±5%/level diff). Opposed schools: Necromancy, Invocation/Evocation, Abjuration."},
   "Abjurer":    {cost:29,schools:["Abjuration"],
     abilities:["School knowledge +2/-2 saves","Immunity (one spell)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 11th: conjuration/summoning without components; 14th: dispel summoned creatures 3/day (10 HD cap)
+    limitations:[],
+    note:"8th level: +2 saves vs paralyzation, poison, and death magic (School knowledge +2/-2 is the nearest CP equivalent — the bonus applies vs those save categories, not just abjuration spells). 11th level: AC improves by 1 (no direct CP analog; note it on your sheet). 14th level: immunity to all hold spells — set Immunity (one spell) to hold person or hold monster. Opposed schools: Alteration, Illusion/Phantasm."},
   "Conjurer":   {cost:30,schools:["Conjuration/Summoning"],
     abilities:["No components (one school)","Dispel (3/day)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 11th: find traps 3/day; 14th: immune to all scrying (ESP, know alignment, clairaudience)
+    limitations:[],
+    note:"11th level: cast all conjuration/summoning spells without material components. 14th level: Dispel (3/day) models the ability to dispel summoned creatures (up to 10 HD worth, only creatures 5 HD or less per use). Opposed schools: Divination, Invocation/Evocation."},
   "Diviner":    {cost:20,schools:["Divination"],
     abilities:["Thief ability (1)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 11th: free action 1/day (no components, CT 1, 1 hr); 14th: immunity to charm
+    limitations:[],
+    note:"11th level: Thief ability (1) represents find traps 3×/day (equivalent to the 2nd-level priest spell — point and concentrate one round). 14th level: immunity to all scrying spells (ESP, know alignment, clairaudience) — no CP analog; note it on your sheet. Only one opposed school: Conjuration/Summoning. 11 CP remain for further customization."},
   "Enchanter":  {cost:26,schools:["Enchantment/Charm"],
     abilities:["No components (one school)","Immunity (one spell)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 8th: +2 saves vs invocation; 11th: +3; 14th: immunity to one invocation spell ≤3rd level
+    limitations:[],
+    note:"11th level: No components (one school) models the free action ability (cast on self or touched creature, CT 1, no components, lasts 1 hour, duplicates 4th-level priest spell free action). 14th level: set Immunity (one spell) to charm person or charm monster. Opposed schools: Invocation/Evocation, Necromancy."},
   "Evoker":     {cost:29,schools:["Invocation/Evocation"],
     abilities:["School knowledge +2/-2 saves","Immunity (one spell)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 8th: +2 saves vs necromancy; 11th: speak with dead at will (no components); 14th: undead resistance
+    limitations:[],
+    note:"8th level: +2 saves vs invocation/evocation (also applies to magic items that simulate these spells, such as a wand of fire). 11th level: save bonus increases to +3 — the CP system has no +3 tier; add a note on your sheet. 14th level: immunity to one invocation/evocation spell of 3rd level or lower of your choice — set Immunity (one spell) accordingly. Opposed schools: Enchantment/Charm, Conjuration/Summoning."},
   "Necromancer":{cost:28,schools:["Necromancy"],
     abilities:["School knowledge +2/-2 saves","Priestly wizard (minor sphere)","Learning bonus +15% (one school)"],
-    limitations:[]},
-  // 8th: +2 saves vs alteration; 11th: +3 saves vs alteration
+    limitations:[],
+    note:"8th level: +2 saves vs necromancy spells. 11th level: Priestly wizard (minor sphere) models speak with dead at will (no verbal or material components — point and concentrate one round; converse up to one turn, ask 4 questions). Set minor sphere to Necromantic. 14th level: +2 saves vs undead special attacks (strength drain, paralyzation); may attempt save vs death magic at −4 for normally-unsaveable attacks — note both on your sheet. Opposed schools: Illusion/Phantasm, Enchantment/Charm."},
   "Transmuter": {cost:28,schools:["Alteration"],
     abilities:["School knowledge +2/-2 saves","Extended duration (one school)","Learning bonus +15% (one school)"],
-    limitations:[]},
+    limitations:[],
+    note:"8th level: +2 saves vs alteration spells and related magic items (e.g. wand of polymorph). 11th level: save bonus increases to +3 — the CP system has no +3 tier; note it on your sheet. Extended duration (one school) represents mastery over alteration effects (spells like haste, strength, passwall last longer). Opposed schools: Necromancy, Abjuration."},
 };
 var PRIEST_ABILITIES={"Animal empathy":{c:10},"AC improvement":{c:15},"Casting time reduction":{c:5},"Cold resistance":{c:5},"Combat bonus (warrior THAC0)":{c:20},"Communication":{c:10},"Detect evil":{c:10},"Detect undead":{c:10},"Expert healer":{c:10},"Extended duration (one sphere)":{c:10},"Extended duration (all)":{c:15},"Fire/electrical resistance":{c:7},"Followers (8th level)":{c:5},"Followers (any level)":{c:10},"Hit point bonus (d10)":{c:10},"Identify plants/animals":{c:5},"Identify plants/animals (1st)":{c:8},"Immunity to charm":{c:5},"Immunity to magic":{c:15},"Immunity to disease":{c:10},"Inspire allies":{c:5},"Enrage allies":{c:10},"Know alignment":{c:15},"Lay on hands":{c:10},"Pass without trace":{c:5},"Pass without trace (1st)":{c:7},"Shapechange":{c:15},"Turn undead":{c:15},"Unarmed combat":{c:15},"Warrior Con bonus":{c:15},"Warrior Con + Str":{c:20},"Weapon: one edged":{c:5},"Weapon: any":{c:10},"Weapon specialization":{c:25},"Wizardly priest":{c:25},"Thief ability (1)":{c:10},"Thief ability (2)":{c:15},"Spirit powers (one)":{c:30},"Spirit powers (all)":{c:40}};
 
@@ -1360,6 +1361,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _cpSchools=useState([]),cpSchools=_cpSchools[0],setCpSchools=_cpSchools[1];
   var _cpAbil=useState([]),cpAbil=_cpAbil[0],setCpAbil=_cpAbil[1];
   var _cpLim=useState([]),cpLim=_cpLim[0],setCpLim=_cpLim[1];
+  var _wizardPresetNote=useState(""),wizardPresetNote=_wizardPresetNote[0],setWizardPresetNote=_wizardPresetNote[1];
   // Active CP sub-tab ('priest'|'monk'|'wizard'|null=auto)
   var _cpSubTab=useState(null),cpSubTab=_cpSubTab[0],setCpSubTab=_cpSubTab[1];
   // Spell-like granted powers: [{id, spell, level, spellType, freq}]
@@ -1698,6 +1700,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   function loadWizardPreset(name){
     var p=WIZARD_PRESETS[name];if(!p)return;
     setCpSchools(p.schools.slice());setCpAbil(p.abilities.slice());setCpLim(p.limitations.slice());
+    setWizardPresetNote(p.note||"");
   }
 
   function toggle(list,setList,item){
@@ -3289,6 +3292,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 <span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>PRESETS:</span>
                 {Object.keys(WIZARD_PRESETS).map(function(n){return <button key={n} disabled={!isWizard} onClick={function(){loadWizardPreset(n);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:isWizard?"pointer":"not-allowed",fontSize:"10px",fontFamily:"monospace",background:"#1a1a28",color:isWizard?g:dim,border:"1px solid "+brd,opacity:isWizard?1:0.5}}>{n} ({WIZARD_PRESETS[n].cost})</button>;})}
               </div>
+              {wizardPresetNote&&<div style={{padding:"8px 12px",marginBottom:"10px",background:"#0e1a0e",border:"1px solid #2a4a2a",borderRadius:"6px",fontSize:"11px",color:"#90b890",fontFamily:"monospace",lineHeight:"1.6",whiteSpace:"pre-wrap"}}>{wizardPresetNote}</div>}
               {/* Schools */}
               <div style={{marginBottom:"12px"}}>
                 <Lbl dim={dim}>SCHOOLS OF MAGIC <span style={{color:g}}>(5 CP each, Universal is free)</span></Lbl>
