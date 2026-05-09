@@ -1300,8 +1300,30 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _round=useState(1),combatRound=_round[0],setCombatRound=_round[1];
   var _casting=useState(null),castingSpell=_casting[0],setCastingSpell=_casting[1];
   var _spells=useState([]),compSpells=_spells[0],setCompSpells=_spells[1];
+  var _edition=useState('2e'),edition=_edition[0],setEdition=_edition[1];
+  var _spells1e=useState([]),spells1e=_spells1e[0],setSpells1e=_spells1e[1];
+  var _spells1eLoaded=useState(false),spells1eLoaded=_spells1eLoaded[0],setSpells1eLoaded=_spells1eLoaded[1];
   // Sync compSpells when spell data prop loads
   useEffect(function(){if(SPELL_DATA&&SPELL_DATA.length>0)setCompSpells(SPELL_DATA);},[SPELL_DATA]);
+  // Fetch 1E spell list lazily the first time 1E mode is activated
+  useEffect(function(){
+    if(edition!=='1e'||spells1eLoaded)return;
+    fetch('/1e-spells.xlsx')
+      .then(function(r){return r.arrayBuffer();})
+      .then(function(buf){
+        var wb=XLSX.read(buf,{type:'array'});var all=[];
+        wb.SheetNames.forEach(function(n){
+          if(n.toLowerCase().indexOf('summary')>=0)return;
+          var rows=XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});
+          rows.forEach(function(row){
+            var c1e=row.Class?row.Class.toLowerCase():(n.toLowerCase().indexOf('illusionist')>=0?'illusionist':'mage');
+            all.push(Object.assign({},row,{_type:'Wizard',_1eClass:c1e}));
+          });
+        });
+        setSpells1e(all);setSpells1eLoaded(true);
+      })
+      .catch(function(){setSpells1eLoaded(true);});
+  },[edition,spells1eLoaded]);
   var _memo=useState([]),memorized=_memo[0],setMemorized=_memo[1];
   var _notes=useState(""),notes=_notes[0],setNotes=_notes[1];
   // AI state
@@ -1698,6 +1720,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     if(cd.group==="Priest")setCpBudget(120);
     else if(cd.group==="Wizard")setCpBudget(40);
     else setCpBudget(0);
+    // Reset to 2E when switching away from a class that supports 1E mode
+    if(newCls!=="Mage"&&newCls!=="Illusionist")setEdition('2e');
     if(newCls!=="Druid"){setKit("");setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);setDmOverride(false);}
   }
 
@@ -1842,7 +1866,16 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
 
   // Spell filtering based on CP selections
-  var availableSpells=compSpells.filter(function(s){
+  var activeSpellDb=(edition==='1e'&&isWizard)?spells1e:compSpells;
+  var availableSpells=activeSpellDb.filter(function(s){
+    // 1E mode: filter by exact class, skip school filtering
+    if(edition==='1e'&&isWizard){
+      if(cls==='Mage'&&s._1eClass!=='mage')return false;
+      if(cls==='Illusionist'&&s._1eClass!=='illusionist')return false;
+      if(spellLvlFilter&&s.Level!=parseInt(spellLvlFilter))return false;
+      if(spellFilter){var q=spellFilter.toLowerCase();return(s["Spell Name"]||"").toLowerCase().indexOf(q)>=0;}
+      return true;
+    }
     if(classData.spells==="priest"&&s._type!=="Priest")return false;
     if(classData.spells==="wizard"&&s._type!=="Wizard")return false;
     // CP-based sphere filtering for priests
@@ -1879,7 +1912,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
-    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setGearItems([]);setInventory([]);setCloudId(null);
+    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setGearItems([]);setInventory([]);setCloudId(null);setEdition('2e');
   }
 
   // ── Character slot (tab) operations ─────────────────────────────────────────
@@ -2188,6 +2221,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
       cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,
       monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
+      edition,
       slotType:activeSlot?activeSlot.type||null:null,
       slotPcRef:activeSlot?activeSlot.slotPcRef||null:null,
       _version:1};
@@ -2224,6 +2258,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setNwpUsed(parseInt(d.nwpUsed)||0);
     setInventory(d.inventory||[]);
     setCloudId(d.cloudId||null);
+    setEdition(d.edition||'2e');
     setMonkStyleForm(d.monkStyleForm||"Hard");
     setMonkStyleMethod(d.monkStyleMethod||"Strike");
     setMonkStyleName(d.monkStyleName||"");
@@ -2656,6 +2691,21 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               <select value={cls} onChange={function(e){changeClass(e.target.value);}} style={ss(brd,txt)}>{Object.keys(CLASSES).map(function(c){return <option key={c}>{c}</option>;})}</select>
               <div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>HD: d{effectiveHD}{effectiveHD!==classData.hd&&<span style={{color:"#80c0e0"}}> (base d{classData.hd})</span>} | {classData.group} | CP: {isPriest?120:isWizard?40:0}</div>
             </Card>
+            {(cls==='Mage'||cls==='Illusionist')&&<Card brd={brd} surf={surf}><Lbl dim={dim}>EDITION</Lbl>
+              <div style={{display:"flex",gap:"4px"}}>
+                {['2e','1e'].map(function(ed){var on=edition===ed;
+                  return <button key={ed} onClick={function(){setEdition(ed);}}
+                    style={{flex:1,padding:"4px 8px",background:on?"#1a2a18":surf,color:on?g:dim,
+                      border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",cursor:"pointer",
+                      fontFamily:"monospace",fontSize:"11px"}}>
+                    {ed==='1e'?'AD&D 1E':'AD&D 2E'}
+                  </button>;
+                })}
+              </div>
+              {edition==='1e'&&!spells1eLoaded&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>Loading 1E spells…</div>}
+              {edition==='1e'&&spells1eLoaded&&spells1e.length===0&&<div style={{fontSize:"10px",color:"#e08060",marginTop:"4px",fontFamily:"monospace"}}>⚠ 1e-spells.xlsx not found in /public</div>}
+              {edition==='1e'&&spells1e.length>0&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>{spells1e.filter(function(s){return s._1eClass===(cls==='Illusionist'?'illusionist':'mage');}).length} spells loaded</div>}
+            </Card>}
             <Card brd={brd} surf={surf}><Lbl dim={dim}>KIT</Lbl>
               {isDruid
                 ?<select value={kit} onChange={function(e){setKit(e.target.value);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);}} style={ss(brd,txt)}>
@@ -3293,55 +3343,61 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
             {/* ── WIZARD SUB-TAB ── */}
             {activeSub==='wizard'&&<div>
+              {isWizard&&edition==='1e'&&<div style={{padding:"30px",textAlign:"center",color:dim,fontSize:"12px",marginTop:"8px"}}>
+                CP customization is a 2E mechanic.<br/>Switch to AD&D 2E on the Stats tab to use it.
+              </div>}
               {!isWizard&&<div style={{padding:"10px 14px",marginBottom:"12px",background:"#1a1010",border:"1px solid #4a2a2a",borderRadius:"6px",fontSize:"11px",color:"#c08080"}}>
                 ⚠ Viewing only — select Mage or Illusionist on the Stats tab to make this section editable.
               </div>}
-              {/* Specialist Presets */}
-              <div style={{marginBottom:"12px",display:"flex",flexWrap:"wrap",alignItems:"center",gap:"6px"}}>
-                <span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>PRESETS:</span>
-                {Object.keys(WIZARD_PRESETS).map(function(n){return <button key={n} disabled={!isWizard} onClick={function(){loadWizardPreset(n);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:isWizard?"pointer":"not-allowed",fontSize:"10px",fontFamily:"monospace",background:"#1a1a28",color:isWizard?g:dim,border:"1px solid "+brd,opacity:isWizard?1:0.5}}>{n} ({WIZARD_PRESETS[n].cost})</button>;})}
-              </div>
-              {wizardPresetNote&&<div style={{padding:"8px 12px",marginBottom:"10px",background:"#0e1a0e",border:"1px solid #2a4a2a",borderRadius:"6px",fontSize:"11px",color:"#90b890",fontFamily:"monospace",lineHeight:"1.6",whiteSpace:"pre-wrap"}}>{wizardPresetNote}</div>}
-              {/* Schools */}
-              <div style={{marginBottom:"12px"}}>
-                <Lbl dim={dim}>SCHOOLS OF MAGIC <span style={{color:g}}>(5 CP each, Universal is free)</span></Lbl>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"6px"}}>
-                  {WIZARD_SCHOOLS.map(function(sch){var on=cpSchools.indexOf(sch)>=0;
-                    return <label key={sch} style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 10px",cursor:isWizard?"pointer":"default",fontSize:"12px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?g:dim,opacity:isWizard?1:0.5}}>
-                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpSchools,setCpSchools,sch);}} style={{accentColor:g}} />
-                      <span style={{flex:1}}>{sch}</span><span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>5 CP</span>
-                    </label>;
-                  })}
+              {/* All wizard CP content — hidden in 1E mode */}
+              {(!isWizard||edition!=='1e')&&<div>
+                {/* Specialist Presets */}
+                <div style={{marginBottom:"12px",display:"flex",flexWrap:"wrap",alignItems:"center",gap:"6px"}}>
+                  <span style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>PRESETS:</span>
+                  {Object.keys(WIZARD_PRESETS).map(function(n){return <button key={n} disabled={!isWizard} onClick={function(){loadWizardPreset(n);}} style={{padding:"4px 12px",borderRadius:"4px",cursor:isWizard?"pointer":"not-allowed",fontSize:"10px",fontFamily:"monospace",background:"#1a1a28",color:isWizard?g:dim,border:"1px solid "+brd,opacity:isWizard?1:0.5}}>{n} ({WIZARD_PRESETS[n].cost})</button>;})}
                 </div>
-                <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>{cpSchools.length} schools = {cpSchools.length*5} CP (+ Universal free)</div>
-              </div>
-              {/* Wizard Abilities */}
-              <div style={{marginBottom:"12px"}}>
-                <Lbl dim={dim}>ABILITIES</Lbl>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
-                  {Object.keys(WIZARD_ABILITIES).map(function(a){var d=WIZARD_ABILITIES[a];var on=cpAbil.indexOf(a)>=0;
-                    var isClassFeat=d.c===0;
-                    return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?(isClassFeat?"#1a1e28":"#1a2a18"):surf,border:"1px solid "+(on?(isClassFeat?"#3a4a68":"#3a5a3a"):brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
-                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:isClassFeat?"#6080c0":g}} />
-                      <span style={{flex:1}}>{a}</span>
-                      <span style={{fontFamily:"monospace",fontSize:"10px",color:isClassFeat?"#6080c0":"#e08060"}}>{isClassFeat?"—":d.c}</span>
-                    </label>;
-                  })}
+                {wizardPresetNote&&<div style={{padding:"8px 12px",marginBottom:"10px",background:"#0e1a0e",border:"1px solid #2a4a2a",borderRadius:"6px",fontSize:"11px",color:"#90b890",fontFamily:"monospace",lineHeight:"1.6",whiteSpace:"pre-wrap"}}>{wizardPresetNote}</div>}
+                {/* Schools */}
+                <div style={{marginBottom:"12px"}}>
+                  <Lbl dim={dim}>SCHOOLS OF MAGIC <span style={{color:g}}>(5 CP each, Universal is free)</span></Lbl>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"6px"}}>
+                    {WIZARD_SCHOOLS.map(function(sch){var on=cpSchools.indexOf(sch)>=0;
+                      return <label key={sch} style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 10px",cursor:isWizard?"pointer":"default",fontSize:"12px",background:on?"#1a2a18":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?g:dim,opacity:isWizard?1:0.5}}>
+                        <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpSchools,setCpSchools,sch);}} style={{accentColor:g}} />
+                        <span style={{flex:1}}>{sch}</span><span style={{fontFamily:"monospace",fontSize:"10px",color:"#e08060"}}>5 CP</span>
+                      </label>;
+                    })}
+                  </div>
+                  <div style={{marginTop:"4px",fontSize:"10px",color:dim,fontFamily:"monospace"}}>{cpSchools.length} schools = {cpSchools.length*5} CP (+ Universal free)</div>
                 </div>
-              </div>
-              {/* Wizard Limitations */}
-              <div style={{marginBottom:"12px"}}>
-                <Lbl dim={dim}>LIMITATIONS <span style={{color:"#60a060"}}>(refund CP)</span></Lbl>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
-                  {Object.keys(WIZARD_LIMITS).map(function(l){var d=WIZARD_LIMITS[l];var on=cpLim.indexOf(l)>=0;
-                    return <label key={l} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?"#1a2818":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
-                      <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpLim,setCpLim,l);}} style={{accentColor:"#60a060"}} />
-                      <span style={{flex:1}}>{l}</span>
-                      <span style={{fontFamily:"monospace",fontSize:"10px",color:"#60a060"}}>-{d.r}</span>
-                    </label>;
-                  })}
+                {/* Wizard Abilities */}
+                <div style={{marginBottom:"12px"}}>
+                  <Lbl dim={dim}>ABILITIES</Lbl>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                    {Object.keys(WIZARD_ABILITIES).map(function(a){var d=WIZARD_ABILITIES[a];var on=cpAbil.indexOf(a)>=0;
+                      var isClassFeat=d.c===0;
+                      return <label key={a} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?(isClassFeat?"#1a1e28":"#1a2a18"):surf,border:"1px solid "+(on?(isClassFeat?"#3a4a68":"#3a5a3a"):brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
+                        <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpAbil,setCpAbil,a);}} style={{accentColor:isClassFeat?"#6080c0":g}} />
+                        <span style={{flex:1}}>{a}</span>
+                        <span style={{fontFamily:"monospace",fontSize:"10px",color:isClassFeat?"#6080c0":"#e08060"}}>{isClassFeat?"—":d.c}</span>
+                      </label>;
+                    })}
+                  </div>
                 </div>
-              </div>
+                {/* Wizard Limitations */}
+                <div style={{marginBottom:"12px"}}>
+                  <Lbl dim={dim}>LIMITATIONS <span style={{color:"#60a060"}}>(refund CP)</span></Lbl>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                    {Object.keys(WIZARD_LIMITS).map(function(l){var d=WIZARD_LIMITS[l];var on=cpLim.indexOf(l)>=0;
+                      return <label key={l} style={{display:"flex",alignItems:"center",gap:"6px",padding:"3px 8px",cursor:isWizard?"pointer":"default",fontSize:"11px",background:on?"#1a2818":surf,border:"1px solid "+(on?"#3a5a3a":brd),borderRadius:"4px",color:on?txt:dim,opacity:isWizard?1:0.5}}>
+                        <input type="checkbox" checked={on} disabled={!isWizard} onChange={function(){toggle(cpLim,setCpLim,l);}} style={{accentColor:"#60a060"}} />
+                        <span style={{flex:1}}>{l}</span>
+                        <span style={{fontFamily:"monospace",fontSize:"10px",color:"#60a060"}}>-{d.r}</span>
+                      </label>;
+                    })}
+                  </div>
+                </div>
+              </div>}
             </div>}
 
             {/* No CP class */}
@@ -3355,7 +3411,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         {tab==="sheet"&&<div style={{fontFamily:"'Courier New',monospace",fontSize:"11px",lineHeight:"1.5",color:"#ddd",background:"#0c0c14",border:"1px solid "+brd,borderRadius:"8px",padding:"20px",maxWidth:"700px",margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:"16px"}}>
             <div style={{fontSize:"18px",color:g,fontWeight:"bold",fontVariant:"small-caps",letterSpacing:"3px"}}>Advanced Dungeons & Dragons</div>
-            <div style={{fontSize:"12px",color:dim,letterSpacing:"2px"}}>2nd Edition — Player Character Record</div>
+            <div style={{fontSize:"12px",color:dim,letterSpacing:"2px"}}>{edition==='1e'?'1st Edition':'2nd Edition'} — Player Character Record</div>
           </div>
           <div style={{borderBottom:"2px solid "+g,marginBottom:"12px",paddingBottom:"8px"}}>
             <Row l="Character" v={charName||"_______________"} l2="Level" v2={level} />
