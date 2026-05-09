@@ -16,7 +16,9 @@ Directly above the header is the **character tab bar** — a row of named tabs, 
 
 ## Multiple Characters & Party Management
 
-You can keep your entire party open at once — each character in its own tab. The tab bar sits at the very top of the page.
+![Tab bar with PC, henchman, and dead character](docs/10-tabs.png)
+
+You can keep your entire party open at once — each character in its own tab. The tab bar sits at the very top of the page. In the screenshot above: ♦ Aldric the Bold (PC), → Grognak (henchman), ☠ Mira (dead, greyed out).
 
 ### Opening and Switching Characters
 
@@ -25,6 +27,8 @@ You can keep your entire party open at once — each character in its own tab. T
 - **× on a tab** — closes that character (henchman tabs are archived rather than deleted — see below)
 
 ### Tagging Characters (⋯ Menu)
+
+![⋯ menu open on a PC tab with archived henchmen](docs/10-tabs-menu.png)
 
 Each tab has a **⋯** button that opens a management dropdown. Right-clicking a tab on desktop does the same thing.
 
