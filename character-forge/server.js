@@ -150,6 +150,29 @@ app.post('/api/parse-pdf', async (req, res) => {
   }
 });
 
+// ── Portrait generation proxy (Pollinations.ai) ─────────────────────────────
+app.post('/api/generate-portrait', async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'No prompt provided' });
+
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&model=flux&nologo=true&seed=${seed}`;
+
+  let upstream;
+  try {
+    upstream = await fetch(url, { signal: AbortSignal.timeout(55000) });
+  } catch (err) {
+    return res.status(502).json({ error: 'Image API unreachable: ' + err.message });
+  }
+
+  if (!upstream.ok) return res.status(502).json({ error: 'Image API returned ' + upstream.status });
+
+  const buffer = await upstream.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+  const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+  res.json({ dataUrl: `data:${contentType};base64,${base64}` });
+});
+
 // ── Admin: set user password (requires service role key in env) ──────────────
 app.post('/api/admin/set-password', async (req, res) => {
   const { email, password, adminKey } = req.body;

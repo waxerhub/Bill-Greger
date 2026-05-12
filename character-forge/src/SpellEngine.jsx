@@ -2322,24 +2322,20 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setPortraitPromptOpen(true);
     setPortraitLoading(true);
     setPortraitError("");
-    // Cancel any in-flight request before starting a new one
     if(portraitAbortRef.current)portraitAbortRef.current.abort();
     var controller=new AbortController();
     portraitAbortRef.current=controller;
-    var timer=setTimeout(function(){controller.abort();},45000);
+    var timer=setTimeout(function(){controller.abort();},60000);
     try{
-      var seed=Math.floor(Math.random()*1000000);
-      var url="https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=512&height=512&model=flux&nologo=true&seed="+seed;
-      var resp=await fetch(url,{signal:controller.signal});
-      if(!resp.ok)throw new Error("Server returned "+resp.status);
-      var blob=await resp.blob();
-      var dataUrl=await new Promise(function(resolve,reject){
-        var fr2=new FileReader();
-        fr2.onload=function(ev2){resolve(ev2.target.result);};
-        fr2.onerror=reject;
-        fr2.readAsDataURL(blob);
+      var resp=await fetch("/api/generate-portrait",{
+        method:"POST",
+        headers:{"content-type":"application/json"},
+        body:JSON.stringify({prompt:prompt}),
+        signal:controller.signal
       });
-      setCharPortrait(dataUrl);
+      var data=await resp.json();
+      if(!resp.ok||data.error)throw new Error(data.error||"HTTP "+resp.status);
+      setCharPortrait(data.dataUrl);
     }catch(err){
       if(err.name!=="AbortError")setPortraitError("Generation failed — try again");
     }finally{
@@ -2832,7 +2828,6 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                       Cancel
                     </button>}
                   </div>
-                  {portraitError&&<div style={{marginTop:"4px",fontSize:"9px",color:"#e08060",fontFamily:"monospace"}}>{portraitError}</div>}
                 </div>}
                 {charPortrait&&<button onClick={function(){setCharPortrait(null);setPortraitPrompt("");setPortraitPromptOpen(false);}}
                   style={{marginTop:"4px",width:"110px",padding:"2px 0",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear</button>}
