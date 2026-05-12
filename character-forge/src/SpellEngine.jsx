@@ -1449,6 +1449,9 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _monkStyleMethod=useState("Strike"),monkStyleMethod=_monkStyleMethod[0],setMonkStyleMethod=_monkStyleMethod[1];
   var _monkStyleName=useState(""),monkStyleName=_monkStyleName[0],setMonkStyleName=_monkStyleName[1];
   var _monkManeuvers=useState([]),monkManeuvers=_monkManeuvers[0],setMonkManeuvers=_monkManeuvers[1];
+  // Portrait
+  var _charPortrait=useState(null),charPortrait=_charPortrait[0],setCharPortrait=_charPortrait[1];
+  var _portraitLoading=useState(false),portraitLoading=_portraitLoading[0],setPortraitLoading=_portraitLoading[1];
 
   // Auto-save to localStorage on every change; also keeps current slot snapshot in sync
   useEffect(function(){
@@ -1456,7 +1459,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
       var snap={charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
         cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
         inventory,cloudId,edition,
-        monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers};
+        monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
+        charPortrait};
       localStorage.setItem("cf_autosave",JSON.stringify(snap));
       if(activeSlotId){
         slotSnapsRef.current[activeSlotId]=snap;
@@ -1471,6 +1475,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
      cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,
      inventory,cloudId,edition,
      monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
+     charPortrait,
      charSlots,activeSlotId]);
 
   // Restore character slots on first load (falls back to single slot from cf_autosave)
@@ -1916,7 +1921,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setStats({Str:10,Dex:10,Con:10,Int:10,Wis:10,Cha:10});setStrPct(0);setMemorized([]);setActiveCasts([]);setCombatRound(1);setCastingSpell(null);setNotes("");
     setCpBudget(120);setCpMajor([]);setCpMinor([]);setCpSchools([]);setCpAbil([]);setCpLim([]);setCpSpellPowers([]);
     setDmOverride(false);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);
-    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setGearItems([]);setInventory([]);setCloudId(null);setEdition('2e');
+    setCpDayUses({});setWpUsed(0);setNwpUsed(0);setGearItems([]);setInventory([]);setCloudId(null);setEdition('2e');setCharPortrait(null);
   }
 
   // ── Character slot (tab) operations ─────────────────────────────────────────
@@ -2238,7 +2243,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     return {charName,race,cls,kit,level,xp,hp,align,stats,strPct,memorized,notes,
       cpBudget,cpMajor,cpMinor,cpSchools,cpAbil,cpLim,cpSpellPowers,dmOverride,totemAnimal,shapeUsesLeft,shapeFailed,gearItems,cpDayUses,wpUsed,nwpUsed,inventory,cloudId,
       monkStyleForm,monkStyleMethod,monkStyleName,monkManeuvers,
-      edition,
+      edition,charPortrait,
       slotType:activeSlot?activeSlot.type||null:null,
       slotPcRef:activeSlot?activeSlot.slotPcRef||null:null,
       _version:1};
@@ -2280,9 +2285,46 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     setMonkStyleMethod(d.monkStyleMethod||"Strike");
     setMonkStyleName(d.monkStyleName||"");
     setMonkManeuvers(d.monkManeuvers||[]);
+    setCharPortrait(d.charPortrait||null);
     // Clear transient combat/session state that doesn't travel with the character
     setActiveCasts([]);setCombatRound(1);setCastingSpell(null);
     setTab("stats");
+  }
+
+  // ── Portrait upload / AI generation ──────────────────────────────────────
+  function handlePortraitUpload(e){
+    var file=e.target.files[0];if(!file)return;
+    var rd=new FileReader();
+    rd.onload=function(ev){setCharPortrait(ev.target.result);};
+    rd.readAsDataURL(file);
+    e.target.value="";
+  }
+  async function generatePortrait(opts){
+    var r=(opts&&opts.race)||race;
+    var c=(opts&&opts.cls)||cls;
+    var k=(opts&&opts.kit)||kit;
+    var a=(opts&&opts.align)||align;
+    var n=(opts&&opts.notes)||notes;
+    var descParts=[r,c];
+    if(k)descParts.push(k);
+    if(a)descParts.push(a);
+    if(n)descParts.push(n.slice(0,150));
+    var prompt="Fantasy character portrait, "+descParts.join(", ")+", AD&D tabletop RPG style, detailed face, dramatic lighting, oil painting, high quality";
+    setPortraitLoading(true);
+    try{
+      var url="https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=512&height=512&model=flux&nologo=true";
+      var resp=await fetch(url);
+      if(!resp.ok)throw new Error("HTTP "+resp.status);
+      var blob=await resp.blob();
+      var dataUrl=await new Promise(function(resolve,reject){
+        var fr2=new FileReader();
+        fr2.onload=function(ev2){resolve(ev2.target.result);};
+        fr2.onerror=reject;
+        fr2.readAsDataURL(blob);
+      });
+      setCharPortrait(dataUrl);
+    }catch(_){}
+    finally{setPortraitLoading(false);}
   }
 
   // ── JSON save / load ─────────────────────────────────────────────────────
@@ -2723,6 +2765,29 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
               {edition==='1e'&&spells1eLoaded&&spells1e.length===0&&<div style={{fontSize:"10px",color:"#e08060",marginTop:"4px",fontFamily:"monospace"}}>⚠ 1e-spells.xlsx not found in /public</div>}
               {edition==='1e'&&spells1e.length>0&&<div style={{fontSize:"10px",color:dim,marginTop:"4px",fontFamily:"monospace"}}>{spells1e.filter(function(s){return cls==='Illusionist'?(s._1eClass==='illusionist'||s._1eClass==='mu/i'):(s._1eClass==='mu'||s._1eClass==='mu/i');}).length} spells loaded</div>}
             </Card>}
+            {/* Portrait card */}
+            <Card brd={brd} surf={surf}><Lbl dim={dim}>PORTRAIT</Lbl>
+              <div style={{width:"110px"}}>
+                {charPortrait
+                  ?<img src={charPortrait} alt="portrait" style={{width:"110px",height:"110px",objectFit:"cover",borderRadius:"4px",border:"1px solid "+brd,display:"block",marginBottom:"6px"}} />
+                  :<div style={{width:"110px",height:"110px",background:"#0a0a12",border:"1px dashed "+brd,borderRadius:"4px",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"6px",fontSize:"9px",color:dim,fontFamily:"monospace",textAlign:"center",lineHeight:"1.4"}}>
+                    {portraitLoading?"Generating…":"No portrait"}
+                  </div>
+                }
+                {portraitLoading&&charPortrait&&<div style={{fontSize:"9px",color:dim,fontFamily:"monospace",textAlign:"center",marginBottom:"6px"}}>Generating…</div>}
+                <div style={{display:"flex",gap:"4px"}}>
+                  <label style={{flex:1,padding:"3px 0",background:"#0a0a1a",border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px",color:dim,textAlign:"center",display:"block"}}>
+                    Upload
+                    <input type="file" accept="image/*" onChange={handlePortraitUpload} style={{display:"none"}} />
+                  </label>
+                  <button onClick={function(){generatePortrait({});}} disabled={portraitLoading}
+                    style={{flex:1,padding:"3px 0",background:portraitLoading?"transparent":"#0a0a1a",color:portraitLoading?dim:"#80a0e0",border:"1px solid "+(portraitLoading?brd:"#2a3a5a"),borderRadius:"3px",cursor:portraitLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"9px"}}>
+                    {portraitLoading?"…":"AI Gen"}
+                  </button>
+                </div>
+                {charPortrait&&<button onClick={function(){setCharPortrait(null);}} style={{marginTop:"4px",width:"100%",padding:"2px 0",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear</button>}
+              </div>
+            </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>KIT</Lbl>
               {isDruid
                 ?<select value={kit} onChange={function(e){setKit(e.target.value);setTotemAnimal("");setShapeUsesLeft(0);setShapeFailed(0);}} style={ss(brd,txt)}>
@@ -3426,9 +3491,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
 
         {/* ═══ SHEET TAB ═══ */}
         {tab==="sheet"&&<div style={{fontFamily:"'Courier New',monospace",fontSize:"11px",lineHeight:"1.5",color:"#ddd",background:"#0c0c14",border:"1px solid "+brd,borderRadius:"8px",padding:"20px",maxWidth:"700px",margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:"16px"}}>
-            <div style={{fontSize:"18px",color:g,fontWeight:"bold",fontVariant:"small-caps",letterSpacing:"3px"}}>Advanced Dungeons & Dragons</div>
-            <div style={{fontSize:"12px",color:dim,letterSpacing:"2px"}}>{edition==='1e'?'1st Edition':'2nd Edition'} — Player Character Record</div>
+          <div style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}>
+            {charPortrait&&<img src={charPortrait} alt="portrait" style={{width:"80px",height:"80px",objectFit:"cover",borderRadius:"4px",border:"1px solid "+brd,flexShrink:0}} />}
+            <div style={{flex:1,textAlign:"center"}}>
+              <div style={{fontSize:"18px",color:g,fontWeight:"bold",fontVariant:"small-caps",letterSpacing:"3px"}}>Advanced Dungeons & Dragons</div>
+              <div style={{fontSize:"12px",color:dim,letterSpacing:"2px"}}>{edition==='1e'?'1st Edition':'2nd Edition'} — Player Character Record</div>
+            </div>
           </div>
           <div style={{borderBottom:"2px solid "+g,marginBottom:"12px",paddingBottom:"8px"}}>
             <Row l="Character" v={charName||"_______________"} l2="Level" v2={level} />
@@ -4773,7 +4841,15 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                 {(genResult.cls==="Mage"||genResult.cls==="Illusionist"||genResult.cls==="Cleric"||genResult.cls==="Druid")&&
                   <button onClick={doSuggestSpells} disabled={suggestLoading} style={{padding:"5px 14px",background:"transparent",color:suggestLoading?dim:"#80b0e0",border:"1px solid "+(suggestLoading?brd:"#2a3a6a"),borderRadius:"4px",cursor:suggestLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"10px",opacity:suggestLoading?0.5:0.8}}>{suggestLoading?"… Thinking":"✦ Suggest Spells"+(suggestDone?" ✓":"")}</button>
                 }
+                <button onClick={function(){generatePortrait({race:genResult.race,cls:genResult.cls,kit:"",align:genResult.align,notes:genResult.notes||""});}} disabled={portraitLoading}
+                  style={{padding:"5px 14px",background:"transparent",color:portraitLoading?dim:"#c0a040",border:"1px solid "+(portraitLoading?brd:"#5a4a20"),borderRadius:"4px",cursor:portraitLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"10px",opacity:portraitLoading?0.5:0.8}}>
+                  {portraitLoading?"Generating portrait…":"✦ Generate Portrait"}
+                </button>
               </div>
+              {charPortrait&&!portraitLoading&&<div style={{marginTop:"10px",display:"flex",alignItems:"center",gap:"10px"}}>
+                <img src={charPortrait} alt="portrait" style={{width:"64px",height:"64px",objectFit:"cover",borderRadius:"4px",border:"1px solid "+brd}} />
+                <div style={{fontSize:"10px",color:dim,fontFamily:"monospace"}}>Portrait ready — will be applied with character</div>
+              </div>}
               {suggestDone&&aiHighlight.length>0&&<div style={{marginTop:"8px",fontSize:"11px",color:"#80b0e0",fontFamily:"monospace"}}>{aiHighlight.length} spells queued — hit Create to apply them, or browse the Spells tab</div>}
               {suggestDone&&aiHighlight.length===0&&<div style={{marginTop:"8px",fontSize:"11px",color:dim,fontFamily:"monospace"}}>No castable spells found for this class/level</div>}
             </div>}
