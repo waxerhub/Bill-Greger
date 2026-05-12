@@ -1452,6 +1452,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   // Portrait
   var _charPortrait=useState(null),charPortrait=_charPortrait[0],setCharPortrait=_charPortrait[1];
   var _portraitLoading=useState(false),portraitLoading=_portraitLoading[0],setPortraitLoading=_portraitLoading[1];
+  var _portraitPrompt=useState(""),portraitPrompt=_portraitPrompt[0],setPortraitPrompt=_portraitPrompt[1];
+  var _portraitPromptOpen=useState(false),portraitPromptOpen=_portraitPromptOpen[0],setPortraitPromptOpen=_portraitPromptOpen[1];
 
   // Auto-save to localStorage on every change; also keeps current slot snapshot in sync
   useEffect(function(){
@@ -2300,19 +2302,26 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     e.target.value="";
   }
   async function generatePortrait(opts){
-    var r=(opts&&opts.race)||race;
-    var c=(opts&&opts.cls)||cls;
-    var k=(opts&&opts.kit)||kit;
-    var a=(opts&&opts.align)||align;
-    var n=(opts&&opts.notes)||notes;
-    var descParts=[r,c];
-    if(k)descParts.push(k);
-    if(a)descParts.push(a);
-    if(n)descParts.push(n.slice(0,150));
-    var prompt="Fantasy character portrait, "+descParts.join(", ")+", AD&D tabletop RPG style, detailed face, dramatic lighting, oil painting, high quality";
+    // Use custom prompt if the user typed one; otherwise auto-build from character
+    var prompt=portraitPrompt.trim();
+    if(!prompt){
+      var r=(opts&&opts.race)||race;
+      var c=(opts&&opts.cls)||cls;
+      var k=(opts&&opts.kit)||kit;
+      var a=(opts&&opts.align)||align;
+      var n=(opts&&opts.notes)||notes;
+      var descParts=[r,c];
+      if(k)descParts.push(k);
+      if(a)descParts.push(a);
+      if(n)descParts.push(n.slice(0,150));
+      prompt="Fantasy character portrait, "+descParts.join(", ")+", AD&D tabletop RPG style, detailed face, dramatic lighting, oil painting, high quality";
+      setPortraitPrompt(prompt);
+    }
+    setPortraitPromptOpen(true);
     setPortraitLoading(true);
     try{
-      var url="https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=512&height=512&model=flux&nologo=true";
+      var seed=Math.floor(Math.random()*1000000);
+      var url="https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=512&height=512&model=flux&nologo=true&seed="+seed;
       var resp=await fetch(url);
       if(!resp.ok)throw new Error("HTTP "+resp.status);
       var blob=await resp.blob();
@@ -2767,7 +2776,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             </Card>}
             {/* Portrait card */}
             <Card brd={brd} surf={surf}><Lbl dim={dim}>PORTRAIT</Lbl>
-              <div style={{width:"110px"}}>
+              <div style={{width:portraitPromptOpen?"250px":"110px"}}>
                 {charPortrait
                   ?<img src={charPortrait} alt="portrait" style={{width:"110px",height:"110px",objectFit:"cover",borderRadius:"4px",border:"1px solid "+brd,display:"block",marginBottom:"6px"}} />
                   :<div style={{width:"110px",height:"110px",background:"#0a0a12",border:"1px dashed "+brd,borderRadius:"4px",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"6px",fontSize:"9px",color:dim,fontFamily:"monospace",textAlign:"center",lineHeight:"1.4"}}>
@@ -2775,7 +2784,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   </div>
                 }
                 {portraitLoading&&charPortrait&&<div style={{fontSize:"9px",color:dim,fontFamily:"monospace",textAlign:"center",marginBottom:"6px"}}>Generating…</div>}
-                <div style={{display:"flex",gap:"4px"}}>
+                <div style={{display:"flex",gap:"4px",marginBottom:"4px"}}>
                   <label style={{flex:1,padding:"3px 0",background:"#0a0a1a",border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px",color:dim,textAlign:"center",display:"block"}}>
                     Upload
                     <input type="file" accept="image/*" onChange={handlePortraitUpload} style={{display:"none"}} />
@@ -2785,7 +2794,27 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     {portraitLoading?"…":"AI Gen"}
                   </button>
                 </div>
-                {charPortrait&&<button onClick={function(){setCharPortrait(null);}} style={{marginTop:"4px",width:"100%",padding:"2px 0",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear</button>}
+                {(charPortrait||portraitPrompt)&&<button onClick={function(){setPortraitPromptOpen(function(p){return !p;});}}
+                  style={{width:"110px",marginBottom:"4px",padding:"2px 0",background:"transparent",color:portraitPromptOpen?"#80a0e0":dim,border:"1px solid "+(portraitPromptOpen?"#2a3a5a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>
+                  {portraitPromptOpen?"▲ hide prompt":"▼ edit prompt"}
+                </button>}
+                {portraitPromptOpen&&<div>
+                  <textarea value={portraitPrompt} onChange={function(e){setPortraitPrompt(e.target.value);}}
+                    placeholder="Describe the portrait — leave blank to auto-build from character stats"
+                    style={{width:"100%",height:"80px",padding:"6px",background:"#0a0a12",border:"1px solid "+brd,borderRadius:"4px",color:txt,fontSize:"10px",fontFamily:"monospace",outline:"none",resize:"vertical",lineHeight:"1.4",boxSizing:"border-box"}} />
+                  <div style={{display:"flex",gap:"4px",marginTop:"4px"}}>
+                    <button onClick={function(){generatePortrait({});}} disabled={portraitLoading}
+                      style={{flex:1,padding:"3px 0",background:portraitLoading?"transparent":"#1a1a2a",color:portraitLoading?dim:"#80a0e0",border:"1px solid "+(portraitLoading?brd:"#2a3a5a"),borderRadius:"3px",cursor:portraitLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"9px"}}>
+                      {portraitLoading?"…":"Regenerate"}
+                    </button>
+                    <button onClick={function(){setPortraitPrompt("");}}
+                      style={{padding:"3px 8px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>
+                      Reset
+                    </button>
+                  </div>
+                </div>}
+                {charPortrait&&<button onClick={function(){setCharPortrait(null);setPortraitPrompt("");setPortraitPromptOpen(false);}}
+                  style={{marginTop:"4px",width:"110px",padding:"2px 0",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear</button>}
               </div>
             </Card>
             <Card brd={brd} surf={surf}><Lbl dim={dim}>KIT</Lbl>
