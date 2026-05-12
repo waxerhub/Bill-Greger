@@ -1454,6 +1454,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _portraitLoading=useState(false),portraitLoading=_portraitLoading[0],setPortraitLoading=_portraitLoading[1];
   var _portraitPrompt=useState(""),portraitPrompt=_portraitPrompt[0],setPortraitPrompt=_portraitPrompt[1];
   var _portraitPromptOpen=useState(false),portraitPromptOpen=_portraitPromptOpen[0],setPortraitPromptOpen=_portraitPromptOpen[1];
+  var _portraitError=useState(""),portraitError=_portraitError[0],setPortraitError=_portraitError[1];
+  var portraitAbortRef=useRef(null);
 
   // Auto-save to localStorage on every change; also keeps current slot snapshot in sync
   useEffect(function(){
@@ -2319,11 +2321,17 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     }
     setPortraitPromptOpen(true);
     setPortraitLoading(true);
+    setPortraitError("");
+    // Cancel any in-flight request before starting a new one
+    if(portraitAbortRef.current)portraitAbortRef.current.abort();
+    var controller=new AbortController();
+    portraitAbortRef.current=controller;
+    var timer=setTimeout(function(){controller.abort();},45000);
     try{
       var seed=Math.floor(Math.random()*1000000);
       var url="https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt)+"?width=512&height=512&model=flux&nologo=true&seed="+seed;
-      var resp=await fetch(url);
-      if(!resp.ok)throw new Error("HTTP "+resp.status);
+      var resp=await fetch(url,{signal:controller.signal});
+      if(!resp.ok)throw new Error("Server returned "+resp.status);
       var blob=await resp.blob();
       var dataUrl=await new Promise(function(resolve,reject){
         var fr2=new FileReader();
@@ -2332,8 +2340,12 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
         fr2.readAsDataURL(blob);
       });
       setCharPortrait(dataUrl);
-    }catch(_){}
-    finally{setPortraitLoading(false);}
+    }catch(err){
+      if(err.name!=="AbortError")setPortraitError("Generation failed — try again");
+    }finally{
+      clearTimeout(timer);
+      setPortraitLoading(false);
+    }
   }
 
   // ── JSON save / load ─────────────────────────────────────────────────────
@@ -2783,7 +2795,6 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     {portraitLoading?"Generating…":"No portrait"}
                   </div>
                 }
-                {portraitLoading&&charPortrait&&<div style={{fontSize:"9px",color:dim,fontFamily:"monospace",textAlign:"center",marginBottom:"6px"}}>Generating…</div>}
                 <div style={{display:"flex",gap:"4px",marginBottom:"4px"}}>
                   <label style={{flex:1,padding:"3px 0",background:"#0a0a1a",border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px",color:dim,textAlign:"center",display:"block"}}>
                     Upload
@@ -2794,6 +2805,11 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                     {portraitLoading?"…":"AI Gen"}
                   </button>
                 </div>
+                {portraitLoading&&<button onClick={function(){if(portraitAbortRef.current)portraitAbortRef.current.abort();setPortraitLoading(false);setPortraitError("Cancelled");}}
+                  style={{width:"110px",marginBottom:"4px",padding:"2px 0",background:"transparent",color:"#e08060",border:"1px solid #5a3020",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>
+                  ✕ Cancel
+                </button>}
+                {portraitError&&!portraitLoading&&<div style={{fontSize:"9px",color:"#e08060",fontFamily:"monospace",marginBottom:"4px",wordBreak:"break-word"}}>{portraitError}</div>}
                 {(charPortrait||portraitPrompt)&&<button onClick={function(){setPortraitPromptOpen(function(p){return !p;});}}
                   style={{width:"110px",marginBottom:"4px",padding:"2px 0",background:"transparent",color:portraitPromptOpen?"#80a0e0":dim,border:"1px solid "+(portraitPromptOpen?"#2a3a5a":brd),borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>
                   {portraitPromptOpen?"▲ hide prompt":"▼ edit prompt"}
@@ -2805,13 +2821,18 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
                   <div style={{display:"flex",gap:"4px",marginTop:"4px"}}>
                     <button onClick={function(){generatePortrait({});}} disabled={portraitLoading}
                       style={{flex:1,padding:"3px 0",background:portraitLoading?"transparent":"#1a1a2a",color:portraitLoading?dim:"#80a0e0",border:"1px solid "+(portraitLoading?brd:"#2a3a5a"),borderRadius:"3px",cursor:portraitLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"9px"}}>
-                      {portraitLoading?"…":"Regenerate"}
+                      {portraitLoading?"Generating…":"Regenerate"}
                     </button>
-                    <button onClick={function(){setPortraitPrompt("");}}
+                    <button onClick={function(){setPortraitPrompt("");setPortraitError("");}}
                       style={{padding:"3px 8px",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>
                       Reset
                     </button>
+                    {portraitLoading&&<button onClick={function(){if(portraitAbortRef.current)portraitAbortRef.current.abort();setPortraitLoading(false);setPortraitError("Cancelled");}}
+                      style={{padding:"3px 8px",background:"transparent",color:"#e08060",border:"1px solid #5a3020",borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>
+                      Cancel
+                    </button>}
                   </div>
+                  {portraitError&&<div style={{marginTop:"4px",fontSize:"9px",color:"#e08060",fontFamily:"monospace"}}>{portraitError}</div>}
                 </div>}
                 {charPortrait&&<button onClick={function(){setCharPortrait(null);setPortraitPrompt("");setPortraitPromptOpen(false);}}
                   style={{marginTop:"4px",width:"110px",padding:"2px 0",background:"transparent",color:dim,border:"1px solid "+brd,borderRadius:"3px",cursor:"pointer",fontFamily:"monospace",fontSize:"9px"}}>Clear</button>}
