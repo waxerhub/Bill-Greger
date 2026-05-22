@@ -3,7 +3,7 @@
 // never reaches the browser.
 
 const API_URL = '/api/messages';
-const MODEL = 'claude-opus-4-6';
+const MODEL = 'claude-opus-4-7';
 
 // ── Spell Search (streaming) ─────────────────────────────────────────────────
 // onChunk(text) called with each text delta
