@@ -55,6 +55,12 @@ app.post('/api/messages', async (req, res) => {
   }
 
   if (req.body.stream) {
+    // If upstream returned an error, surface it as JSON rather than piping
+    // raw JSON as fake SSE (which the client parser can't read).
+    if (!upstream.ok) {
+      const errData = await upstream.json().catch(() => ({ error: 'Upstream error ' + upstream.status }));
+      return res.status(upstream.status).json(errData);
+    }
     // Stream SSE straight through to the browser
     res.setHeader('content-type', 'text/event-stream');
     res.setHeader('cache-control', 'no-cache');

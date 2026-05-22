@@ -95,19 +95,23 @@ export async function streamSpellSearch(query, spellData, charContext, onChunk, 
       if (!line.startsWith('data: ')) continue;
       var raw = line.slice(6).trim();
       if (!raw || raw === '[DONE]') continue;
-      try {
-        var ev = JSON.parse(raw);
-        if (ev.type === 'content_block_delta' && ev.delta) {
-          if (ev.delta.type === 'thinking_delta' && ev.delta.thinking && onThinking) {
-            onThinking(ev.delta.thinking);
-          } else if (ev.delta.type === 'text_delta' && ev.delta.text) {
-            fullText += ev.delta.text;
-            onChunk(ev.delta.text);
-          }
+      var ev;
+      try { ev = JSON.parse(raw); } catch (_) { continue; }
+      // Surface any API-level errors sent inside the stream
+      if (ev.type === 'error') {
+        throw new Error(ev.error ? (ev.error.message || ev.error.type || 'API stream error') : 'API stream error');
+      }
+      if (ev.type === 'content_block_delta' && ev.delta) {
+        if (ev.delta.type === 'thinking_delta' && ev.delta.thinking && onThinking) {
+          onThinking(ev.delta.thinking);
+        } else if (ev.delta.type === 'text_delta' && ev.delta.text) {
+          fullText += ev.delta.text;
+          onChunk(ev.delta.text);
         }
-      } catch (_) {}
+      }
     }
   }
+  if (!fullText) throw new Error('No response received — check server logs');
   onDone(fullText);
 }
 
