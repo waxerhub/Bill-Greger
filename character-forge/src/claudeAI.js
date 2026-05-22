@@ -165,7 +165,7 @@ export async function suggestSpellsForCharacter(charInfo, concept, filteredSpell
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-opus-4-7',
       max_tokens: 300,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMsg }],
@@ -200,7 +200,7 @@ export async function fetchSpellDescription(spell) {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-opus-4-7',
       max_tokens: 180,
       system:
         'You are an AD&D 2nd Edition spell reference. ' +
