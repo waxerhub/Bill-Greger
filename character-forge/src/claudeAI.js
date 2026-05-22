@@ -5,27 +5,60 @@
 const API_URL = '/api/messages';
 const MODEL = 'claude-opus-4-7';
 
-// ── Spell Search (streaming) ─────────────────────────────────────────────────
-// onChunk(text) called with each text delta
-// onDone(fullText) called when stream completes
-export async function streamSpellSearch(query, spellData, onChunk, onDone) {
+// ── Spell Search (streaming, with extended thinking) ─────────────────────────
+// charContext: { cls, level, race, adjSlots, memorized, notes }
+// onChunk(text)   — called with each streamed text delta
+// onDone(full)    — called when complete
+// onThinking(txt) — called with each thinking delta (optional)
+export async function streamSpellSearch(query, spellData, charContext, onChunk, onDone, onThinking) {
   var is1e = spellData.length > 0 && spellData[0]._1eClass;
   var edition = is1e ? '1st' : '2nd';
+
+  // Full descriptions — feasible because spellData is pre-filtered to castable spells
   var spellIndex = spellData.map(function(s) {
     var parts = [s['Spell Name'], 'L' + s.Level];
     if (s.Sphere) parts.push('Sphere:' + s.Sphere);
     if (s.School) parts.push('School:' + s.School);
     if (s.Category) parts.push(s.Category);
-    if (s.Description) parts.push(s.Description.slice(0, 80));
+    if (s.Description) parts.push(s.Description.slice(0, 220));
+    if (s['Damage Dice']) parts.push('Dmg:' + s['Damage Dice']);
     return parts.join(' | ');
   }).join('\n');
 
+  // Character context block
+  var charBlock = '';
+  if (charContext) {
+    var slots = (charContext.adjSlots || [])
+      .map(function(n, i) { return 'L' + (i + 1) + ':' + n; })
+      .filter(function(s) { return !s.endsWith(':0'); })
+      .join(', ');
+    var prepped = (charContext.memorized || [])
+      .map(function(m) { return m['Spell Name'] + ' (L' + m.Level + ')'; })
+      .join(', ');
+    charBlock =
+      'CHARACTER:\n' +
+      '  Class: ' + charContext.cls + ' | Level: ' + charContext.level + ' | Race: ' + (charContext.race || '') + '\n' +
+      '  Spell slots available: ' + (slots || 'none') + '\n' +
+      (prepped ? '  Already memorized: ' + prepped + '\n' : '') +
+      (charContext.notes ? '  Notes: ' + charContext.notes.slice(0, 400) + '\n' : '') +
+      '\n';
+  }
+
   var systemPrompt =
-    'You are an AD&D ' + edition + ' Edition spell reference assistant.\n' +
-    'Answer questions about spells from the compendium below.\n' +
-    'When you name a specific spell, write it in **bold** using its exact name from the list.\n' +
-    'Be concise. Group related spells together. Include level and brief effect.\n\n' +
-    'COMPENDIUM (Name | Level | Sphere/School | Category | Description):\n' +
+    'You are a strategic AD&D ' + edition + ' Edition spell advisor with deep tactical knowledge.\n\n' +
+    'The player describes a situation or need. You will:\n' +
+    '1. Analyze the scenario — identify key tactical challenges and priorities\n' +
+    '2. Recommend the best spells from the compendium for THIS character\n' +
+    '3. Explain HOW each spell addresses the specific situation\n' +
+    '4. Suggest SPELL COMBINATIONS and optimal CASTING ORDER for maximum effect\n' +
+    '5. Respect the character\'s available spell slots — note if slots are tight\n' +
+    '6. Call out any already-memorized spells that are especially relevant\n' +
+    '7. If environment or terrain is described, factor in line-of-sight, cover, and material components\n\n' +
+    'Format: lead with a brief tactical assessment, then group recommendations by priority or role.\n' +
+    'Write spell names in **bold** using their exact name from the list.\n' +
+    'Be specific and decisive — this is live tactical advice.\n\n' +
+    charBlock +
+    'AVAILABLE SPELLS (Name | Level | Sphere/School | Category | Description | Dmg):\n' +
     spellIndex;
 
   var response = await fetch(API_URL, {
@@ -33,7 +66,8 @@ export async function streamSpellSearch(query, spellData, onChunk, onDone) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: 16000,
+      thinking: { type: 'enabled', budget_tokens: 10000 },
       stream: true,
       system: systemPrompt,
       messages: [{ role: 'user', content: query }],
@@ -63,9 +97,13 @@ export async function streamSpellSearch(query, spellData, onChunk, onDone) {
       if (!raw || raw === '[DONE]') continue;
       try {
         var ev = JSON.parse(raw);
-        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.text) {
-          fullText += ev.delta.text;
-          onChunk(ev.delta.text);
+        if (ev.type === 'content_block_delta' && ev.delta) {
+          if (ev.delta.type === 'thinking_delta' && ev.delta.thinking && onThinking) {
+            onThinking(ev.delta.thinking);
+          } else if (ev.delta.type === 'text_delta' && ev.delta.text) {
+            fullText += ev.delta.text;
+            onChunk(ev.delta.text);
+          }
         }
       } catch (_) {}
     }
@@ -165,7 +203,7 @@ export async function suggestSpellsForCharacter(charInfo, concept, filteredSpell
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-opus-4-7',
+      model: MODEL,
       max_tokens: 300,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMsg }],
@@ -200,7 +238,7 @@ export async function fetchSpellDescription(spell) {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-opus-4-7',
+      model: MODEL,
       max_tokens: 180,
       system:
         'You are an AD&D 2nd Edition spell reference. ' +

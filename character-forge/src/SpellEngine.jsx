@@ -1332,6 +1332,8 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   var _aiLoading=useState(false),aiLoading=_aiLoading[0],setAiLoading=_aiLoading[1];
   var _aiMode=useState("spells"),aiMode=_aiMode[0],setAiMode=_aiMode[1];
   var _aiHighlight=useState([]),aiHighlight=_aiHighlight[0],setAiHighlight=_aiHighlight[1];
+  var _aiThinking=useState(""),aiThinking=_aiThinking[0],setAiThinking=_aiThinking[1];
+  var _aiThinkingOpen=useState(false),aiThinkingOpen=_aiThinkingOpen[0],setAiThinkingOpen=_aiThinkingOpen[1];
   var _genPrompt=useState(""),genPrompt=_genPrompt[0],setGenPrompt=_genPrompt[1];
   var _genResult=useState(null),genResult=_genResult[0],setGenResult=_genResult[1];
   var _genLoading=useState(false),genLoading=_genLoading[0],setGenLoading=_genLoading[1];
@@ -1949,7 +1951,7 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
     });
     setActiveSlotId(id);
     // Clear AI spell search results so prepare buttons don't bleed across characters
-    setAiHighlight([]);setAiResult("");
+    setAiHighlight([]);setAiResult("");setAiThinking("");setAiThinkingOpen(false);
     var snap=slotSnapsRef.current[id];
     if(snap) applyCharacterData(snap);
   }
@@ -2147,17 +2149,23 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
   }
   async function doSpellSearch(){
     if(!aiQuery.trim()||aiLoading)return;
-    setAiLoading(true);setAiResult("");setAiHighlight([]);
-    // In 1E mode use the active 1E spell list, otherwise the full 2E data
+    setAiLoading(true);setAiResult("");setAiHighlight([]);setAiThinking("");setAiThinkingOpen(false);
+    // Build class-filtered spell list
     var searchDb=edition==='1e'&&isWizard
       ?spells1e.filter(function(s){
           return cls==='Illusionist'?(s._1eClass==='illusionist'||s._1eClass==='mu/i'):(s._1eClass==='mu'||s._1eClass==='mu/i');
         })
       :SPELL_DATA;
+    // Narrow to levels this character can actually cast — fewer spells = richer descriptions
+    var maxCastable=adjSlots.reduce(function(mx,n,i){return n>0?i+1:mx;},0);
+    if(maxCastable>0)searchDb=searchDb.filter(function(s){return (parseInt(s.Level)||0)<=maxCastable;});
+    var charContext={cls,level,race,adjSlots,memorized,notes};
     try{
-      await streamSpellSearch(aiQuery,searchDb,
+      await streamSpellSearch(
+        aiQuery, searchDb, charContext,
         function(chunk){setAiResult(function(p){return p+chunk;});},
-        function(full){setAiHighlight(extractSpellNames(full));setAiLoading(false);}
+        function(full){setAiHighlight(extractSpellNames(full));setAiLoading(false);},
+        function(thinking){setAiThinking(function(p){return p+thinking;});}
       );
     }catch(e){setAiResult("Error: "+e.message);setAiLoading(false);}
   }
@@ -4819,11 +4827,20 @@ function CharCreator({ spellData: SPELL_DATA, itemData: ITEM_DATA }) {
             })}
           </div>
           {aiMode==="spells"&&<div>
-            <Lbl dim={dim}>DESCRIBE THE SPELLS YOU NEED</Lbl>
+            <Lbl dim={dim}>DESCRIBE YOUR SITUATION OR NEED</Lbl>
             <div style={{display:"flex",gap:"8px",marginBottom:"12px"}}>
-              <input value={aiQuery} onChange={function(e){setAiQuery(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doSpellSearch();}} placeholder="e.g. healing over time, charm a humanoid, conjure fire, teleport…" style={Object.assign({},is(brd,txt),{flex:1})} />
+              <input value={aiQuery} onChange={function(e){setAiQuery(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")doSpellSearch();}} placeholder="e.g. mass combat underground, high DPS no vegetation, party needs survivability buffs…" style={Object.assign({},is(brd,txt),{flex:1})} />
               <button onClick={doSpellSearch} disabled={aiLoading} style={{padding:"6px 18px",background:aiLoading?"#1a1a28":"#1a2a1a",color:aiLoading?dim:"#7db87d",border:"1px solid "+(aiLoading?brd:"#3a6a3a"),borderRadius:"4px",cursor:aiLoading?"not-allowed":"pointer",fontFamily:"monospace",fontSize:"11px"}}>{aiLoading?"…":"Search"}</button>
             </div>
+            {aiThinking&&<div style={{marginBottom:"10px",border:"1px solid #2a2a4a",borderRadius:"6px",overflow:"hidden"}}>
+              <button onClick={function(){setAiThinkingOpen(function(p){return !p;});}}
+                style={{width:"100%",padding:"8px 12px",background:"#0e0e1e",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:"8px",fontFamily:"monospace",fontSize:"10px",color:"#6060a0",textAlign:"left"}}>
+                <span style={{fontSize:"8px",color:"#4040a0"}}>{aiLoading&&!aiResult?"●":aiThinkingOpen?"▲":"▼"}</span>
+                <span style={{letterSpacing:"1px"}}>REASONING</span>
+                {!aiLoading&&<span style={{marginLeft:"auto",fontSize:"9px",opacity:0.5}}>{aiThinkingOpen?"hide":"show"}</span>}
+              </button>
+              {(aiThinkingOpen||(aiLoading&&!aiResult))&&<div style={{padding:"12px",background:"#080810",fontSize:"10px",color:"#5050a0",fontFamily:"monospace",lineHeight:"1.7",maxHeight:"30vh",overflowY:"auto",whiteSpace:"pre-wrap"}}>{aiThinking}</div>}
+            </div>}
             {aiResult&&<div style={{background:surf,border:"1px solid "+brd,borderRadius:"6px",padding:"14px",fontSize:"12px",lineHeight:"1.8",whiteSpace:"pre-wrap",color:txt,maxHeight:"40vh",overflowY:"auto"}}>{renderBold(aiResult)}</div>}
             {aiHighlight.length>0&&(function(){
               var db=edition==='1e'&&isWizard?spells1e:compSpells;
